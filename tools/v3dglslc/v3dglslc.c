@@ -24,6 +24,7 @@
 #include "util/xmlconfig.h"
 #include "util/macros.h"
 #include "v3d_screen.h"
+#include "v3d_context.h" /* the driver's sampler views (bind_samplers) */
 #include "xf86drm.h"
 #include "v3dp_writer.h"
 
@@ -262,6 +263,8 @@ static GLenum sampler_target(GLenum type, int wide, GLuint *tex)
  *    which waits on a fence (glFinish) the fake device cannot give;
  *  - the key's sampler_is_32b comes from the bound texture's format (wide:
  *    RGBA32F textures, for the variants with every sampler 32-bit). */
+static struct pipe_context *the_pipe; /* the GL context's (main), for bind_samplers */
+
 static void bind_samplers(GLuint p, int restore, int wide)
 {
     GLint n = 0, i, j, unit = 0;
@@ -288,6 +291,20 @@ static void bind_samplers(GLuint p, int restore, int wide)
             }
         }
         _mesa_Uniform1iv(loc, size, units);
+    }
+    if (restore && the_pipe) {
+        /* The driver's sampler views of every stage dropped, as in a fresh
+         * process: the state tracker sends a stage's views only while its
+         * program reads samplers, so a later program without any kept this
+         * one's, and V3D's key takes sampler_is_32b from the views bound:
+         * the program compiled before changed the variants (light after
+         * tex: 7 bytes of light's .v3dp; found in ogles3). A later program
+         * with samplers gets its own from the state tracker. */
+        struct v3d_context *v3d = v3d_context(the_pipe);
+        int s;
+        for (s = 0; s < MESA_SHADER_STAGES; s++)
+            if (v3d->tex[s].num_textures)
+                the_pipe->set_sampler_views(the_pipe, (mesa_shader_stage)s, 0, 0, v3d->tex[s].num_textures, NULL);
     }
     _mesa_ActiveTexture(GL_TEXTURE0);
 }
@@ -595,6 +612,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "v3dglslc: st_api_make_current failed\n");
         return 20;
     }
+    the_pipe = st->pipe;
     /* ogles2.library's limits, which its GL queries report too (GLSL's
      * gl_Max* constants must equal them: dEQP-GLES2 builtin_variable): four
      * draw buffers (EXT_draw_buffers, M7 step 5; OGLES2_MAX_DRAW_BUFFERS), 16

@@ -1994,5 +1994,13 @@ void v3d_store_tiled_image(void *dst, v3d_u32 dst_stride,
 }
 #endif
 
+// The packing above ends with this file's own structs. Left open, it packed
+// every struct defined after an #include of this file (draw.c's, buffer.c's,
+// texture.c's...): a 32-bit member at an odd offset is read and written a
+// byte at a time, four accesses and shifts for one under Emu68, and
+// V3DTexture was a byte shorter in ogles2/texture.c (v3d_texture.h after
+// this file) than in v3d_texture.c.
+#pragma pack(pop)
+
 //
 #endif // end v3d.h (V3D_HW_H)

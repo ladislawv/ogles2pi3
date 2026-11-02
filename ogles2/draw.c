@@ -1694,13 +1694,15 @@ static BOOL arrays_ok(struct OGLES2Context *ctx, const struct OGLES2Program *p, 
             ULONG st = arr->stride ? (ULONG)arr->stride : es;
             ULONG off = (ULONG)arr->pointer, size = ogles2_buffer_size(arr->buffer);
             if (off + es > size || (size - off - es) / st + 1 < end) {
-                ogles2_log("%s: attribute %ld reads past the end of buffer %ld; nothing drawn",
-                           (ULONG)fn, (ULONG)p->attrib_index[a], (ULONG)ogles2_buffer_name(arr->buffer));
+                if (fn)
+                    ogles2_log("%s: attribute %ld reads past the end of buffer %ld; nothing drawn",
+                               (ULONG)fn, (ULONG)p->attrib_index[a], (ULONG)ogles2_buffer_name(arr->buffer));
                 return FALSE;
             }
         } else if (!arr->pointer) {
-            ogles2_log("%s: attribute %ld is enabled without an array; nothing drawn", (ULONG)fn,
-                       (ULONG)p->attrib_index[a]);
+            if (fn)
+                ogles2_log("%s: attribute %ld is enabled without an array; nothing drawn", (ULONG)fn,
+                           (ULONG)p->attrib_index[a]);
             return FALSE;
         }
     }
@@ -1778,6 +1780,7 @@ static void draw_elements(struct OGLES2Context *ctx, GLenum mode, GLsizei count,
         else if (!indices)
             return;
     }
+scan:
     /* Mesa's state tracker: copy only the range the indices use. Without
      * branches (Emu68 runs a loop with two of them a pass at a third of the
      * speed): d's sign bit, spread by the arithmetic shift, picks it. Indices
@@ -1842,8 +1845,15 @@ static void draw_elements(struct OGLES2Context *ctx, GLenum mode, GLsizei count,
     }
     lo += (ULONG)basevertex;
     hi += (ULONG)basevertex;
-    if (!arrays_ok(ctx, p, hi + 1, fn))
-        return;
+    if (!arrays_ok(ctx, p, hi + 1, range ? 0 : fn)) { /* 0: quiet */
+        if (!range)
+            return;
+        /* A range wider than the arrays (it need only hold the indices,
+         * GLES 3.0 2.9.3; dEQP-GLES31's draw_range_elements_base_vertex in
+         * ogles3): the indices' own. */
+        range = 0;
+        goto scan;
+    }
     el.indices = indices;
     el.type = type;
     el.count = count;
