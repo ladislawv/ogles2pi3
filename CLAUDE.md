@@ -4,7 +4,12 @@ OpenGL ES 2.0 for AmigaOS 3 on the PiStorm's V3D 4.2 GPU (Raspberry Pi 4, Emu68)
 
 **Read first:** [`CONTRIBUTING.md`](CONTRIBUTING.md) (the handbook: build machine, building,
 testing on the Amiga, conventions, traps) and [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md)
-§13 (status; its "Next" list is the work queue).
+§13 (status; its "Next" list is the work queue). This repository (`ogles2pi3`) adds the
+Raspberry Pi 3 (VideoCore IV) to `ogles2`: one `ogles2.library` and one `v3dglslc` for the Pi 4
+(V3D 4.2) and the Pi 3. For that work read [`docs/PI3_PLAN.md`](docs/PI3_PLAN.md) first; its §10
+is the work queue. It is done here until finished and tested, then goes into `ogles2` (PI3_PLAN
+PD8); nothing is pushed to `ogles2` or `ogles3` from here before that. The Pi 4 must keep
+behaving as release 1.3.3 (PI3_PLAN §5.1).
 
 ## Build machine
 

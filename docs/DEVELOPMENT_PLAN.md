@@ -39,7 +39,7 @@ The goal is a new shared library, `ogles2.library`, that implements OpenGL ES 2.
 
 ### 2.2 Non-goals for version 1
 - OpenGL ES 3.x, compute and transform feedback.
-- Raspberry Pi 3 (VideoCore IV / VC4) and Pi 5 (V3D 7.1). The backend's identity check requires V3D 4.2 (`IDENT0 == 0x04443356`).
+- Raspberry Pi 3 (VideoCore IV / VC4) and Pi 5 (V3D 7.1). The backend's identity check requires V3D 4.2 (`IDENT0 == 0x04443356`). The Pi 3 port (one `ogles2.library` with a VC4 backend beside V3D 4.2, in the repository `ogles2pi3`) is planned in [`PI3_PLAN.md`](PI3_PLAN.md) (2026-11-03).
 - Binary compatibility with OS4 executables. OS4 is PowerPC, so only source compatibility is meaningful.
 - Sharing objects between contexts (`OGLES2_CCT_SHARE_WITH`) before M6.
 
