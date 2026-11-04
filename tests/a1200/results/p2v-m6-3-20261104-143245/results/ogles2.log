@@ -1,0 +1,161 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 GPU submission lock "V3D 4.2 submit" at 0x08365178
+     4 device: V3D 4.2.14 (PiStorm), 8 QPUs, 64 KB VPM, clipper granularity 256
+     5 device: GPU-visible RAM (device tree memory): 0x01000000-0x2E9FFFFF
+     6 device: GPU-visible RAM (device tree memory): 0x40000000-0x79DFFFFF
+     7 device: memory region "expansion memory" 0x08000020-0x2E9FFFFF fast: the GPU reaches it
+     8 device: memory region "expansion memory" 0x01000020-0x07FFFFFF fast: the GPU reaches it
+     9 device: memory region "expansion memory" 0x41000020-0x79DFFFFF fast: the GPU reaches it
+    10 device: memory region "memory" 0x00C00020-0x00C7FFFF fast: OUTSIDE the GPU-visible RAM
+    11 device: memory region "chip memory" 0x00001020-0x001FFFFF chip: OUTSIDE the GPU-visible RAM
+    12 aglCreateContext2: probes "V" (ENV:OGLES2/Probe)
+    13 display: application window, 640x480, BGRA
+    14 device: context pools for 640x480, D16, 18196864 bytes of GPU memory in use
+    15 aglCreateContext2: context 0x0872085C, 640x480
+    16 compiler: Stuff:amictld/work/p2v-m6-3/libs/v3dglslc, 19007888 bytes, id F758B608
+    17 compiler: started (0 s)
+    18 compiler: shader compiled in 1240 ms
+    19 compiler: shader compiled in 40 ms
+    20 compiler: program compiled in 260 ms, OGLES2Cache:c97596a4b972af6fefc357c7.v3dp
+    21 glLinkProgram: OGLES2Cache:c97596a4b972af6fefc357c7.v3dp (5 variants, 936 bytes of code)
+    22 vc4keys: program 3 vertex key 1 at frame 0: 00021203001203
+    23 vc4keys: program 3 fragment key 1 at frame 0: 0000fe00000000000000000000000f01
+    24 aglDestroyContext: context 0x0872085C: freeing
+    25 vc4keys: program 3 (program binary): 3605 draws, 1 fragment keys (0 late), 1 vertex keys (0 late)
+    26 vc4keys: context: 3605 frames, 3605 draws, 1 programs drawn, 1 fragment keys (0 first seen from frame 30 on), 1 vertex keys (0 from frame 30 on)
+    27 device: context freed, 0 bytes of GPU memory still in use
+    28 aglDestroyContext: context 0x0872085C (3605 frames, 0 dropped, 0 binning blocks added)
+    29 timing: 3605 jobs, each on average: 135 us of CPU work before its flush, 16 us waiting for binning, 298 us for the render
+    30 timing: and in each flush 60 us building the render list, 64 us for the CPU cache before the GPU, 51 us after
+    31 timing: 3605 swaps, 1664 us from one to the next on average, 854 us of it presenting
+    32 timing: per frame 1 draws, 104 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+    33 close (count 0)
+    34 open (count 1)
+    35 aglCreateContext2: probes "V" (ENV:OGLES2/Probe)
+    36 display: application window, 640x480, BGRA
+    37 device: context pools for 640x480, D16, 18196864 bytes of GPU memory in use
+    38 aglCreateContext2: context 0x08F79EF4, 640x480
+    39 compiler: shader compiled in 20 ms
+    40 compiler: shader compiled in 40 ms
+    41 compiler: shader compiled in 40 ms
+    42 compiler: shader compiled in 40 ms
+    43 compiler: shader compiled in 40 ms
+    44 compiler: shader compiled in 40 ms
+    45 compiler: shader compiled in 40 ms
+    46 compiler: shader compiled in 40 ms
+    47 compiler: shader compiled in 40 ms
+    48 compiler: shader compiled in 40 ms
+    49 compiler: shader compiled in 40 ms
+    50 compiler: shader compiled in 40 ms
+    51 compiler: shader compiled in 40 ms
+    52 compiler: shader compiled in 40 ms
+    53 compiler: shader compiled in 40 ms
+    54 compiler: shader compiled in 40 ms
+    55 compiler: shader compiled in 40 ms
+    56 compiler: shader compiled in 40 ms
+    57 compiler: program compiled in 180 ms, OGLES2Cache:32601cbdaebe715ed81b94a8.v3dp
+    58 glLinkProgram: OGLES2Cache:32601cbdaebe715ed81b94a8.v3dp (7 variants, 1520 bytes of code)
+    59 vc4keys: program 19 vertex key 1 at frame 0: 0102120200150401
+    60 vc4keys: program 19 fragment key 1 at frame 0: 0200fe00000000000000000000000f
+    61 vc4keys: program 19 vertex key 2 at frame 0: 0002120200150401
+    62 vc4keys: program 19 fragment key 2 at frame 0: 0000fe00000000000000000000000f
+    63 compiler: program compiled in 180 ms, OGLES2Cache:7ee918b1f2d9dc5c62622a91.v3dp
+    64 glLinkProgram: OGLES2Cache:7ee918b1f2d9dc5c62622a91.v3dp (7 variants, 1800 bytes of code)
+    65 vc4keys: program 20 vertex key 1 at frame 0: 00031202001504011202
+    66 vc4keys: program 20 fragment key 1 at frame 0: 0000fe00000000018686010001000f00000402030405
+    67 vc4keys: program 19 (program binary): 17402 draws, 2 fragment keys (0 late), 2 vertex keys (0 late)
+    68 aglDestroyContext: context 0x08F79EF4: freeing
+    69 vc4keys: program 20 (program binary): 129272 draws, 1 fragment keys (0 late), 1 vertex keys (0 late)
+    70 vc4keys: context: 1243 frames, 146674 draws, 2 programs drawn, 3 fragment keys (0 first seen from frame 30 on), 3 vertex keys (0 from frame 30 on)
+    71 device: context freed, 0 bytes of GPU memory still in use
+    72 aglDestroyContext: context 0x08F79EF4 (1243 frames, 0 dropped, 0 binning blocks added)
+    73 timing: 1243 jobs, each on average: 3468 us of CPU work before its flush, 54 us waiting for binning, 429 us for the render
+    74 timing: and in each flush 65 us building the render list, 67 us for the CPU cache before the GPU, 52 us after
+    75 timing: 1243 swaps, 4838 us from one to the next on average, 844 us of it presenting
+    76 timing: per frame 118 draws, 1322 us in them; in all 0 ms in glBuffer(Sub)Data, 5 ms in glTex(Sub)Image2D
+    77 close (count 0)
+    78 open (count 1)
+    79 aglCreateContext2: probes "V" (ENV:OGLES2/Probe)
+    80 display: application window, 640x480, BGRA
+    81 device: context pools for 640x480, D16, 18196864 bytes of GPU memory in use
+    82 aglCreateContext2: context 0x08F79EF4, 640x480
+    83 compiler: program compiled in 180 ms, OGLES2Cache:cfc86550fb7abb1f73ae047e.v3dp
+    84 glLinkProgram: OGLES2Cache:cfc86550fb7abb1f73ae047e.v3dp (7 variants, 1800 bytes of code)
+    85 vc4keys: program 19 vertex key 1 at frame 0: 00031202001504011202
+    86 vc4keys: program 19 fragment key 1 at frame 0: 0000fd00000000000000000000000f00000402030405
+    87 glLinkProgram: OGLES2Cache:7ee918b1f2d9dc5c62622a91.v3dp (7 variants, 1800 bytes of code)
+    88 vc4keys: program 20 vertex key 1 at frame 0: 00031202001504011202
+    89 vc4keys: program 20 fragment key 1 at frame 0: 0000fd00000000018686010001000f00000402030405
+    90 vc4keys: program 20 fragment key 2 at frame 1: 0000fe00000000000000000000000f00000402030405
+    91 vc4keys: program 19 (program binary): 893 draws, 1 fragment keys (0 late), 1 vertex keys (0 late)
+    92 aglDestroyContext: context 0x08F79EF4: freeing
+    93 vc4keys: program 20 (program binary): 1786 draws, 2 fragment keys (0 late), 1 vertex keys (0 late)
+    94 vc4keys: context: 1786 frames, 2679 draws, 2 programs drawn, 3 fragment keys (0 first seen from frame 30 on), 2 vertex keys (0 from frame 30 on)
+    95 device: context freed, 0 bytes of GPU memory still in use
+    96 aglDestroyContext: context 0x08F79EF4 (1786 frames, 0 dropped, 0 binning blocks added)
+    97 timing: 1786 jobs, each on average: 618 us of CPU work before its flush, 22 us waiting for binning, 754 us for the render
+    98 timing: and in each flush 820 us building the render list, 59 us for the CPU cache before the GPU, 27 us after
+    99 timing: 893 swaps, 6735 us from one to the next on average, 866 us of it presenting
+   100 timing: per frame 3 draws, 2109 us in them; in all 0 ms in glBuffer(Sub)Data, 1309 ms in glTex(Sub)Image2D
+   101 close (count 0)
+   102 open (count 1)
+   103 aglCreateContext2: probes "V" (ENV:OGLES2/Probe)
+   104 display: application window, 640x480, BGRA
+   105 device: context pools for 640x480, D16, 18196864 bytes of GPU memory in use
+   106 aglCreateContext2: context 0x08F79EF4, 640x480
+   107 glLinkProgram: OGLES2Cache:32601cbdaebe715ed81b94a8.v3dp (7 variants, 1520 bytes of code)
+   108 vc4keys: program 19 vertex key 1 at frame 0: 0002120200150401
+   109 vc4keys: program 19 fragment key 1 at frame 0: 0000fe00000000000000000000000f
+   110 vc4keys: program 19 vertex key 2 at frame 0: 0102120200150401
+   111 vc4keys: program 19 fragment key 2 at frame 0: 0200fe00000000000000000000000f
+   112 aglDestroyContext: context 0x08F79EF4: freeing
+   113 vc4keys: program 19 (program binary): 219236 draws, 2 fragment keys (0 late), 2 vertex keys (0 late)
+   114 vc4keys: context: 458 frames, 219236 draws, 1 programs drawn, 2 fragment keys (0 first seen from frame 30 on), 2 vertex keys (0 from frame 30 on)
+   115 device: context freed, 0 bytes of GPU memory still in use
+   116 aglDestroyContext: context 0x08F79EF4 (458 frames, 0 dropped, 0 binning blocks added)
+   117 timing: 458 jobs, each on average: 11279 us of CPU work before its flush, 186 us waiting for binning, 511 us for the render
+   118 timing: and in each flush 63 us building the render list, 96 us for the CPU cache before the GPU, 56 us after
+   119 timing: 458 swaps, 13177 us from one to the next on average, 837 us of it presenting
+   120 timing: per frame 478 draws, 4048 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+   121 close (count 0)
+   122 open (count 1)
+   123 aglCreateContext2: probes "V" (ENV:OGLES2/Probe)
+   124 display: application window, all of its screen (no copy), 640x480, BGRA
+   125 device: context pools for 640x480, D16, 18196864 bytes of GPU memory in use
+   126 aglCreateContext2: context 0x0901756C, 640x480
+   127 glLinkProgram: OGLES2Cache:c97596a4b972af6fefc357c7.v3dp (5 variants, 936 bytes of code)
+   128 vc4keys: program 3 vertex key 1 at frame 0: 00021203001203
+   129 vc4keys: program 3 fragment key 1 at frame 0: 0000fe00000000000000000000000f01
+   130 aglDestroyContext: context 0x0901756C: freeing
+   131 vc4keys: program 3 (program binary): 12056 draws, 1 fragment keys (0 late), 1 vertex keys (0 late)
+   132 vc4keys: context: 12056 frames, 12056 draws, 1 programs drawn, 1 fragment keys (0 first seen from frame 30 on), 1 vertex keys (0 from frame 30 on)
+   133 device: context freed, 0 bytes of GPU memory still in use
+   134 aglDestroyContext: context 0x0901756C (12056 frames, 0 dropped, 0 binning blocks added)
+   135 timing: 12056 jobs, each on average: 141 us of CPU work before its flush, 15 us waiting for binning, 2 us for the render
+   136 timing: and in each flush 55 us building the render list, 52 us for the CPU cache before the GPU, 2 us after
+   137 timing: 12056 swaps, 497 us from one to the next on average, 2 us of it presenting
+   138 timing: per frame 1 draws, 98 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+   139 close (count 0)
+   140 open (count 1)
+   141 aglCreateContext2: probes "V" (ENV:OGLES2/Probe)
+   142 display: application window, 640x480, BGRA
+   143 device: context pools for 640x480, D16, 18196864 bytes of GPU memory in use
+   144 aglCreateContext2: context 0x08F79EF4, 640x480
+   145 compiler: shader compiled in 40 ms
+   146 compiler: shader compiled in 40 ms
+   147 compiler: program compiled in 160 ms, OGLES2Cache:1e035666840fa535d6ee75a4.v3dp
+   148 glLinkProgram: OGLES2Cache:1e035666840fa535d6ee75a4.v3dp (5 variants, 592 bytes of code)
+   149 vc4keys: program 3 vertex key 1 at frame 0: 00021202001202
+   150 vc4keys: program 3 fragment key 1 at frame 0: 0000fd00000000000000000000000f00000402030405
+   151 vc4keys: program 3 fragment key 2 at frame 1: 0000fe00000000000000000000000f00000402030405
+   152 vc4keys: program 3 fragment key 3 at frame 262: 00000402030405000000000000000f00000402030405
+   153 aglDestroyContext: context 0x08F79EF4: freeing
+   154 vc4keys: program 3 (program binary): 780 draws, 3 fragment keys (1 late), 1 vertex keys (0 late)
+   155 vc4keys: context: 520 frames, 780 draws, 1 programs drawn, 3 fragment keys (1 first seen from frame 30 on), 1 vertex keys (0 from frame 30 on)
+   156 device: context freed, 0 bytes of GPU memory still in use
+   157 aglDestroyContext: context 0x08F79EF4 (520 frames, 0 dropped, 0 binning blocks added)
+   158 timing: 520 jobs, each on average: 444 us of CPU work before its flush, 20 us waiting for binning, 620 us for the render
+   159 timing: and in each flush 437 us building the render list, 55 us for the CPU cache before the GPU, 25 us after
+   160 timing: 260 swaps, 4412 us from one to the next on average, 846 us of it presenting
+   161 timing: per frame 3 draws, 1331 us in them; in all 0 ms in glBuffer(Sub)Data, 188 ms in glTex(Sub)Image2D

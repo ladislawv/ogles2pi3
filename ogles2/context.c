@@ -112,6 +112,8 @@ struct OGLES2Context *ogles2_aglCreateContext2(ULONG *errcode, struct TagItem *t
                     ctx->probe |= OGLES2_PROBE_CPU_UPLOAD;
                 else if (*p == 'K')
                     ctx->probe |= OGLES2_PROBE_CPU_COPY;
+                else if (*p == 'V')
+                    ctx->probe |= OGLES2_PROBE_VC4KEYS;
             }
             ogles2_log("aglCreateContext2: probes \"%s\" (ENV:OGLES2/Probe)", var);
             if ((ctx->probe & OGLES2_PROBE_ADDR) &&
@@ -218,6 +220,7 @@ void ogles2_aglDestroyContext(struct OGLES2Context *ctx)
     ogles2_job_free(ctx);
     ogles2_trace(ctx, "aglDestroyContext: draw and job state freed", -1, 0);
     ogles2_objects_free(ctx);
+    ogles2_vc4keys_report(ctx); /* probe V: after the programs' own summaries */
     ogles2_trace(ctx, "aglDestroyContext: programs and shaders freed", -1, 0);
     ogles2_fbo_free(ctx); /* before the textures: renderbuffers' colour storage is theirs */
     ogles2_textures_free(ctx);

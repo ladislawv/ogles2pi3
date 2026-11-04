@@ -361,6 +361,7 @@ struct OGLES2Program
     struct OGLES2Context *us_ctx[2];
     UBYTE nslots;                     /* vertex input slots (0xff: not mapped yet) */
     UBYTE slot_attrib[16];            /* the generic attribute of each (0xff: none) */
+    void *vc4keys;                    /* probe V (vc4keys.c): the VC4 keys its draws needed */
 };
 
 struct OGLES2Context;
@@ -461,6 +462,8 @@ struct OGLES2Context
     GLint viewport[4];              /* x, y, width, height */
     GLint scissor[4];
     ULONG frames, frames_dropped;   /* statistics, logged at destroy */
+    /* probe V (vc4keys.c): totals over the context's programs */
+    ULONG vc4k_draws, vc4k_programs, vc4k_fs, vc4k_vs, vc4k_late_fs, vc4k_late_vs;
     /* Timing (microseconds, ogles2_clock_us; logged at destroy): per job the
      * CPU's part (job begun to flush) and the waits for binning and render;
      * per frame the time between swaps and the presentation. */
@@ -562,6 +565,8 @@ struct OGLES2Context
 #define OGLES2_PROBE_CPU_MIPMAP 256UL /* M: glGenerateMipmap on the CPU, not the TFU (texture.c) */
 #define OGLES2_PROBE_CPU_UPLOAD 512UL /* U: texture uploads tiled by the CPU, not the TFU (texture.c) */
 #define OGLES2_PROBE_CPU_COPY 1024UL /* K: glCopyTex* through the CPU, not drawn by the GPU (copy.c) */
+/* The Pi 3 port's measurement (docs/PI3_PLAN.md §4.2, P2): */
+#define OGLES2_PROBE_VC4KEYS 2048UL /* V: log the distinct VC4 shader keys each program's draws need (vc4keys.c) */
 
 void ogles2_state_init(struct OGLES2Context *ctx);
 BOOL ogles2_state_dither(struct OGLES2Context *ctx); /* GL_DITHER enabled */
@@ -683,6 +688,23 @@ void ogles2_fbo_free(struct OGLES2Context *ctx);
 BOOL ogles2_texture_query(struct OGLES2Context *ctx, GLenum pname, GLint *v);
 /* The texture and sampler state of texture unit `unit` (its binding of
  * OGLES2_TEX_* kind), written into the open job's state buffer; FALSE: no memory. */
+/* Probe V (vc4keys.c, docs/PI3_PLAN.md §4.2): what a draw tells the VC4 key
+ * count; draw.c fills it. */
+struct OGLES2Vc4KeyDraw
+{
+    UBYTE prim;            /* the fragment shader's primitive class: 0 triangles, 1 lines, 2 points */
+    UBYTE psiz;            /* points from a vertex shader that writes gl_PointSize */
+    UBYTE nslots;          /* vertex input slots */
+    UBYTE attr[16][3];     /* per slot: type code, size, normalized; 0xff: a constant attribute */
+    UBYTE nsamp[2];        /* per stage (vertex, fragment): texture indices used */
+    UBYTE samp[2][16][5];  /* per stage and index: the texture's stored type (0xfd: none) and swizzle */
+};
+void ogles2_vc4keys_draw(struct OGLES2Context *ctx, struct OGLES2Program *p, const struct OGLES2Vc4KeyDraw *in);
+void ogles2_vc4keys_free(struct OGLES2Context *ctx, struct OGLES2Program *p); /* logs its summary */
+void ogles2_vc4keys_report(struct OGLES2Context *ctx);                         /* aglDestroyContext */
+BOOL ogles2_texture_stored(struct OGLES2Context *ctx, int unit, int kind, UBYTE *hw_type, UBYTE swizzle[4]);
+BOOL ogles2_texture_stored_of(const struct OGLES2Texture *t, UBYTE *hw_type, UBYTE swizzle[4]);
+const struct OGLES2Texture *ogles2_fbo_color_texture(const struct OGLES2Framebuffer *fb, int i);
 BOOL ogles2_texture_state(struct OGLES2Context *ctx, int unit, int kind, ULONG *tex_state,
                           ULONG *sampler_state);
 ULONG ogles2_format(char *buf, ULONG size, const char *fmt, ...); /* log.c: RawDoFmt, bounded */

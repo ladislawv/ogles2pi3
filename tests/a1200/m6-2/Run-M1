@@ -2,11 +2,13 @@
 ;   CD to this directory, then:   Execute Run-M1
 ;   With the game elsewhere:       Execute Run-M1 Q3DATA=<the directory with baseq3>
 ;   The whole demo (1260 frames):  Execute Run-M1 FRAMES=0
+;   Other library probes:          Execute Run-M1 PROBE=TPV (ENV:OGLES2/Probe; default TP)
 ; Nothing is installed and nothing is written to the game's directory: the
 ; game's own files (config, logs) go to home/ here. Output goes to results/.
-.key Q3DATA/K,FRAMES/K
+.key Q3DATA/K,FRAMES/K,PROBE/K
 .def FRAMES 400
 .def Q3DATA "Stuff:Quake3-68k-beta10/Quake3-68k-beta10"
+.def PROBE TP
 .bra {
 .ket }
 
@@ -46,7 +48,7 @@ Echo "  for a minute. Then the demo plays as fast as it can and the game quits."
 ; and ogles2 do not (M6).
 ; Probes T and P (ogles2_internal.h): the deletes and the context's end
 ; step by step, and the timing every 256 frames.
-SetEnv OGLES2/Probe TP
+SetEnv OGLES2/Probe {PROBE}
 ; gl4es's calls into ogles2.library, timed (ports/gl4es/gen_glue.py).
 SetEnv GL4ES_GLUE_PROFILE 1
 If {FRAMES} EQ 0 VAL

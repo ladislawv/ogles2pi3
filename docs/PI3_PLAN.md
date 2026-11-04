@@ -292,6 +292,32 @@ textures, the texture-parameter ones, then multiple render targets, then half-fl
   examples, SDL's `testgles2` and dEQP's shader groups give the numbers: variants per program and
   per run, and how many appear after the first frames (each is a stall while S2 compiles, or a
   wrong draw without it).
+- **Measured (2026-11-04), probe V** (`ogles2/vc4keys.c`: per draw the canonical keys of the
+  list above; a sampler's format class and swizzle are taken from the Pi 4's stored texture type
+  and swizzle, which may count a few formats apart that VC4 shares; `tests/a1200/vc4keys.py`
+  summarises the log; packages `p2v-*` made by `tests/a1200/p2_vc4keys.sh` from the 1.3.3
+  packages with this repository's library; results `tests/a1200/results/p2v-*-20261104-*`):
+
+  | Run | Programs | Fragment keys | Vertex keys | Most per program | New after frame 100 |
+  |---|---|---|---|---|---|
+  | corpus (es2gears, 10 book samples, 3 of ours; `m2-5`) | 22 | 32 | 23 | 3 | 0 |
+  | SDL2's tests (`m6-3`) | 8 | 13 | 10 | 3 | 1 |
+  | SDL3's tests (`m6-4`) | 10 | 12 | 12 | 2 | 0 |
+  | Quake III, renderergl2, the whole demo (`m6-5`) | 18 | 39 | 25 | 6 | 2 (frames 100-489) |
+  | Quake III on gl4es, the whole demo (`m6-2`) | 5 | 17 | 5 | 9 | 1 (frame ~470) |
+
+  What makes the keys differ: in Quake III blending (on/off and its factors, by shader stage)
+  and the sampler's format (RGB against RGBA textures), in a few programs the attribute formats;
+  in the corpus and SDL the render target (the display against an RGBA8 texture: the
+  default framebuffer's format, BGRA on the RTG screen, against RGBA8888 is a key difference on
+  VC4) and points against triangles. Quake III's loading takes about the first 35 frames; nearly
+  all keys appear by frame 100, i.e. in the first second of play. dEQP's shader groups were not
+  measured (one draw state per program: one or two keys each).
+  **Conclusion for PD7:** the counts are small (a game needs about 40 to 60 fragment and vertex
+  variants, at most 9 for one program, 1 or 2 first needed in play), so option 1 (accept: the
+  offline compiler's key manifests list the common states, the rest compile into the cache
+  once) is enough; options 2 and 3 are not needed for these programs. Decided so (PD7,
+  2026-11-04).
 - **Then decided (PD7), with the numbers:**
   1. accept them: the offline compiler's key manifests (DEVELOPMENT_PLAN §8.2) list the common
      states; the rest compile at draw time into the cache (a stall once per installation);
@@ -607,8 +633,11 @@ Everything that can run here runs here first (the developer, 2026-11-03).
   do.
 - **PD6 (2026-11-03): every extension of 1.3 is kept on the Pi 3, the missing ones emulated**
   (§2.1); float textures stored as half floats, a documented deviation.
-- **PD7 (open, P2): shader variants on the Pi 3** (§4.2): accept, reduce in the compiler, or
-  splice; decided with the counts from P2.
+- **PD7 (2026-11-04): shader variants on the Pi 3: option 1, accept** (§4.2): the canonical
+  keys; the offline compiler's key manifests list the common states, the other variants compile
+  into the cache once (a stall the first time). Decided by the developer with P2's counts (a game
+  about 40 to 60 variants, at most 9 for one program, 1 or 2 first needed in play); reducing
+  the keys in the compiler (option 2) or splicing (option 3) are not planned.
 - **PD8 (2026-11-03): the work lives in `ogles2pi3` until it is finished and tested** (P6), then
   goes into `ogles2`, from which the release for both Pis comes (P7). Meanwhile:
   - `ogles2` stays the Pi 4's: a fix needed there before P7 is made there and released from
@@ -661,6 +690,14 @@ Everything that can run here runs here first (the developer, 2026-11-03).
   `vc4core` power-cycles the core into its reset state when it takes it and watches `ERRSTAT`
   (§2 "Power", §6.2). The second power supply still flags under-voltage (§6.0).
 
+- P2's variant count measured on the A1200 with the Pi 4 card (§4.2): probe V
+  (`ogles2/vc4keys.c`); the corpus, SDL2, SDL3 and Quake III (both renderers) need 1 to 9
+  fragment keys per program, 39 + 25 for Quake III's renderergl2, 1 or 2 first needed in play.
+  This repository's library builds go to `~/ogles2-build/m68k-pi3` (B=...), never to
+  `~/ogles2-build/m68k`, which the `ogles2` checkout builds the Pi 4's releases into: make
+  compares timestamps and would mix the two trees' objects. The WSL Mesa tree
+  (`~/mesa-build/mesa`) is shared: it now has vc4 configured and patches 0015 and 0016 applied,
+  which change nothing of the V3D build (54 of 54 files unchanged).
 - P4's S1 begun (§4.1): `v3dglslc -g 21` compiles with Mesa's vc4 driver, its code identical to
   the Pi's Mesa for the reference programs; the variant hook (patch 0015) reports code and
   uniform recipes; the Pi 4's output unchanged (54 files). Then the format (§4.3): 1.1 with a
@@ -671,9 +708,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 **Next:**
 1. A power supply and cable that hold 5 V on the test Pi (`vcgencmd get_throttled` 0 after an
    hour).
-2. P2 on the build machine and the A1200 with the Pi 4 card: first the variant-count probe (the
-   numbers PD7 needs), then the backend interface and the MIT rewrite of the shared front end's
-   PiStorm3D parts.
+2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
+   the Pi 4 card (PD7 decided: option 1).
 3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
    canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the
    compiler (8 varyings, draw buffers per the emulation); the corpus compiled for VC4 as a

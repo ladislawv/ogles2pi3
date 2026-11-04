@@ -1439,6 +1439,55 @@ struct elements
     ULONG min;            /* the smallest index: subtracted from each */
 };
 
+/* Probe V (vc4keys.c, docs/PI3_PLAN.md §4.2): the draw's vertex inputs and
+ * the textures its samplers read, for the VC4 key count. */
+static void vc4keys_glue(struct OGLES2Context *ctx, struct OGLES2Program *p, GLenum mode, GLenum fsmode,
+                         const struct OGLES2Variant *vs, int nslots)
+{
+    const struct OGLES2Image *im = p->image;
+    struct OGLES2Vc4KeyDraw in;
+    UWORD k, n = list_samplers(p);
+    int i, st;
+
+    memset(&in, 0, sizeof(in));
+    in.prim = (UBYTE)(fsmode == GL_POINTS ? 2
+                      : fsmode == GL_LINES || fsmode == GL_LINE_LOOP || fsmode == GL_LINE_STRIP ? 1 : 0);
+    in.psiz = (UBYTE)(mode == GL_POINTS && vs->writes_psiz);
+    in.nslots = (UBYTE)nslots;
+    for (i = 0; i < nslots && i < 16; i++) {
+        GLuint g = p->slot_attrib[i];
+        if (g < OGLES2_MAX_VERTEX_ATTRIBS && ctx->array[g].enabled) {
+            GLenum t = ctx->array[g].type;
+            in.attr[i][0] = (UBYTE)(t ^ (t >> 8));
+            in.attr[i][1] = (UBYTE)ctx->array[g].size;
+            in.attr[i][2] = (UBYTE)(ctx->array[g].normalized ? 1 : 0);
+        } else {
+            in.attr[i][0] = 0xff; /* the current value, given as floats */
+        }
+    }
+    for (k = 0; k < n; k++) {
+        UWORD u = p->nsamplers == 0xfe ? k : p->samplers[k];
+        const struct OGLES2ImageUniform *un = &im->uniforms[u];
+        if (!(un->flags & OGLES2_UNIFORM_SAMPLER))
+            continue;
+        for (st = 0; st < 2; st++) {
+            UWORD e, ne = un->array ? un->array : 1;
+            for (e = 0; e < ne; e++) {
+                ULONG idx = un->sampler[st] + e;
+                UBYTE *d;
+                if (un->sampler[st] >= OGLES2_MAX_STAGE_SAMPLERS || idx >= OGLES2_MAX_STAGE_SAMPLERS)
+                    break;
+                d = in.samp[st][idx];
+                if (!ogles2_texture_stored(ctx, unit_of(p, u, e), ogles2_sampler_kind(un->type), &d[0], &d[1]))
+                    d[0] = 0xfd;
+                if (idx + 1 > in.nsamp[st])
+                    in.nsamp[st] = (UBYTE)(idx + 1);
+            }
+        }
+    }
+    ogles2_vc4keys_draw(ctx, p, &in);
+}
+
 /* Draws with program p and the context's state; arguments are valid. The
  * vertices [first, first+count) are copied; without `el` they are drawn in
  * order, with it through its indices. */
@@ -1580,6 +1629,8 @@ static void draw_arrays(struct OGLES2Context *ctx, struct OGLES2Program *p, GLen
         p->nslots = (UBYTE)nslots;
     }
     nslots = p->nslots;
+    if (ctx->probe & OGLES2_PROBE_VC4KEYS)
+        vc4keys_glue(ctx, p, mode, fsmode, vs, nslots);
     for (i = 0; i < nslots; i++) {
         GLuint g = p->slot_attrib[i];
         BOOL ok;

@@ -1,0 +1,88 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 GPU submission lock "V3D 4.2 submit" at 0x08365178
+     4 device: V3D 4.2.14 (PiStorm), 8 QPUs, 64 KB VPM, clipper granularity 256
+     5 device: GPU-visible RAM (device tree memory): 0x01000000-0x2E9FFFFF
+     6 device: GPU-visible RAM (device tree memory): 0x40000000-0x79DFFFFF
+     7 device: memory region "expansion memory" 0x08000020-0x2E9FFFFF fast: the GPU reaches it
+     8 device: memory region "expansion memory" 0x01000020-0x07FFFFFF fast: the GPU reaches it
+     9 device: memory region "expansion memory" 0x41000020-0x79DFFFFF fast: the GPU reaches it
+    10 device: memory region "memory" 0x00C00020-0x00C7FFFF fast: OUTSIDE the GPU-visible RAM
+    11 device: memory region "chip memory" 0x00001020-0x001FFFFF chip: OUTSIDE the GPU-visible RAM
+    12 aglCreateContext2: probes "PV" (ENV:OGLES2/Probe)
+    13 display: fullscreen, 640x480, BGRA
+    14 device: context pools for 640x480, D32F, 18852224 bytes of GPU memory in use
+    15 aglCreateContext2: context 0x08F93D9C, 640x480
+    16 compiler: Stuff:amictld/work/p2v-m6-2/libs/v3dglslc, 19004732 bytes, id 4915727C
+    17 compiler: started (0 s)
+    18 compiler: shader failed in 1200 ms
+    19 compiler: shader failed in 20 ms
+    20 compiler: shader failed in 40 ms
+    21 compiler: shader compiled in 20 ms
+    22 compiler: shader compiled in 40 ms
+    23 compiler: program compiled in 320 ms, OGLES2Cache:7ed7abf47358a282c8ca6708.v3dp
+    24 glLinkProgram: OGLES2Cache:7ed7abf47358a282c8ca6708.v3dp (5 variants, 1224 bytes of code)
+    25 vc4keys: program 1 vertex key 1 at frame 0: 00031203001504011202
+    26 vc4keys: program 1 fragment key 1 at frame 0: 0000fe00000000018686010001000f00000402030401
+    27 vc4keys: program 1 fragment key 2 at frame 0: 0000fe00000000018686050305030f01000402030401
+    28 compiler: shader compiled in 40 ms
+    29 compiler: program compiled in 180 ms, OGLES2Cache:6a9a5f2065e7601eda260dae.v3dp
+    30 glLinkProgram: OGLES2Cache:6a9a5f2065e7601eda260dae.v3dp (5 variants, 1248 bytes of code)
+    31 vc4keys: program 4 vertex key 1 at frame 0: 00031203001504011202
+    32 vc4keys: program 4 fragment key 1 at frame 0: 0000fe00000000018686010001000f00000402030405
+    33 job: depth and stencil kept across a mid-frame flush (logged once)
+    34 vc4keys: program 4 fragment key 2 at frame 5: 0000fe00000000018686010001000f01000402030405
+    35 vc4keys: program 1 fragment key 3 at frame 35: 0000fe00000000000000000000000f01000402030401
+    36 vc4keys: program 1 fragment key 4 at frame 35: 0000fe00000000018686010101010f01000402030401
+    37 compiler: shader compiled in 40 ms
+    38 compiler: shader compiled in 40 ms
+    39 compiler: program compiled in 200 ms, OGLES2Cache:d743c055789b4d39db82c455.v3dp
+    40 glLinkProgram: OGLES2Cache:d743c055789b4d39db82c455.v3dp (5 variants, 1512 bytes of code)
+    41 vc4keys: program 7 vertex key 1 at frame 35: 00041203001504011202001202
+    42 vc4keys: program 7 fragment key 1 at frame 35: 0000fe00000000000000000000000f010004020304010402030401
+    43 vc4keys: program 1 fragment key 5 at frame 35: 0000fe00000000018686050105010f01000402030401
+    44 compiler: shader compiled in 40 ms
+    45 compiler: program compiled in 200 ms, OGLES2Cache:6b35572bbc15d8acd0465545.v3dp
+    46 glLinkProgram: OGLES2Cache:6b35572bbc15d8acd0465545.v3dp (5 variants, 1296 bytes of code)
+    47 vc4keys: program 10 vertex key 1 at frame 35: 00031203001504011202
+    48 vc4keys: program 10 fragment key 1 at frame 35: 0000fe00000000000000000000000f01000402030405
+    49 vc4keys: program 1 fragment key 6 at frame 35: 0000fe00000000018686050005000f01000402030401
+    50 vc4keys: program 4 fragment key 3 at frame 35: 0000fe00000000000000000000000f01000402030405
+    51 vc4keys: program 1 fragment key 7 at frame 35: 0000fe00000000018686010001000f01000402030401
+    52 vc4keys: program 1 fragment key 8 at frame 37: 0000fe00000000018686000200020f01000402030401
+    53 vc4keys: program 1 fragment key 9 at frame 44: 0000fe00000000018686050605060f01000402030401
+    54 vc4keys: program 4 fragment key 4 at frame 44: 0000fe00000000018686050105010f01000402030405
+    55 vc4keys: program 0 vertex key 1 at frame 44: 0002120300ff
+    56 vc4keys: program 0 fragment key 1 at frame 44: 0000fe00000000000000000000000001
+    57 periodic: frames to 256: 48317 us a frame, 256 jobs; per job 49098 us of CPU work, 77 us render list, 65 us cache, 228 us render wait; 0 textures renamed; 51549528 bytes of GPU memory
+    58 periodic: per frame 86 draws, 2922 us in them, 0 us in glBuffer(Sub)Data, 617 us in glTex(Sub)Image2D
+    59 periodic: per frame in draws: 165 us checks, 72 shaders, 705 textures, 367 uniforms, 980 vertex data, 128 record, 128 indices, 421 binning list
+    60 vc4keys: program 10 fragment key 2 at frame 472: 0000fe00000000018686010001000f01000402030405
+    61 periodic: frames to 512: 21505 us a frame, 256 jobs; per job 16937 us of CPU work, 69 us render list, 66 us cache, 2 us render wait; 0 textures renamed; 53832024 bytes of GPU memory
+    62 periodic: per frame 131 draws, 3187 us in them, 0 us in glBuffer(Sub)Data, 0 us in glTex(Sub)Image2D
+    63 periodic: per frame in draws: 242 us checks, 101 shaders, 275 textures, 514 uniforms, 1191 vertex data, 181 record, 185 indices, 526 binning list
+    64 periodic: frames to 768: 21241 us a frame, 256 jobs; per job 16660 us of CPU work, 66 us render list, 64 us cache, 2 us render wait; 0 textures renamed; 54543832 bytes of GPU memory
+    65 periodic: per frame 141 draws, 3456 us in them, 0 us in glBuffer(Sub)Data, 0 us in glTex(Sub)Image2D
+    66 periodic: per frame in draws: 268 us checks, 102 shaders, 276 textures, 554 uniforms, 1275 vertex data, 209 record, 216 indices, 592 binning list
+    67 periodic: frames to 1024: 21061 us a frame, 256 jobs; per job 16598 us of CPU work, 68 us render list, 64 us cache, 2 us render wait; 0 textures renamed; 55037272 bytes of GPU memory
+    68 periodic: per frame 125 draws, 3083 us in them, 0 us in glBuffer(Sub)Data, 0 us in glTex(Sub)Image2D
+    69 periodic: per frame in draws: 229 us checks, 94 shaders, 243 textures, 502 uniforms, 1141 vertex data, 173 record, 191 indices, 563 binning list
+    70 periodic: frames to 1280: 23914 us a frame, 256 jobs; per job 18996 us of CPU work, 71 us render list, 65 us cache, 2 us render wait; 0 textures renamed; 55037272 bytes of GPU memory
+    71 periodic: per frame 166 draws, 3990 us in them, 0 us in glBuffer(Sub)Data, 0 us in glTex(Sub)Image2D
+    72 periodic: per frame in draws: 319 us checks, 121 shaders, 298 textures, 697 uniforms, 1474 vertex data, 228 record, 245 indices, 656 binning list
+    73 texture 2 changed after a draw used it in the same frame: renamed (logged once)
+    74 texture 126 changed after a draw used it: the frame is rendered first (too many renamed blocks in this frame)
+    75 aglDestroyContext: context 0x08F93D9C: freeing
+    76 vc4keys: program 1 (program binary): 91171 draws, 9 fragment keys (7 late), 1 vertex keys (0 late)
+    77 vc4keys: program 4 (program binary): 27995 draws, 4 fragment keys (2 late), 1 vertex keys (0 late)
+    78 vc4keys: program 7 (program binary): 46934 draws, 1 fragment keys (1 late), 1 vertex keys (1 late)
+    79 vc4keys: program 10 (program binary): 2199 draws, 2 fragment keys (2 late), 1 vertex keys (1 late)
+    80 vc4keys: context: 1294 frames, 172883 draws, 5 programs drawn, 17 fragment keys (13 first seen from frame 30 on), 5 vertex keys (3 from frame 30 on)
+    81 device: context freed, 0 bytes of GPU memory still in use
+    82 aglDestroyContext: context 0x08F93D9C (1294 frames, 0 dropped, 0 binning blocks added)
+    83 timing: 1294 jobs, each on average: 23614 us of CPU work before its flush, 113 us waiting for binning, 47 us for the render
+    84 timing: and in each flush 70 us building the render list, 65 us for the CPU cache before the GPU, 2 us after
+    85 timing: 1294 swaps, 27190 us from one to the next on average, 2 us of it presenting
+    86 timing: per frame 130 draws, 3326 us in them; in all 0 ms in glBuffer(Sub)Data, 158 ms in glTex(Sub)Image2D
+    87 timing: per frame in draws: 244 us checks, 98 shaders, 358 textures, 528 uniforms, 1212 vertex data, 184 record, 193 indices, 552 binning list
+    88 timing: per draw 25 uniform stream words, 1612 bytes of vertex data, 144 indices

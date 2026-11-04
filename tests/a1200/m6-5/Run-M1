@@ -9,12 +9,13 @@
 ;   Vsync (r_swapInterval 1):      Execute Run-M1 VSYNC=1
 ;   4x antialiasing:               Execute Run-M1 MSAA=1
 ;   Another size (custom mode):    Execute Run-M1 WIDTH=1920 HEIGHT=1080
+;   Other library probes:          Execute Run-M1 PROBE=TPV (ENV:OGLES2/Probe; default TP)
 ;   The demo at its own speed, paced as a game is (com_maxfps):
 ;                                  Execute Run-M1 TIMEDEMO=0 [MAXFPS=<n>]
 ; Nothing is installed and nothing is written to the game's directory: the
 ; game's own files (config, logs, screenshots) go to home/ here. Output goes
 ; to results/.
-.key Q3DATA/K,FRAMES/K,SOUND/K,PROFILE/K,SPEEDS/K,VSYNC/K,MSAA/K,TIMEDEMO/K,MAXFPS/K,WIDTH/K,HEIGHT/K
+.key Q3DATA/K,FRAMES/K,SOUND/K,PROFILE/K,SPEEDS/K,VSYNC/K,MSAA/K,TIMEDEMO/K,MAXFPS/K,WIDTH/K,HEIGHT/K,PROBE/K
 .def FRAMES 400
 .def SOUND 0
 .def PROFILE 0
@@ -25,6 +26,7 @@
 .def MAXFPS 85
 .def WIDTH 0
 .def HEIGHT 0
+.def PROBE TP
 .def Q3DATA "Stuff:Quake3-68k-beta10/Quake3-68k-beta10"
 .bra {
 .ket }
@@ -62,7 +64,7 @@ Echo "  ioquake3's GLES2 renderer (its shaders come compiled in cache/). The"
 Echo "  demo plays as fast as it can and the game quits."
 ; Probes T and P (ogles2_internal.h): the deletes and the context's end
 ; step by step, and the timing every 256 frames.
-SetEnv OGLES2/Probe TP
+SetEnv OGLES2/Probe {PROBE}
 ; Silent by default, as the earlier timedemo figures (MiniGL's too).
 Set Q3SND "+set s_initsound 0"
 If {SOUND} EQ 1 VAL

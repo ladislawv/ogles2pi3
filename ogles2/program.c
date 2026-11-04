@@ -251,6 +251,7 @@ static void set_log(struct OGLES2Program *p, const char *a, const char *b)
 
 static void free_program(struct OGLES2Context *ctx, struct OGLES2Program *p)
 {
+    ogles2_vc4keys_free(ctx, p); /* probe V's summary of it */
     ctx->share->objects[p->name] = 0;
     release_shader(ctx, p->vs);
     release_shader(ctx, p->fs);

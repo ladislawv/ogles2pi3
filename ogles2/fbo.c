@@ -1407,3 +1407,14 @@ void ogles2_fbo_free(struct OGLES2Context *ctx)
     ctx->fbo = 0;
     ctx->draw_fb = ctx->job_fb = 0;
 }
+
+/* Probe V (vc4keys.c): colour attachment i's texture (a renderbuffer's own
+ * storage), or NULL. */
+const struct OGLES2Texture *ogles2_fbo_color_texture(const struct OGLES2Framebuffer *fb, int i)
+{
+    const struct OGLES2Attachment *c;
+    if (!fb || i < 0 || i >= OGLES2_MAX_DRAW_BUFFERS)
+        return NULL;
+    c = &fb->att[ATT_COLOR + i];
+    return c->type == GL_TEXTURE ? c->tex : c->type == GL_RENDERBUFFER ? c->rb->color : NULL;
+}

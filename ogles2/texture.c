@@ -2895,3 +2895,28 @@ BOOL ogles2_texture_state(struct OGLES2Context *ctx, int unit, int kind, ULONG *
     t->st_smp = *sampler_state;
     return TRUE;
 }
+
+/* Probe V (vc4keys.c, docs/PI3_PLAN.md §4.2): the texture bound to a unit
+ * for a sampler of `kind`, and its stored hardware type and swizzle
+ * (storage_of); FALSE: none, or no image yet. */
+BOOL ogles2_texture_stored(struct OGLES2Context *ctx, int unit, int kind, UBYTE *hw_type, UBYTE swizzle[4])
+{
+    struct OGLES2TexState *ts = ts_get(ctx);
+    const struct OGLES2Texture *t;
+    if (!ts || unit < 0 || unit >= OGLES2_MAX_TEXTURE_UNITS)
+        return FALSE;
+    t = kind == OGLES2_TEX_CUBE ? ts->unitcube[unit] : kind == OGLES2_TEX_RECT ? ts->unitrect[unit] : ts->unit2d[unit];
+    return ogles2_texture_stored_of(t, hw_type, swizzle);
+}
+
+BOOL ogles2_texture_stored_of(const struct OGLES2Texture *t, UBYTE *hw_type, UBYTE swizzle[4])
+{
+    if (!t || !t->gpu)
+        return FALSE;
+    *hw_type = t->hw_type;
+    swizzle[0] = t->swizzle[0];
+    swizzle[1] = t->swizzle[1];
+    swizzle[2] = t->swizzle[2];
+    swizzle[3] = t->swizzle[3];
+    return TRUE;
+}
