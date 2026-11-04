@@ -11,6 +11,8 @@
  * texture storage (texture.c keeps the objects, the RAM copies, completeness
  * and the fallback texture). Step 6: framebuffer targets (fbo.c keeps the
  * objects, attachments and completeness) and memory freed after a job.
+ * Step 7: the device (device.c keeps the clock and the calls) and programs
+ * (v3dp.c reads the file, the backend its variants' keys and prog data).
  *
  * Addresses. GPU memory is a struct v3d_mem: `hostptr` is where the CPU
  * reads and writes it, `busaddr` where the GPU does. The front end keeps
@@ -40,6 +42,15 @@ struct OGLES2Target;
 struct OGLES2Program;
 struct OGLES2Texture;
 struct OGLES2Surface;
+struct SignalSemaphore;
+struct V3DContext;
+struct OGLES2Image;
+struct ogles2_rd;
+
+/* The internal programs (draw.c): a clear into several render targets
+ * (EXT_draw_buffers), and glCopyTex*'s copy on the GPU. */
+#define OGLES2_PROG_CLEAR_MRT 0
+#define OGLES2_PROG_COPY_TEX  1
 struct OGLES2Variant;
 
 /* An indexed draw's indices: the application's, rebased to the copied
@@ -92,7 +103,24 @@ struct OGLES2Backend
     const char *name;            /* for the log */
     UWORD device;                /* the .v3dp device version of its programs (v3dp/FORMAT.md): 42, 21 */
     const struct OGLES2Caps *caps;
+    UBYTE variant_section;       /* its programs' VARIANT section type (FORMAT.md): 6, 7 VC4 */
+    const char *program_ext;     /* their file names' extension: ".v3dp", ".vc4p" */
     const char *(*renderer)(void); /* GL_RENDERER, once the device is open */
+    /* The device: opened at the first context (FALSE: no GPU); open and
+     * working; reset after a job it did not finish (the GPU lock held);
+     * bytes of GPU memory in use; RAM the GPU reaches; the GPU submission
+     * lock (shared with other GPU clients); a context's pools and control
+     * lists for a w x h default framebuffer (the V3D one's type for now:
+     * ctx->v3d), resized, freed. */
+    BOOL (*open)(void);
+    BOOL (*ready)(void);
+    void (*reset)(const char *why);
+    ULONG (*bytes)(void);
+    BOOL (*gpu_reachable)(ULONG addr, ULONG size);
+    struct SignalSemaphore *(*gpu_lock)(void);
+    struct V3DContext *(*context_new)(UWORD w, UWORD h, int depth_bits, BOOL msaa);
+    BOOL (*context_resize)(struct V3DContext *v, UWORD w, UWORD h);
+    void (*context_free)(struct V3DContext *v);
     /* GPU memory, zeroed, in a block the GPU reaches; 0 or -1 (out of
      * memory). Freeing a block a job may still read waits for the job
      * (ogles2_share_defer_free, the frame's own list); this frees now. */
@@ -156,6 +184,17 @@ struct OGLES2Backend
                          ULONG name, struct OGLES2Target *t);
     BOOL (*tex_surface)(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l, struct OGLES2Surface *s);
     BOOL (*tex_zs_surface)(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l, struct OGLES2Surface *s);
+    /* Programs: a variant section's key and prog data, after its stage (0,
+     * or why the file is refused); its recipe's types judged, uses_ubo and
+     * no_textures set, *clip_z for OGLES2_U_CLIP_Z_COEFF (0, or why, *bad
+     * the value); the variant a draw uses (stage, render targets, primitive
+     * mode); the built-in image (clears drawn as rectangles); an internal
+     * program's file (OGLES2_PROG_*; 0: none). */
+    const char *(*variant_read)(struct ogles2_rd *s, struct OGLES2Variant *v);
+    const char *(*variant_recipe)(struct OGLES2Variant *v, BOOL *clip_z, ULONG *bad);
+    const struct OGLES2Variant *(*variant_choose)(const struct OGLES2Image *im, UBYTE stage, UBYTE cbufs, GLenum mode);
+    const struct OGLES2Image *(*builtin_image)(void);
+    const UBYTE *(*internal_program)(int which, ULONG *len);
 };
 
 #define ogles2_mem_alloc(m, size) (ogles2_backend->mem_alloc((m), (size)))

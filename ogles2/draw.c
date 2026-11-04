@@ -672,7 +672,22 @@ void ogles2_glDrawRangeElements(struct OGLES2Context *ctx, GLenum mode, GLuint s
     draw_elements(ctx, mode, count, type, indices, 0, range, "glDrawRangeElements");
 }
 
-#include "clear_mrt_v3dp.h"
+/* An internal program's image (the backend's .v3dp for it); 0 with the
+ * reason in why[]. */
+static struct OGLES2Image *internal_image(int which, char *why, ULONG whylen)
+{
+    ULONG n = 0;
+    const UBYTE *blob = ogles2_backend->internal_program(which, &n);
+    if (!blob) {
+        static const char none[] = "none for this GPU";
+        ULONG i;
+        for (i = 0; i + 1 < whylen && none[i]; i++) /* no C library here */
+            why[i] = none[i];
+        why[i] = 0;
+        return 0;
+    }
+    return ogles2_v3dp_load(blob, n, why, whylen);
+}
 
 /* The program a clear draws into several render targets with: the clear
  * colour (the last generic attribute, constant) in every output, position
@@ -684,7 +699,7 @@ static struct OGLES2Program *mrt_program(struct OGLES2Draw *d)
     UWORD a;
     if (!d->mrt_ready && !d->mrt_failed) {
         char why[96];
-        if (!(d->mrt_image = ogles2_v3dp_load(clear_mrt_v3dp, sizeof(clear_mrt_v3dp), why, sizeof(why))) ||
+        if (!(d->mrt_image = internal_image(OGLES2_PROG_CLEAR_MRT, why, sizeof(why))) ||
             !ogles2_program_image(p, d->mrt_image)) {
             d->mrt_failed = TRUE;
             ogles2_log("glClear: no program for several render targets (%s): the first is cleared only",
@@ -701,8 +716,6 @@ static struct OGLES2Program *mrt_program(struct OGLES2Draw *d)
     return p;
 }
 
-#include "copy_tex_v3dp.h"
-
 /* The program glCopyTex* draws with on the GPU: unit 0's 2D texture over a
  * quad, position from the last but one generic attribute, texture
  * coordinates from the last; tools/copy_tex. 0: none (logged once), and the
@@ -713,7 +726,7 @@ static struct OGLES2Program *copy_program(struct OGLES2Draw *d)
     UWORD a;
     if (!d->copy_ready && !d->copy_failed) {
         char why[96];
-        if (!(d->copy_image = ogles2_v3dp_load(copy_tex_v3dp, sizeof(copy_tex_v3dp), why, sizeof(why))) ||
+        if (!(d->copy_image = internal_image(OGLES2_PROG_COPY_TEX, why, sizeof(why))) ||
             !ogles2_program_image(p, d->copy_image)) {
             d->copy_failed = TRUE;
             ogles2_log("glCopyTexSubImage2D: no program for copies on the GPU (%s): the CPU copies",

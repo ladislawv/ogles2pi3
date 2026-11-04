@@ -1,5 +1,5 @@
 /*
- * The .v3dp reader (v3dp/FORMAT.md, version 1.0): a program binary from the
+ * The .v3dp reader (v3dp/FORMAT.md, versions 1.0 and 1.1): a program binary from the
  * offline compiler (v3dglslc, S1) or the on-target one (S2) becomes a
  * struct OGLES2Image, with its code copied once into GPU memory.
  *
@@ -7,16 +7,16 @@
  * the runtime cannot honour is refused with a reason rather than drawn
  * wrongly: an unknown major version, V3D version or Mesa commit, a bad CRC,
  * a uniform recipe type or state variable the runtime does not implement
- * (plan sections 8.3, 8.6, 7.11).
+ * (plan sections 8.3, 8.6, 7.11). A variant's key, prog data and recipe
+ * types are the backend's to read and judge (backend.h, P2 step 7).
  */
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <string.h>
 #include "ogles2_internal.h"
 #include "backend.h"
-#include "v3d_device.h"
-#include "v3d_context.h"
-#include "v3d_frame.h"
+#include "v3dp_private.h"
+#include "v3d_types.h" /* struct v3d_mem: the code's GPU memory */
 
 /* Mesa commits whose recipe and state numbering the runtime implements. */
 static const char *const validated_commits[] = {"74b69717c52b"};
@@ -46,53 +46,6 @@ static void free_blocks(struct OGLES2Image *im)
 
 /* ---- the reader ---- */
 
-struct rd
-{
-    const UBYTE *p, *end;
-    BOOL bad;
-};
-
-static ULONG need(struct rd *r, ULONG n)
-{
-    if (r->bad || (ULONG)(r->end - r->p) < n) {
-        r->bad = TRUE;
-        return 0;
-    }
-    return 1;
-}
-
-static UBYTE u8(struct rd *r)
-{
-    if (!need(r, 1))
-        return 0;
-    return *r->p++;
-}
-
-static UWORD u16(struct rd *r)
-{
-    UWORD v;
-    if (!need(r, 2))
-        return 0;
-    v = (UWORD)(r->p[0] | (r->p[1] << 8));
-    r->p += 2;
-    return v;
-}
-
-static ULONG u32(struct rd *r)
-{
-    ULONG v;
-    if (!need(r, 4))
-        return 0;
-    v = (ULONG)r->p[0] | ((ULONG)r->p[1] << 8) | ((ULONG)r->p[2] << 16) | ((ULONG)r->p[3] << 24);
-    r->p += 4;
-    return v;
-}
-
-static void skip(struct rd *r, ULONG n)
-{
-    if (need(r, n))
-        r->p += n;
-}
 
 static ULONG crc32(const UBYTE *p, ULONG n)
 {
@@ -136,32 +89,12 @@ static const char *str_at(const char *strings, ULONG len, ULONG off)
 
 #define FAIL(a, b, n) do { say(why, whylen, (a), (b), (n)); goto fail; } while (0)
 
-static BOOL recipe_ok(ULONG t)
-{
-    return t <= OGLES2_U_VIEWPORT_Z_SCALE || t == OGLES2_U_TMU_CONFIG_P0 || t == OGLES2_U_TMU_CONFIG_P1 ||
-           t == OGLES2_U_UBO_ADDR ||
-           t == OGLES2_U_LINE_WIDTH || t == OGLES2_U_AA_LINE_WIDTH ||
-           t == OGLES2_U_SPILL_OFFSET || t == OGLES2_U_SPILL_SIZE_PER_THREAD ||
-           (t >= OGLES2_U_BLEND_CONSTANT_R && t <= OGLES2_U_BLEND_CONSTANT_R + 3) || t == OGLES2_U_CLIP_Z_COEFF;
-}
 
-/* The common prog data (FORMAT.md "Common key and prog data"), 28 bytes. */
-static void read_common_prog_data(struct rd *r, struct OGLES2Variant *v)
-{
-    v->spill_size = u32(r);
-    skip(r, 4 * 4);              /* tmu_spills, tmu_fills, tmu_count, qpu_read_stalls */
-    skip(r, 1);                  /* compile_strategy_idx */
-    v->threads = u8(r);
-    v->single_seg = u8(r);
-    skip(r, 3 + 2);              /* tmu_dirty_rcl, has_control_barrier, has_global_address, pad */
-}
-
-#define COMMON_KEY_BYTES (4 + 6 + 2) /* sampler_is_32b, six bools, pad */
 
 struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, ULONG whylen)
 {
     struct OGLES2Image *im = 0;
-    struct rd r, s;
+    struct ogles2_rd r, s;
     ULONG nsections, i, k, stages = 0;
     const char *strings = 0;
     ULONG strings_len = 0;
@@ -180,8 +113,8 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
     if (u16(&r) != 1)
         FAIL("unknown format major version", 0, ~0UL);
     (void)u16(&r);
-    if (u32(&r) != 42)
-        FAIL("not compiled for V3D 4.2", 0, ~0UL);
+    if (u32(&r) != ogles2_backend->device) /* the GPU's (FORMAT.md 1.1: 42 V3D 4.2, 21 VC4) */
+        FAIL("not compiled for this GPU", 0, ~0UL);
     for (i = 0; i < sizeof(validated_commits) / sizeof(validated_commits[0]); i++)
         if (!memcmp(r.p, validated_commits[i], 12))
             commit_ok = TRUE;
@@ -202,7 +135,7 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
         skip(&r, (sec_len[i] + 3) & ~3UL);
         if (r.bad)
             FAIL("truncated section", 0, i);
-        if (sec_type[i] == 6)
+        if (sec_type[i] == ogles2_backend->variant_section)
             nvars++;
     }
     if (nsections < 2 || sec_type[0] != 1 || sec_type[1] != 2)
@@ -225,7 +158,8 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
         s.p = sec_start[i];
         s.end = sec_start[i] + sec_len[i];
         s.bad = FALSE;
-        switch (sec_type[i]) {
+        /* The backend's variant section (FORMAT.md: 6 V3D 4.2, 7 VC4) as 6; another GPU's as unknown. */
+        switch (sec_type[i] == ogles2_backend->variant_section ? 6UL : sec_type[i] == 6 ? 0UL : sec_type[i]) {
         case 1: /* PROGRAM */
             if (sec_len[i] < 36)
                 FAIL("short PROGRAM section", 0, ~0UL);
@@ -352,55 +286,13 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
         }
         case 6: { /* VARIANT */
             struct OGLES2Variant *v = &vars[im->nvariants];
-            ULONG n, j, codelen;
+            ULONG n, j, codelen, bad;
+            const char *e;
+            BOOL clip_z = FALSE;
             ULONG *rt, *rd2;
             v->stage = (UBYTE)u32(&s);
-            if (v->stage == OGLES2_VARIANT_VS || v->stage == OGLES2_VARIANT_CS) {
-                skip(&s, COMMON_KEY_BYTES);
-                skip(&s, 4 + 64 + 4);             /* num_used_outputs+pad, used_outputs, va_swap_rb_mask */
-                (void)u8(&s);                     /* is_coord (the stage says it) */
-                v->per_vertex_point_size = u8(&s);
-                skip(&s, 2);                      /* clamp_color, pad */
-                read_common_prog_data(&s, v);
-                v->uses_iid = u8(&s);
-                (void)u8(&s);                     /* uses_biid */
-                v->uses_vid = u8(&s);
-                v->separate_segments = u8(&s);
-                v->vcm_cache_size = u8(&s);
-                v->writes_psiz = u8(&s);
-                skip(&s, 2);
-                for (j = 0; j < 16; j++)
-                    v->vattr_sizes[j] = u8(&s);
-                v->vpm_input_size = u32(&s);
-                v->vpm_output_size = u32(&s);
-                skip(&s, 64 * 4);                 /* driver_location_map */
-            } else if (v->stage == OGLES2_VARIANT_FS) {
-                skip(&s, COMMON_KEY_BYTES);
-                v->is_points = u8(&s);
-                v->is_lines = u8(&s);
-                skip(&s, 8);                      /* line_smoothing .. ignore_sample_mask */
-                v->cbufs = u8(&s);
-                skip(&s, 6 + 3);                  /* the other key bytes, pad */
-                skip(&s, 8 * 8 + 8 * 24 + 4 + 4); /* colour formats, blend, logicop, sprite mask */
-                read_common_prog_data(&s, v);
-                v->uses_pid = u8(&s);
-                v->num_inputs = u8(&s);
-                v->writes_z = u8(&s);
-                v->writes_z_from_fep = u8(&s);
-                v->disable_ez = u8(&s);
-                v->uses_center_w = u8(&s);
-                v->uses_implicit_point_line_varyings = u8(&s);
-                v->lock_scoreboard_on_first_thrsw = u8(&s);
-                skip(&s, 1 + 3 + 64);             /* force_per_sample_msaa, pad, input_slots */
-                for (j = 0; j < 3; j++)
-                    v->flat_shade_flags[j] = u32(&s);
-                for (j = 0; j < 3; j++)
-                    v->noperspective_flags[j] = u32(&s);
-                for (j = 0; j < 3; j++)
-                    v->centroid_flags[j] = u32(&s);
-            } else {
-                FAIL("variant of an unknown stage", 0, v->stage);
-            }
+            if ((e = ogles2_backend->variant_read(&s, v)) != 0) /* its key and prog data */
+                FAIL(e, 0, v->stage);
             n = u32(&s);
             if (n > 4096)
                 FAIL("uniform recipe too long:", 0, n);
@@ -408,25 +300,20 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
             if (!rt)
                 FAIL("out of memory", 0, ~0UL);
             rd2 = rt + n;
-            for (j = 0; j < n; j++) {
+            for (j = 0; j < n; j++)
                 rt[j] = u32(&s);
-                if (!recipe_ok(rt[j]))
-                    FAIL("uniform recipe type not implemented yet:", 0, rt[j]);
-            }
-            for (j = 0; j < n; j++) {
+            for (j = 0; j < n; j++)
                 rd2[j] = u32(&s);
-                /* UBO 0 is the stage's own constant buffer (indirectly
-                 * indexed uniform arrays); others are GLES3 uniform blocks. */
-                if (rt[j] == OGLES2_U_UBO_ADDR && (rd2[j] >> 24) != 0)
-                    FAIL("a uniform block other than the default one", 0, rd2[j] >> 24);
-                if (rt[j] == OGLES2_U_UBO_ADDR)
-                    v->uses_ubo = 1;
-                if (rt[j] == OGLES2_U_CLIP_Z_COEFF)
-                    im->clip_z_coeff = TRUE;
-            }
             v->nrecipe = (UWORD)n;
             v->rtype = rt;
             v->rdata = rd2;
+            /* The recipe's types are the GPU's (the backend judges them; 0 a
+             * constant and 1 a constant buffer word on both GPUs). */
+            bad = ~0UL;
+            if ((e = ogles2_backend->variant_recipe(v, &clip_z, &bad)) != 0)
+                FAIL(e, 0, bad);
+            if (clip_z)
+                im->clip_z_coeff = TRUE;
             {
                 UWORD *ui = alloc(im, n * 4 + 4), *sp = ui ? ui + n : 0, ns = 0;
                 if (!ui)
@@ -442,12 +329,6 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
                 v->uidx = ui;
                 v->special = sp;
                 v->nspecial = ns;
-                v->no_textures = 1;
-                for (j = 0; j < n; j++)
-                    if (rt[j] == OGLES2_U_TMU_CONFIG_P0 || rt[j] == OGLES2_U_TMU_CONFIG_P1 ||
-                        rt[j] == OGLES2_U_UBO_ADDR || rt[j] == OGLES2_U_SPILL_OFFSET ||
-                        (rt[j] >= OGLES2_U_BLEND_CONSTANT_R && rt[j] <= OGLES2_U_BLEND_CONSTANT_R + 3))
-                        v->no_textures = 0; /* nor the blend colour or the spill area: not in draw.c's key */
             }
             codelen = u32(&s);
             if ((codelen & 7) || !need(&s, codelen))
@@ -556,37 +437,10 @@ void ogles2_image_free(struct OGLES2Image *im, struct OGLES2Context *ctx)
     FreeVec(im);
 }
 
-/* The variant for a draw: the stage's variant whose primitive key matches
- * (fragment: points, lines or triangles, and the render targets it writes,
- * `cbufs`; vertex and binning: a point size written per vertex, for points,
- * when the program has such a variant). A fragment shader with no variant
- * for those targets: the one for target 0 (EXT_draw_buffers: v3dglslc
- * makes the others only for programs that write gl_FragData[1] or up). */
+
+/* The variant for a draw: the backend's choice (its keys). */
 const struct OGLES2Variant *ogles2_image_variant(const struct OGLES2Image *im, UBYTE stage, UBYTE cbufs,
                                                  GLenum mode)
 {
-    const struct OGLES2Variant *v, *any = 0, *rt0 = 0;
-    BOOL points = mode == GL_POINTS;
-    BOOL lines = mode == GL_LINES || mode == GL_LINE_LOOP || mode == GL_LINE_STRIP;
-    UWORD i;
-    for (i = 0; i < im->nvariants; i++) {
-        v = &im->variants[i];
-        if (v->stage != stage)
-            continue;
-        if (stage == OGLES2_VARIANT_FS) {
-            if (v->is_points == points && v->is_lines == lines) {
-                UBYTE vc = v->cbufs ? v->cbufs : 1;
-                if (vc == cbufs)
-                    return v;
-                if (vc == 1 && !rt0)
-                    rt0 = v;
-            }
-        } else {
-            if (v->per_vertex_point_size == (points ? 1 : 0))
-                return v;
-        }
-        if (!any)
-            any = v;
-    }
-    return rt0 ? rt0 : any; /* a miss: the closest there is (plan 7.8); draw.c logs it */
+    return ogles2_backend->variant_choose(im, stage, cbufs, mode);
 }

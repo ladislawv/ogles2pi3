@@ -553,6 +553,29 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   m2-4 146, m7-2 66, m7-4 129, m7-5 162 PASS, none FAIL; speed against step 5, alternating: Quake III
   88.3, 88.1, 88.9 fps against 89.2, 88.0, 88.0; gears bitmap arrays 812, 810, 809 against
   818, 816, 813, screen 1091, 1082, 1076 against 1094, 1098, 1090 (within 1 %).
+- **Step 7 done (2026-11-04):** programs, and the device group left from step 1. Programs:
+  `v3dp.c` reads the file's frame, checks the header's device against the backend's
+  (`device`: 42, 21), takes the backend's variant section (`variant_section`: 6, VC4 7) and
+  copies the code into GPU memory; the backend reads a variant's key and prog data
+  (`variant_read`), judges its recipe's types (`variant_recipe`: its enum, UBO 0 only,
+  `uses_ubo`, `no_textures`, the clip-z coefficient; 0 and 1, constant and constant buffer
+  word, mean the same on both GPUs, so the uniform index tables stay shared) and chooses a
+  draw's variant (`variant_choose`); `ogles2/v3d/v3dp_v3d.c` (MIT) with the reads in
+  `ogles2/v3dp_private.h`. The built-in image (PiStorm3D's shaders) and the internal
+  programs (`clear_mrt`, `copy_tex`) are the backend's (`builtin_image`,
+  `internal_program`; `ogles2/v3d/program_v3d.c`, Hyperion); file names take its
+  `program_ext` (`.v3dp`, VC4 `.vc4p`). Device: `ogles2/v3d/device_v3d.c` (v3d_init, the
+  renderer, reset, the RAM the GPU reaches, the GPU lock, a context's pools); `device.c`
+  keeps the clock and calls the table (nine entries `open` … `context_free`), and its open is
+  where the VC4 backend will be chosen. Kept V3D's for now, to be generalised when VC4's are
+  written (P5): `struct OGLES2Variant`'s prog-data fields, the texture object's storage
+  fields (step 5), `ctx->v3d`'s type, the `.v3dw`/`.v3da` extra variant files (VC4 has no
+  such variants: none are found), the on-target compiler's GPU (`compiler.c` runs
+  `v3dglslc` for V3D; S2 for VC4 is P4's). Pi 4 checks the same day: m5-1 255 PASS, no FAIL;
+  m7-6 36 of 36; m2-5 14 of 14 identical; m2-4 146, m7-2 66, m7-4 129, m7-5 162 PASS, none
+  FAIL; the whole `make` (library, tests, fpcheck) builds; speed against step 6, alternating: Quake III 88.8,
+  88.2, 87.3 fps against 88.5, 88.3, 88.1; gears bitmap arrays 817, 808, 809 against 817, 809,
+  808, screen 1093, 1081, 1085 against 1106, 1086, 1081 (as step 6).
 - **Measuring speed between steps (learnt at step 3):** runs of one library minutes apart are
   not enough. Quake III's timedemo drifts by about 1.5 % within an hour (step 1's library:
   87.9 to 89.3 fps the same afternoon), and where the code lies moves gears: step 3 with 64
@@ -880,8 +903,9 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0). A heatsink before long speed
    runs on it.
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
-   the Pi 4 card (PD7 decided: option 1): steps 1 to 6 done (§5.1), step 7 (programs, and
-   the device group left from step 1) next; each
+   the Pi 4 card (PD7 decided: option 1): steps 1 to 7 done (§5.1), step 8 (the MIT
+   rewrite of the front end's PiStorm3D parts: job.c, display.c, draw.c, program.c,
+   texture.c) next, then the acceptance; each
    step's speed compared with the last commit's library, alternating runs (§5.1).
 3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
    canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the

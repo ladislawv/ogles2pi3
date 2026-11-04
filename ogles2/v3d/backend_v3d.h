@@ -14,6 +14,23 @@ struct OGLES2DrawCall;
 struct OGLES2Texture;
 struct OGLES2Surface;
 struct v3d_mem;
+struct SignalSemaphore;
+struct V3DContext;
+struct OGLES2Image;
+struct OGLES2Variant;
+struct ogles2_rd;
+
+/* device_v3d.c */
+BOOL ogles2_v3d_open(void);
+BOOL ogles2_v3d_ready(void);
+void ogles2_v3d_reset(const char *why);
+ULONG ogles2_v3d_bytes(void);
+BOOL ogles2_v3d_gpu_reachable(ULONG addr, ULONG size);
+struct SignalSemaphore *ogles2_v3d_gpu_lock(void);
+struct V3DContext *ogles2_v3d_context_new(UWORD w, UWORD h, int depth_bits, BOOL msaa);
+BOOL ogles2_v3d_context_resize(struct V3DContext *v, UWORD w, UWORD h);
+void ogles2_v3d_context_free(struct V3DContext *v);
+const char *ogles2_v3d_renderer(void);
 
 /* job_v3d.c */
 void ogles2_v3d_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *tg, BOOL bad);
@@ -56,5 +73,13 @@ void ogles2_v3d_target_layout(struct OGLES2Target *t, UBYTE depth_format, BOOL w
 BOOL ogles2_v3d_target_pools(struct OGLES2Context *ctx, struct v3d_mem *pool_alloc, struct v3d_mem *pool_state,
                              ULONG *pool_tiles, ULONG name, struct OGLES2Target *t);
 void ogles2_v3d_mem_free_after(struct OGLES2Context *user, struct v3d_mem *m);
+
+/* v3dp_v3d.c, program_v3d.c */
+const char *ogles2_v3d_variant_read(struct ogles2_rd *s, struct OGLES2Variant *v);
+const char *ogles2_v3d_variant_recipe(struct OGLES2Variant *v, BOOL *clip_z, ULONG *bad);
+const struct OGLES2Variant *ogles2_v3d_variant_choose(const struct OGLES2Image *im, UBYTE stage, UBYTE cbufs,
+                                                      GLenum mode);
+const struct OGLES2Image *ogles2_v3d_builtin_image(void);
+const UBYTE *ogles2_v3d_internal_program(int which, ULONG *len);
 
 #endif

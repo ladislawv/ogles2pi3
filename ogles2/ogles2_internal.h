@@ -804,7 +804,6 @@ static inline BOOL ogles2_context_valid(struct OGLES2Context *ctx)
  * FALSE if there is none or it did not start. */
 BOOL ogles2_device_open(void);
 /* GL_RENDERER: "V3D 4.2.14 (PiStorm), 8 QPUs, 64 KB VPM" */
-const char *ogles2_device_renderer(void);
 /* [addr, addr+size) lies in RAM the GPU reaches (the device tree's memory node). */
 BOOL ogles2_device_gpu_reachable(ULONG addr, ULONG size);
 /* The public "V3D 4.2 submit" semaphore (v3dcore/include/v3d_gpu_lock.h):

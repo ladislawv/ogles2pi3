@@ -5,7 +5,8 @@
  * frame.c; release 1.3.3). Step 2: GPU memory, AllocVec'd fast RAM
  * (v3dcore/hw/v3d_mem_allocvec.c), whose bus address is its CPU address.
  * Step 3: jobs (job_v3d.c). Step 4: draw (draw_v3d.c). Step 5: texture
- * storage (texture_v3d.c). Step 6: framebuffer targets (fbo_v3d.c).
+ * storage (texture_v3d.c). Step 6: framebuffer targets (fbo_v3d.c). Step
+ * 7: the device (device_v3d.c) and programs (v3dp_v3d.c, program_v3d.c).
  *
  * MIT licence (LICENSE).
  */
@@ -54,7 +55,18 @@ const struct OGLES2Backend ogles2_backend_v3d = {
     "V3D 4.2",
     42,
     &caps,
-    ogles2_device_renderer,
+    6,       /* VARIANT */
+    ".v3dp",
+    ogles2_v3d_renderer,
+    ogles2_v3d_open,
+    ogles2_v3d_ready,
+    ogles2_v3d_reset,
+    ogles2_v3d_bytes,
+    ogles2_v3d_gpu_reachable,
+    ogles2_v3d_gpu_lock,
+    ogles2_v3d_context_new,
+    ogles2_v3d_context_resize,
+    ogles2_v3d_context_free,
     mem_alloc,
     mem_free,
     ogles2_v3d_mem_free_after,
@@ -88,6 +100,11 @@ const struct OGLES2Backend ogles2_backend_v3d = {
     ogles2_v3d_target_pools,
     ogles2_v3d_tex_surface,
     ogles2_v3d_tex_zs_surface,
+    ogles2_v3d_variant_read,
+    ogles2_v3d_variant_recipe,
+    ogles2_v3d_variant_choose,
+    ogles2_v3d_builtin_image,
+    ogles2_v3d_internal_program,
 };
 
 const struct OGLES2Backend *ogles2_backend = &ogles2_backend_v3d;
