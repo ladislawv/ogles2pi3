@@ -306,6 +306,27 @@ textures, the texture-parameter ones, then multiple render targets, then half-fl
   sections (`PROGRAM`, `STRINGS`, `STAGE_PARAMS`, `UNIFORMS`, `ATTRIBUTES`) and every V3D 4.2 file
   unchanged; the loader takes the device of the backend in use. Settled in P4 after
   `vc4_program.c` and `vc4_uniforms.c` are read for the prog data the draw needs.
+- **Settled (2026-11-04): format 1.1** (`v3dp/FORMAT.md`, "Version 1.1"): the same container;
+  header minor 1 and device 21; one new section type, 7 `VC4_VARIANT` (stage 0 vertex,
+  1 coordinate, 4 fragment; vc4's key field by field, the sampler entries as their bitfields'
+  values, the MSAA view of that union left out since GLES2 samples no multisampled textures;
+  the vertex key's `fs_inputs` by content; prog data: threading, inputs, VPM attribute offsets,
+  colour inputs, early-Z, texture lookups, the fragment inputs; vc4's recipe enum; the code). The
+  shared sections as in 1.0: vc4 does not pack uniforms either, and `QUNIFORM_UNIFORM`'s data is
+  the constant-buffer index as with v3d. A V3D 4.2 file is still written as 1.0, byte for byte
+  (54 of 54 unchanged). Written by `v3dp_writer.c` (`v3dp_set_device`, `v3dp_add_variant`) from
+  `tools/v3dglslc/vc4_variants.c`'s serializer: `v3dglslc -g 21 -o DIR` writes
+  `<vs>-<fs>.vc4p`; `v3dp_dump.py`, extended from the document, decodes them, and the bytes are
+  the same on a second run. Two notes for the runtime: `UBO0_ADDR` (indirectly indexed uniform
+  arrays) reads the stage's constant buffer from GPU memory through the TMU, so `vc4core` keeps
+  a GPU copy of it; the vertex variant is chosen by the fragment variant's inputs.
+- **The corpus for VC4 (2026-11-04, `tools/v3dglslc/test/vc4_corpus.sh`):** of the 36 shader
+  pairs at hand (`v42_unchanged.sh`'s), 35 compile and are written. `OES_standard_derivatives`
+  is enabled for VC4 in `v3dglslc` (§2.1: compiled, never reported by the driver); without it
+  Boing 2026's `ball` and `room` (`fwidth`) failed; `ball`'s fragment shader is 944 instructions
+  on VC4. The one failure is `mrt.frag` (`gl_FragData[1]`: the driver has one draw buffer),
+  which waits for the multiple-render-target emulation (§2.1). No register-allocation failure
+  in the set.
 - The Pi 4's extra variant files (`.v3dw`: 32-bit samplers, `.v3da`: alpha to coverage) stay; on
   VC4 the extra files are whatever PD7 decides.
 
@@ -640,7 +661,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 
 - P4's S1 begun (§4.1): `v3dglslc -g 21` compiles with Mesa's vc4 driver, its code identical to
   the Pi's Mesa for the reference programs; the variant hook (patch 0015) reports code and
-  uniform recipes; the Pi 4's output unchanged (54 files). The third power supply still flags
+  uniform recipes; the Pi 4's output unchanged (54 files). Then the format (§4.3): 1.1 with a
+  `VC4_VARIANT` section, written as `.vc4p` by `v3dglslc -g 21 -o`, decoded by `v3dp_dump.py`. The third power supply still flags
   under-voltage one minute after boot, idle (`0x50005`, ARM at 600 MHz): the cable is the next
   suspect (§6.0).
 
@@ -650,10 +672,10 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 2. P2 on the build machine and the A1200 with the Pi 4 card: first the variant-count probe (the
    numbers PD7 needs), then the backend interface and the MIT rewrite of the shared front end's
    PiStorm3D parts.
-3. P4's S1, next: the VC4 file format (§4.3: format 1.1 with VC4 key, prog-data and recipe
-   sections, from what `vc4_variants.c` prints) and its writer; the key states to compile
-   (canonical keys, §4.2); the library's limits for the Pi 3 in the compiler (8 varyings, draw
-   buffers per the emulation).
+3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
+   canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the
+   compiler (8 varyings, draw buffers per the emulation); the corpus compiled for VC4 as a
+   whole is done (35 of 36, §4.3); next the draw-buffers emulation in the compiler (§2.1).
 4. P3: `vc4core` on Linux, starting from the probe's lists (Linux's render-list order, the reset
    at take-over, `ERRSTAT` checks), with its tests in `tests/pi3/` against Mesa's pictures; early
    in it a long soak (hours of mixed draws) and the cause of the not-reset core's lost tiles.

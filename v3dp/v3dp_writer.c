@@ -21,8 +21,13 @@
 #endif
 
 #define V3DP_MAJOR 1
-#define V3DP_MINOR 0
+#define V3DP_MINOR 0 /* V3D 4.2 files */
+#define V3DP_MINOR_VC4 1 /* VC4 files (format 1.1) */
 #define V3DP_V3D_VER 42
+#define V3DP_VC4_VER 21
+
+/* The GPU of the next file (v3dp_set_device). */
+static unsigned device = V3DP_V3D_VER;
 
 enum {
     SEC_PROGRAM = 1,
@@ -31,6 +36,7 @@ enum {
     SEC_UNIFORMS = 4,
     SEC_ATTRIBUTES = 5,
     SEC_VARIANT = 6,
+    SEC_VC4_VARIANT = 7, /* format 1.1 */
 };
 
 enum { VARIANT_VS = 0, VARIANT_VS_BIN = 1, VARIANT_FS = 4 };
@@ -311,6 +317,11 @@ static void variant_hook(mesa_shader_stage stage, const struct v3d_key *key, siz
     }
 }
 
+void v3dp_set_device(unsigned ver)
+{
+    device = ver == V3DP_VC4_VER ? V3DP_VC4_VER : V3DP_V3D_VER;
+}
+
 void v3dp_capture_begin(void)
 {
     unsigned i;
@@ -318,7 +329,35 @@ void v3dp_capture_begin(void)
         buf_free(&variants[i]);
     num_variants = 0;
     capture_failed = 0;
-    v3d_compiled_variant_hook = variant_hook;
+    /* VC4's variants arrive through v3dp_add_variant (vc4_variants.c). */
+    if (device == V3DP_V3D_VER)
+        v3d_compiled_variant_hook = variant_hook;
+}
+
+void v3dp_add_variant(const void *payload, size_t size)
+{
+    struct buf *b;
+    unsigned i;
+
+    if (num_variants == MAX_VARIANTS) {
+        fprintf(stderr, "v3dp: more than %d variants\n", MAX_VARIANTS);
+        capture_failed = 1;
+        return;
+    }
+    b = &variants[num_variants++];
+    memset(b, 0, sizeof(*b));
+    put_bytes(b, payload, size);
+    if (b->failed) {
+        capture_failed = 1;
+        return;
+    }
+    for (i = 0; i + 1 < num_variants; i++) { /* duplicates, as variant_hook */
+        if (variants[i].len == b->len && !memcmp(variants[i].p, b->p, b->len)) {
+            buf_free(b);
+            num_variants--;
+            return;
+        }
+    }
 }
 
 void v3dp_capture_end(void)
@@ -568,7 +607,7 @@ int v3dp_write(const char *path, struct gl_shader_program *prog, unsigned num_so
 
     /* VARIANT, in compile order */
     for (i = 0; i < num_variants; i++) {
-        put_section(&body, SEC_VARIANT, &variants[i]);
+        put_section(&body, device == V3DP_VC4_VER ? SEC_VC4_VARIANT : SEC_VARIANT, &variants[i]);
         num_sections++;
     }
 
@@ -587,8 +626,8 @@ int v3dp_write(const char *path, struct gl_shader_program *prog, unsigned num_so
            strlen(V3DP_MESA_COMMIT) < sizeof(commit) ? strlen(V3DP_MESA_COMMIT) : sizeof(commit));
     put_bytes(&file, "V3DP", 4);
     put_u16(&file, V3DP_MAJOR);
-    put_u16(&file, V3DP_MINOR);
-    put_u32(&file, V3DP_V3D_VER);
+    put_u16(&file, device == V3DP_VC4_VER ? V3DP_MINOR_VC4 : V3DP_MINOR);
+    put_u32(&file, device);
     put_bytes(&file, commit, sizeof(commit));
     put_u32(&file, num_sections);
     put_u32(&file, crc32_le(program.p, program.len));

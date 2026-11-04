@@ -4,23 +4,185 @@
  * prints what a VC4 backend needs to run it: the stage, threading, the
  * fragment shader's inputs, the vertex attribute layout, the uniform recipe
  * (enum quniform_contents and its data, in the order the code reads them)
- * and the QPU code. Kept apart from v3dglslc.c, whose V3D 4.2 headers would
- * meet vc4's here. The .v3dp writer for VC4 (format 1.1, §4.3) comes later;
- * until then this listing is what tests/pi3 takes its shaders from.
+ * and the QPU code; and with a capture on (vc4_variants_capture), serializes
+ * each as a VC4_VARIANT section for v3dp_writer.c (v3dp/FORMAT.md 1.1, field
+ * by field, little-endian). Kept apart from v3dglslc.c, whose V3D 4.2 headers
+ * would meet vc4's here.
  *
  * MIT licence (LICENSE: tools/v3dglslc).
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "vc4_context.h"
 #include "vc4_qir.h"
+#include "v3dp_writer.h"
+
+/* v3dp/FORMAT.md 1.1 fixes these sizes. */
+static_assert(VC4_MAX_TEXTURE_SAMPLERS == 16, "samplers in the key");
+static_assert(QUNIFORM_UNIFORMS_ADDRESS == 24, "recipe types as FORMAT.md lists them");
 
 extern void (*vc4_compiled_variant_hook)(enum qstage stage, const struct vc4_key *key, uint32_t key_size,
                                          const struct vc4_compiled_shader *shader,
                                          const uint64_t *qpu_insts, uint32_t qpu_inst_count);
 
 void vc4_variants_install(FILE *f);
+void vc4_variants_capture(int on);
 
-static FILE *out;
+static FILE *out;  /* the listing, or NULL */
+static int capture; /* serialize for the writer */
+
+/* ---- a growing little-endian byte buffer ---- */
+
+struct sbuf {
+    unsigned char *p;
+    size_t len, cap;
+    int failed;
+};
+
+static void s_u8(struct sbuf *b, unsigned v)
+{
+    if (b->failed)
+        return;
+    if (b->len == b->cap) {
+        size_t cap = b->cap ? b->cap * 2 : 1024;
+        unsigned char *p = realloc(b->p, cap);
+        if (!p) {
+            b->failed = 1;
+            return;
+        }
+        b->p = p;
+        b->cap = cap;
+    }
+    b->p[b->len++] = (unsigned char)v;
+}
+
+static void s_u32(struct sbuf *b, uint32_t v)
+{
+    s_u8(b, v);
+    s_u8(b, v >> 8);
+    s_u8(b, v >> 16);
+    s_u8(b, v >> 24);
+}
+
+static void s_u64(struct sbuf *b, uint64_t v)
+{
+    s_u32(b, (uint32_t)v);
+    s_u32(b, (uint32_t)(v >> 32));
+}
+
+static void s_pad4(struct sbuf *b)
+{
+    while (b->len % 4)
+        s_u8(b, 0);
+}
+
+static void s_inputs(struct sbuf *b, const struct vc4_fs_inputs *in)
+{
+    uint32_t i, n = in ? in->num_inputs : 0;
+    s_u32(b, n);
+    for (i = 0; i < n; i++) {
+        s_u8(b, in->input_slots[i].slot);
+        s_u8(b, in->input_slots[i].swizzle);
+    }
+    s_pad4(b);
+}
+
+/* FORMAT.md 1.1, VC4_VARIANT, in its order. */
+static void serialize(enum qstage stage, const struct vc4_key *key, uint32_t key_size,
+                      const struct vc4_compiled_shader *sh, const uint64_t *qpu, uint32_t n)
+{
+    struct sbuf b = { 0 };
+    uint32_t i;
+
+    if (stage == QSTAGE_FRAG ? key_size != sizeof(struct vc4_fs_key) : key_size != sizeof(struct vc4_vs_key)) {
+        fprintf(stderr, "vc4_variants: unexpected key size %u\n", (unsigned)key_size);
+        abort();
+    }
+    s_u32(&b, stage == QSTAGE_FRAG ? 4 : stage == QSTAGE_COORD ? 1 : 0);
+    for (i = 0; i < VC4_MAX_TEXTURE_SAMPLERS; i++) {
+        s_u32(&b, key->tex[i].format);
+        s_u8(&b, key->tex[i].swizzle[0]);
+        s_u8(&b, key->tex[i].swizzle[1]);
+        s_u8(&b, key->tex[i].swizzle[2]);
+        s_u8(&b, key->tex[i].swizzle[3]);
+        s_u8(&b, key->tex[i].compare_mode);
+        s_u8(&b, key->tex[i].compare_func);
+        s_u8(&b, key->tex[i].wrap_s);
+        s_u8(&b, key->tex[i].wrap_t);
+        s_u8(&b, key->tex[i].force_first_level);
+        s_u8(&b, 0);
+        s_u8(&b, 0);
+        s_u8(&b, 0);
+    }
+    if (stage == QSTAGE_FRAG) {
+        const struct vc4_fs_key *k = (const struct vc4_fs_key *)key;
+        s_u32(&b, k->color_format);
+        s_u8(&b, k->depth_enabled);
+        s_u8(&b, k->stencil_enabled);
+        s_u8(&b, k->stencil_twoside);
+        s_u8(&b, k->stencil_full_writemasks);
+        s_u8(&b, k->is_points);
+        s_u8(&b, k->is_lines);
+        s_u8(&b, k->point_coord_upper_left);
+        s_u8(&b, k->msaa);
+        s_u8(&b, k->sample_coverage);
+        s_u8(&b, k->sample_alpha_to_coverage);
+        s_u8(&b, k->sample_alpha_to_one);
+        s_u8(&b, k->logicop_func);
+        s_u32(&b, k->point_sprite_mask);
+        s_u32(&b, k->ubo_1_size);
+        s_u8(&b, k->ucp_enables);
+        s_u8(&b, k->blend.blend_enable);
+        s_u8(&b, k->blend.rgb_func);
+        s_u8(&b, k->blend.rgb_src_factor);
+        s_u8(&b, k->blend.rgb_dst_factor);
+        s_u8(&b, k->blend.alpha_func);
+        s_u8(&b, k->blend.alpha_src_factor);
+        s_u8(&b, k->blend.alpha_dst_factor);
+        s_u8(&b, k->blend.colormask);
+        s_u8(&b, 0);
+        s_u8(&b, 0);
+        s_u8(&b, 0);
+    } else {
+        const struct vc4_vs_key *k = (const struct vc4_vs_key *)key;
+        for (i = 0; i < 8; i++)
+            s_u32(&b, k->attr_formats[i]);
+        s_u8(&b, k->is_coord);
+        s_u8(&b, k->per_vertex_point_size);
+        s_u8(&b, 0);
+        s_u8(&b, 0);
+        s_inputs(&b, k->fs_inputs);
+    }
+    /* prog data */
+    s_u8(&b, sh->fs_threaded);
+    s_u8(&b, sh->num_inputs);
+    s_u8(&b, sh->vattrs_live);
+    s_u8(&b, sh->disable_early_z);
+    for (i = 0; i < 9; i++)
+        s_u8(&b, sh->vattr_offsets[i]);
+    s_u8(&b, 0);
+    s_u8(&b, 0);
+    s_u8(&b, 0);
+    s_u32(&b, sh->color_inputs);
+    s_u32(&b, sh->uniforms.num_texture_samples);
+    s_inputs(&b, stage == QSTAGE_FRAG ? sh->fs_inputs : NULL);
+    /* recipe, code */
+    s_u32(&b, sh->uniforms.count);
+    for (i = 0; i < sh->uniforms.count; i++)
+        s_u32(&b, sh->uniforms.contents[i]);
+    for (i = 0; i < sh->uniforms.count; i++)
+        s_u32(&b, sh->uniforms.data[i]);
+    s_u32(&b, n * 8);
+    for (i = 0; i < n; i++)
+        s_u64(&b, qpu[i]);
+    if (b.failed) {
+        fprintf(stderr, "vc4_variants: out of memory\n");
+        abort();
+    }
+    v3dp_add_variant(b.p, b.len);
+    free(b.p);
+}
 
 static const char *uniform_name(enum quniform_contents c)
 {
@@ -58,7 +220,10 @@ static void variant(enum qstage stage, const struct vc4_key *key, uint32_t key_s
                     const struct vc4_compiled_shader *sh, const uint64_t *qpu, uint32_t n)
 {
     uint32_t i;
-    (void)key;
+    if (capture)
+        serialize(stage, key, key_size, sh, qpu, n);
+    if (!out)
+        return;
     fprintf(out, "vc4-variant %s key-bytes %u threaded %d instructions %u\n",
             stage == QSTAGE_FRAG ? "fragment" : stage == QSTAGE_VERT ? "vertex" : "coordinate",
             (unsigned)key_size, sh->fs_threaded ? 1 : 0, (unsigned)n);
@@ -89,4 +254,9 @@ void vc4_variants_install(FILE *f)
 {
     out = f;
     vc4_compiled_variant_hook = variant;
+}
+
+void vc4_variants_capture(int on)
+{
+    capture = on;
 }

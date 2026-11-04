@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Decode a .v3dp file (FORMAT.md) and print it as text.
+"""Decode a .v3dp or .vc4p file (FORMAT.md 1.0 and 1.1) and print it as text.
 
 Written from FORMAT.md, not from the writer: every section must decode to
 exactly its stated size, the CRC must match, and the counts must agree, or
@@ -11,7 +11,15 @@ STAGES = {0: "vertex", 4: "fragment"}
 VARIANT_STAGES = {0: "vertex", 1: "vertex binning", 4: "fragment"}
 KINDS = {0: "uniform", 1: "constant", 2: "state"}
 SECTIONS = {1: "PROGRAM", 2: "STRINGS", 3: "STAGE_PARAMS", 4: "UNIFORMS", 5: "ATTRIBUTES",
-            6: "VARIANT"}
+            6: "VARIANT", 7: "VC4_VARIANT"}
+VC4_STAGES = {0: "vertex", 1: "coordinate", 4: "fragment"}
+# vc4's enum quniform_contents at Mesa 74b69717c52b (FORMAT.md 1.1)
+QUNIFORM_VC4 = ("CONSTANT UNIFORM VIEWPORT_X_SCALE VIEWPORT_Y_SCALE VIEWPORT_Z_OFFSET "
+                "VIEWPORT_Z_SCALE TEXTURE_CONFIG_P0 TEXTURE_CONFIG_P1 TEXTURE_CONFIG_P2 "
+                "TEXTURE_FIRST_LEVEL TEXTURE_MSAA_ADDR UBO0_ADDR UBO1_ADDR TEXRECT_SCALE_X "
+                "TEXRECT_SCALE_Y TEXTURE_BORDER_COLOR BLEND_CONST_COLOR_X BLEND_CONST_COLOR_Y "
+                "BLEND_CONST_COLOR_Z BLEND_CONST_COLOR_W BLEND_CONST_COLOR_RGBA "
+                "BLEND_CONST_COLOR_AAAA STENCIL SAMPLE_MASK UNIFORMS_ADDRESS").split()
 # enum quniform_contents at Mesa 74b69717c52b (values printed by the compiler),
 # with ogles2's patch 0013's CLIP_Z_COEFF (46)
 QUNIFORM = ("CONSTANT UNIFORM VIEWPORT_X_SCALE VIEWPORT_Y_SCALE VIEWPORT_Z_OFFSET "
@@ -25,8 +33,8 @@ QUNIFORM = ("CONSTANT UNIFORM VIEWPORT_X_SCALE VIEWPORT_Y_SCALE VIEWPORT_Z_OFFSE
             "BLEND_CONSTANT_B BLEND_CONSTANT_A CLIP_Z_COEFF").split()
 
 
-def recipe(contents, word):
-    name = QUNIFORM[contents] if contents < len(QUNIFORM) else "type%d" % contents
+def recipe(contents, word, names=QUNIFORM):
+    name = names[contents] if contents < len(names) else "type%d" % contents
     return "%s(%s)" % (name, word if name == "UNIFORM" else "%08x" % word)
 
 
@@ -136,6 +144,57 @@ def fs_variant(r):
     return k, d
 
 
+def vc4_inputs(r):
+    n = r.u32()
+    ins = [(r.u8(), r.u8()) for _ in range(n)]
+    r.pad((4 - (2 * n) % 4) % 4)
+    return ins
+
+
+def vc4_variant(r):
+    """FORMAT.md 1.1, VC4_VARIANT, after the stage; returns key and prog data."""
+    stage = r.stage
+    k = {}
+    tex = []
+    for i in range(16):
+        fmt, swz = r.u32(), r.u8s(4)
+        cm, cf, ws, wt, ffl = r.u8(), r.u8(), r.u8(), r.u8(), r.u8()
+        r.pad(3)
+        if fmt or any(swz) or cm or cf or ws or wt or ffl:
+            tex.append("%d:fmt%d swz%s wrap%d,%d%s%s" % (i, fmt, "".join(map(str, swz)), ws, wt,
+                                                       " cmp%d/%d" % (cm, cf) if cm else "",
+                                                       " first-level" if ffl else ""))
+    if tex:
+        k["tex"] = " ".join(tex)
+    if stage == 4:
+        k["color_format"] = r.u32()
+        for f in ("depth_enabled stencil_enabled stencil_twoside stencil_full_writemasks is_points "
+                  "is_lines point_coord_upper_left msaa sample_coverage sample_alpha_to_coverage "
+                  "sample_alpha_to_one logicop_func").split():
+            k[f] = r.u8()
+        k["point_sprite_mask"], k["ubo_1_size"] = r.u32(), r.u32()
+        k["ucp_enables"] = r.u8()
+        for f in ("blend_enable rgb_func rgb_src_factor rgb_dst_factor alpha_func "
+                  "alpha_src_factor alpha_dst_factor colormask").split():
+            k[f] = r.u8()
+        r.pad(3)
+    else:
+        k["attr_formats"] = r.u32s(8)
+        k["is_coord"], k["per_vertex_point_size"] = r.u8(), r.u8()
+        r.pad(2)
+        k["fs_inputs"] = vc4_inputs(r)
+    d = {}
+    for f in "fs_threaded num_inputs vattrs_live disable_early_z".split():
+        d[f] = r.u8()
+    d["vattr_offsets"] = r.u8s(9)
+    r.pad(3)
+    d["color_inputs"], d["num_texture_samples"] = r.u32(), r.u32()
+    d["fs_inputs"] = vc4_inputs(r)
+    if stage != 4 and d["fs_inputs"]:
+        raise Bad("a vertex variant with fragment inputs in its prog data")
+    return k, d
+
+
 def nonzero(dic):
     """Fields worth printing: drop zeros and all-zero arrays."""
     out = []
@@ -161,6 +220,8 @@ def dump(path, show_qpu):
           (path, major, minor, ver, commit.rstrip(b"\0").decode(), nsec, len(data)))
     if major != 1:
         raise Bad("unknown major version %d" % major)
+    if ver not in (42, 21) or (ver == 21 and minor < 1):
+        raise Bad("device %d in format %d.%d" % (ver, major, minor))
 
     secs, o = [], 32
     while o < len(data):
@@ -181,6 +242,9 @@ def dump(path, show_qpu):
     for t in (4, 5):
         if sum(1 for s, _ in secs if s == t) != 1:
             raise Bad("need exactly one %s section" % SECTIONS[t])
+    wrong = 6 if ver == 21 else 7
+    if any(t == wrong for t, _ in secs):
+        raise Bad("a %s section in a device %d file" % (SECTIONS[wrong], ver))
 
     strings = secs[1][1]
     if not strings or strings[0] != 0 or strings[-1] != 0:
@@ -271,6 +335,25 @@ def dump(path, show_qpu):
             print("  key: " + nonzero(k))
             print("  prog data: " + nonzero(d))
             print("  uniforms: " + " ".join(recipe(c, w) for c, w in zip(contents, words)))
+            if show_qpu:
+                for i, q in enumerate(qpu):
+                    print("  %4d %016x" % (i, q))
+        elif t == 7:
+            r.stage = stage = r.u32()
+            if stage not in VC4_STAGES:
+                raise Bad("VC4 variant stage %d" % stage)
+            k, d = vc4_variant(r)
+            n = r.u32()
+            contents, words = r.u32s(n), r.u32s(n)
+            qsize = r.u32()
+            if qsize % 8:
+                raise Bad("QPU size %d not a multiple of 8" % qsize)
+            qpu = [r.u64() for _ in range(qsize // 8)]
+            r.done()
+            print("VC4_VARIANT %s: %d instructions, %d uniforms" % (VC4_STAGES[stage], len(qpu), n))
+            print("  key: " + nonzero(k))
+            print("  prog data: " + nonzero(d))
+            print("  uniforms: " + " ".join(recipe(c, w, QUNIFORM_VC4) for c, w in zip(contents, words)))
             if show_qpu:
                 for i, q in enumerate(qpu):
                     print("  %4d %016x" % (i, q))

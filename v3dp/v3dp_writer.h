@@ -8,10 +8,22 @@
 #ifndef V3DP_WRITER_H
 #define V3DP_WRITER_H
 
+#include <stddef.h>
+
 struct gl_shader_program;
 
-/* Start capturing variants: installs the driver hook and forgets earlier ones. */
+/* The GPU of the files written next: 42 (V3D 4.2, the default: format 1.0,
+ * VARIANT sections from the v3d hook) or 21 (VC4: format 1.1, VC4_VARIANT
+ * sections that v3dp_add_variant receives already serialized, from
+ * tools/v3dglslc/vc4_variants.c). */
+void v3dp_set_device(unsigned ver);
+
+/* Start capturing variants: forgets earlier ones and, for V3D 4.2, installs
+ * the driver hook. */
 void v3dp_capture_begin(void);
+/* A variant section's payload, serialized by the caller (VC4); duplicates
+ * are dropped. */
+void v3dp_add_variant(const void *payload, size_t size);
 /* Stop capturing (removes the hook); the captured variants stay until the next begin. */
 void v3dp_capture_end(void);
 

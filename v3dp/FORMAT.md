@@ -1,4 +1,4 @@
-# `.v3dp` program binary container, version 1.0
+# `.v3dp` program binary container, version 1.0 (and 1.1: VC4, at the end)
 
 **Status: frozen (2026-10-10).** Any change follows the versioning rules at the end. Verified:
 the x86-64 and m68k writers produce identical bytes (`dev/spike-c/harness/compare_v3dp.sh`, five
@@ -238,6 +238,83 @@ Prog data (`struct v3d_fs_prog_data`), after the common part: `u8` each: `uses_p
 `uses_implicit_point_line_varyings`, `lock_scoreboard_on_first_thrsw`,
 `force_per_sample_msaa`, `u8 pad[3]`, `u8 input_slots[64]`, `u32 flat_shade_flags[3]`,
 `u32 noperspective_flags[3]`, `u32 centroid_flags[3]`.
+
+## Version 1.1: the Raspberry Pi 3's VideoCore IV (2026-11-04)
+
+Adds VC4 programs (`docs/PI3_PLAN.md` §4.3); nothing of 1.0 changes, and a V3D 4.2 file is
+still written as 1.0, byte for byte as before (it uses nothing of 1.1).
+
+- **Header:** format minor version 1; device version **21** (VC4, V3D 2.1: Mesa vc4's
+  `screen->v3d_ver`). A reader takes files of its own GPU only: ogles2.library the device of the
+  backend in use. A 1.0 reader rejects device 21 at the header.
+- **Sections:** `PROGRAM`, `STRINGS`, `STAGE_PARAMS`, `UNIFORMS` and `ATTRIBUTES` as in 1.0 (they
+  come from Mesa's GL linker and state tracker; with the vc4 driver the constant buffer has the
+  same layout, a vector or array element or matrix column per 4 values). The variants are
+  sections of a new type, **7 `VC4_VARIANT`**; a VC4 file has no type 6.
+- **File names:** the runtime's cache and `PROGDIR:shaders/` name a VC4 program
+  `<24 hex digits>.vc4p` (the same hash), so the two GPUs' files lie side by side.
+
+### `VC4_VARIANT`: one shader compiled by Mesa's vc4 driver
+
+| Type | Field |
+|---|---|
+| `u32` | stage: 0 vertex, 1 coordinate (VC4's binning vertex shader), 4 fragment |
+| key | the variant key, field by field (below) |
+| prog data | the shader's properties (below) |
+| `u32` | uniform recipe entries |
+| `u32[n]`, `u32[n]` | recipe types (vc4's `enum quniform_contents`), then their data words |
+| `u32` | QPU code size in bytes |
+| `u64[size/8]` | QPU instructions, little-endian |
+
+Recipe types are vc4's own enum (`vc4_qir.h`), not v3d's: at 74b69717c52b, 0 `CONSTANT`,
+1 `UNIFORM`, 2 `VIEWPORT_X_SCALE`, 3 `VIEWPORT_Y_SCALE`, 4 `VIEWPORT_Z_OFFSET`,
+5 `VIEWPORT_Z_SCALE`, 6 `TEXTURE_CONFIG_P0`, 7 `TEXTURE_CONFIG_P1`, 8 `TEXTURE_CONFIG_P2`,
+9 `TEXTURE_FIRST_LEVEL`, 10 `TEXTURE_MSAA_ADDR`, 11 `UBO0_ADDR`, 12 `UBO1_ADDR`,
+13 `TEXRECT_SCALE_X`, 14 `TEXRECT_SCALE_Y`, 15 `TEXTURE_BORDER_COLOR`,
+16 to 19 `BLEND_CONST_COLOR_X`, `_Y`, `_Z`, `_W`, 20 `BLEND_CONST_COLOR_RGBA`,
+21 `BLEND_CONST_COLOR_AAAA`, 22 `STENCIL`, 23 `SAMPLE_MASK`, 24 `UNIFORMS_ADDRESS`. As in 1.0,
+`UNIFORM`'s data word is an index (32-bit units) into the stage's constant buffer and
+`CONSTANT`'s the value; the texture types' data word is the sampler (texture unit index of
+that stage). `UBO0_ADDR` (indirectly indexed uniform arrays) reads the constant buffer through
+the TMU: the runtime keeps the stage's constant buffer in GPU memory too. The fragment shader's
+texture lookups take their configuration words from the stream (`TEXTURE_CONFIG_P0`, `P1`
+before each lookup, as the probe found, `tests/pi3_probe`).
+
+Enum values in keys (`pipe_format`, `PIPE_SWIZZLE_*`, `PIPE_TEX_WRAP_*`, `PIPE_FUNC_*`,
+`PIPE_BLEND_*`, `PIPE_BLENDFACTOR_*`, `PIPE_LOGICOP_*`) are Mesa's at the validated commit,
+like the recipe types.
+
+**Key, every stage** (`struct vc4_key`; its `shader_state` pointer is the program itself and is
+not stored): for each of the 16 samplers (`VC4_MAX_TEXTURE_SAMPLERS`): `u32 format`,
+`u8 swizzle[4]`, then `u8` each `compare_mode`, `compare_func`, `wrap_s`, `wrap_t`,
+`force_first_level`, `u8 pad[3]` (16 bytes). The key's other view of these bits, the
+multisampled texture's `msaa_width`/`msaa_height`, is not stored: GLES2 samples no
+multisampled textures, and the two views of one union depend on the host's bitfield layout.
+
+**Key, vertex and coordinate shaders** (`struct vc4_vs_key`), after the common key:
+`u32 attr_formats[8]` (each attribute's `pipe_format`: VC4 converts formats in the shader),
+`u8` each `is_coord`, `per_vertex_point_size`, `u8 pad[2]`, then the fragment shader's inputs
+the variant writes (`fs_inputs`, compiled for the fragment variant it feeds): `u32` count,
+per input `u8 slot`, `u8 swizzle`, zero padding to 4 bytes.
+
+**Key, fragment shader** (`struct vc4_fs_key`), after the common key: `u32 color_format`,
+`u8` each `depth_enabled`, `stencil_enabled`, `stencil_twoside`, `stencil_full_writemasks`,
+`is_points`, `is_lines`, `point_coord_upper_left`, `msaa`, `sample_coverage`,
+`sample_alpha_to_coverage`, `sample_alpha_to_one`, `logicop_func`; `u32 point_sprite_mask`,
+`u32 ubo_1_size`; `u8 ucp_enables`, then the blend state (`pipe_rt_blend_state`) as `u8` each
+`blend_enable`, `rgb_func`, `rgb_src_factor`, `rgb_dst_factor`, `alpha_func`,
+`alpha_src_factor`, `alpha_dst_factor`, `colormask`; `u8 pad[3]`.
+
+**Prog data, every stage** (`struct vc4_compiled_shader`, what the draw needs): `u8` each
+`fs_threaded` (the shader record's single-thread flag is its inverse), `num_inputs`,
+`vattrs_live`, `disable_early_z`; `u8 vattr_offsets[9]` (byte offsets of attributes 0 to 7 in
+the VPM, and the total as the ninth), `u8 pad[3]`; `u32 color_inputs`;
+`u32 num_texture_samples`; then the fragment shader's inputs (`fs_inputs`, empty in vertex and
+coordinate shaders): `u32` count, per input `u8 slot`, `u8 swizzle`, zero padding to 4 bytes.
+The runtime matches a vertex variant to a fragment variant by these inputs.
+
+The writer's choice of variants (which draws `v3dglslc -g 21` makes) is not part of the
+format; it is settled with PD7 (`docs/PI3_PLAN.md` §4.2).
 
 ## Versioning
 

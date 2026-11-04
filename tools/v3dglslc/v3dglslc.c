@@ -57,13 +57,15 @@ int fake_drm_vc4_open(void);
 
 /* The Raspberry Pi 3's VideoCore IV (docs/PI3_PLAN.md §4.1, P4): -g 21 takes
  * Mesa's vc4 driver on its fake device (compat/fake_drm.c) instead of v3d.
- * For now (S1's first step) without the .v3dp writer: each program is drawn
- * once in a reference state and the driver prints its code (-d qpu). */
+ * Each program is drawn once in a reference state (draw_vc4_reference); its
+ * variants are listed on stdout (vc4_variants.c) and with -o written as
+ * <dir>/<vs>-<fs>.vc4p (v3dp/FORMAT.md 1.1). */
 static int device = 42;
 #ifdef V3DGLSLC_VC4 /* build_host.sh; the m68k build (S2) links vc4 in P4 */
 struct renderonly;
 struct pipe_screen *vc4_screen_create(int fd, const struct pipe_screen_config *config, struct renderonly *ro);
 void vc4_variants_install(FILE *f); /* vc4_variants.c */
+void vc4_variants_capture(int on);
 static int run_pairs_vc4(int argc, char **argv, int first);
 #endif
 
@@ -398,8 +400,9 @@ static void program_path(char *out, size_t size, const char *vs_path, const char
     size_t n = strlen(out_dir);
     base_name(vs_base, vs_path);
     base_name(fs_base, fs_path);
-    snprintf(out, size, "%s%s%s-%s.v3dp", out_dir,
-             n && out_dir[n - 1] != '/' && out_dir[n - 1] != ':' ? "/" : "", vs_base, fs_base);
+    snprintf(out, size, "%s%s%s-%s.%s", out_dir,
+             n && out_dir[n - 1] != '/' && out_dir[n - 1] != ':' ? "/" : "", vs_base, fs_base,
+             device == 21 ? "vc4p" : "v3dp");
 }
 
 static int write_program(GLuint p, const char *path, const char *vs_src, const char *fs_src)
@@ -691,8 +694,25 @@ static int run_pairs_vc4(int argc, char **argv, int first)
             glGetProgramiv(p, GL_LINK_STATUS, &ok);
         }
         fprintf(stderr, "v3dglslc: link: %s\n", ok ? "ok" : "FAILED");
-        if (!ok || !draw_vc4_reference(p))
+        if (ok && out_dir) {
+            GET_CURRENT_CONTEXT(ctx);
+            static const unsigned stages[3] = { MESA_SHADER_VERTEX, MESA_SHADER_FRAGMENT, V3DP_HASH_BINDINGS };
+            const char *sources[3] = { vs_src, fs_src, link_bindings };
+            char path[512];
+            program_path(path, sizeof(path), argv[i], argv[i + 1]);
+            v3dp_capture_begin();
+            vc4_variants_capture(1);
+            ok = draw_vc4_reference(p);
+            vc4_variants_capture(0);
+            v3dp_capture_end();
+            if (ok && v3dp_write(path, _mesa_lookup_shader_program(ctx, p), link_bindings ? 3 : 2, stages,
+                                 sources) != 0)
+                ok = 0;
+            if (!ok)
+                failed++;
+        } else if (!ok || !draw_vc4_reference(p)) {
             failed++;
+        }
         glDeleteProgram(p);
         glDeleteShader(vs);
         glDeleteShader(fs);
@@ -757,10 +777,6 @@ int main(int argc, char **argv)
         return 20;
     }
 #endif
-    if (device == 21 && out_dir) {
-        fprintf(stderr, "v3dglslc: -g 21 cannot write files yet (docs/PI3_PLAN.md §4.3)\n");
-        return 20;
-    }
     if (debug) {
         snprintf(debug_flags, sizeof(debug_flags), "%s", debug);
         set_option(device == 21 ? "VC4_DEBUG" : "V3D_DEBUG", debug_flags);
@@ -801,6 +817,15 @@ int main(int argc, char **argv)
     }
     the_pipe = st->pipe;
     if (device == 21) {
+        v3dp_set_device(21);
+        /* OES_standard_derivatives: vc4 compiles derivatives (ntq_fddx,
+         * ntq_fddy, per 2x2 quad) but never reports the capability, so
+         * Mesa leaves the extension off (docs/PI3_PLAN.md §2.1); the Pi 3's
+         * library offers it as the Pi 4's does. */
+        {
+            GET_CURRENT_CONTEXT(ctx);
+            ctx->Extensions.OES_standard_derivatives = GL_TRUE;
+        }
         /* The driver's own limits for now (one draw buffer, 8 varyings);
          * the library's for the Pi 3 are settled in P4. */
         fprintf(stderr, "v3dglslc: renderer %s\n", (const char *)_mesa_GetString(GL_RENDERER));
