@@ -24,7 +24,9 @@ station's large-reply stall, postponed) is in §13's "Next" list.
 ## Setting up a build machine
 
 Ubuntu 24.04, natively or in WSL on Windows. The repository can live anywhere (also on a
-Windows drive, `/mnt/c/...`); the build output goes to `~/ogles2-build`.
+Windows drive, `/mnt/c/...`); the build output goes to `~/ogles2-build-pi3` (in this
+repository, `ogles2pi3`: `~/ogles2-build` is the `ogles2` checkout's, and the two must not
+share a build directory; P7 of `docs/PI3_PLAN.md` returns to `~/ogles2-build`).
 
 1. The packages listed in [`dev/host-setup/README.md`](dev/host-setup/README.md).
 2. `bash dev/host-setup/build_tools.sh`: lha and vamos (minutes).
@@ -49,9 +51,9 @@ make etc1-test        # ogles2's ETC1 decoder against Mesa's (the same)
 make test-v3dp        # compiles the test shaders to .v3dp (needs v3dglslc)
 make perf-mgl         # the MiniGL side of the speed comparison (needs MGL_SDK)
 make gl4es            # gl4es for AmigaOS 3 and gears_gl4es (ports/gl4es/README.md)
-bash ports/ioq3/build.sh       # Quake III on gl4es (after make gl4es): ~/ogles2-build/m68k/ioq3
+bash ports/ioq3/build.sh       # Quake III on gl4es (after make gl4es): ~/ogles2-build-pi3/m68k/ioq3
 bash ports/ioq3-gl2/build.sh   # Quake III with renderergl2 (after ports/ioq3): .../ioq3gl2
-bash release/build_release.sh  # the release archives in ~/ogles2-build/release ("dist": also release/dist/; "sdl": the SDL archive too)
+bash release/build_release.sh  # the release archives in ~/ogles2-build-pi3/release ("dist": also release/dist/; "sdl": the SDL archive too)
 ```
 
 The release builder needs the shader compiler built both ways (`tools/v3dglslc/build_m68k.sh`

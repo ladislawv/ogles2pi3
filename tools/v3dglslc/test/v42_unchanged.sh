@@ -10,9 +10,9 @@
 # examples ($RW/src, release/build_release.sh) and Boing 2026's shaders.
 set -u
 MODE=${1:-check}
-OUT=${OUT:-$HOME/ogles2-build/v3dglslc}
-B=${B:-$HOME/ogles2-build/m68k}
-RW=${RW:-$HOME/ogles2-build/release/work}
+OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
+RW=${RW:-$HOME/ogles2-build-pi3/release/work}
 T="$(dirname "$(readlink -f "$0")")"
 REPO="$(dirname "$(dirname "$(dirname "$T")")")"
 V3DGLSLC=$OUT/host/v3dglslc

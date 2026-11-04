@@ -6,7 +6,7 @@ set -eu
 PKG=$1
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../.." && pwd)
-B=${B:-$HOME/ogles2-build/m68k-sync}
+B=${B:-$HOME/ogles2-build-pi3/m68k-sync}
 
 make -C "$REPO" -j8 B="$B" EXTRA_CFLAGS=-DOGLES2_LOG_SYNC > /dev/null
 mkdir -p "$PKG/libs" "$PKG/bin"

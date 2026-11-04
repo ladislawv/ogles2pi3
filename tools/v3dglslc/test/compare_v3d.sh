@@ -4,7 +4,7 @@
 # independent path), on the same shader pairs.
 #   usage: compare_v3d.sh [V3D_DEBUG flags]   (default precompile,qpu)
 set -u
-OUT=${OUT:-$HOME/ogles2-build/v3dglslc}
+OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
 FLAGS=${1:-precompile,qpu}
 T="$(dirname "$(readlink -f "$0")")"
 H="$(dirname "$T")"

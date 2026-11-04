@@ -8,7 +8,7 @@ set -eu
 PKG=$1
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../.." && pwd)
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 MGL_DIR=${MGL_DIR:-$HOME/minigl-29.1}
 
 make -C "$REPO" -j8 B="$B" > /dev/null

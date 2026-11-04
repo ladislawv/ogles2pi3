@@ -6,7 +6,7 @@
 #   sudo ./pi3_probe --ref=mesa_triangle.ppm
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
-OUT=${OUT:-$HOME/ogles2-build/pi3}
+OUT=${OUT:-$HOME/ogles2-build-pi3/pi3}
 mkdir -p "$OUT"
 aarch64-linux-gnu-gcc-14 -O2 -Wall -Wextra -std=gnu99 -static -o "$OUT/pi3_probe" \
     "$HERE/pi3_probe.c" "$HERE/plat_linux.c"

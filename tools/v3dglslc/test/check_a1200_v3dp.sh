@@ -4,7 +4,7 @@
 #   usage: check_a1200_v3dp.sh <directory with the A1200's .v3dp files>
 set -u
 R=${1:?directory with the A1200 .v3dp files}
-OUT=${OUT:-$HOME/ogles2-build/v3dglslc}
+OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
 REF=$OUT/v3dpcmp/host
 T="$(dirname "$(readlink -f "$0")")"
 V="$(dirname "$(dirname "$(dirname "$T")")")/v3dp"

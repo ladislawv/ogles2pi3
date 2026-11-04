@@ -29,6 +29,7 @@
 #include <proto/exec.h>
 #include <string.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 #include "v3d_context.h"
 #include "v3d_frame.h"
 #include "v3d_hw.h"
@@ -606,7 +607,8 @@ void ogles2_glRenderbufferStorage(struct OGLES2Context *ctx, GLenum target, GLen
         ogles2_error(ctx, GL_INVALID_ENUM);
         return;
     }
-    if (width < 0 || height < 0 || width > OGLES2_MAX_VIEWPORT || height > OGLES2_MAX_VIEWPORT) {
+    if (width < 0 || height < 0 || width > ogles2_backend->caps->max_viewport ||
+        height > ogles2_backend->caps->max_viewport) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }
@@ -1341,9 +1343,9 @@ BOOL ogles2_fbo_query(struct OGLES2Context *ctx, GLenum pname, GLint *v)
     switch (pname) {
     case GL_FRAMEBUFFER_BINDING:  *v = fb ? (GLint)fb->name : 0; return TRUE;
     case GL_RENDERBUFFER_BINDING: *v = ctx->fbo && ctx->fbo->rb_bound ? (GLint)ctx->fbo->rb_bound->name : 0; return TRUE;
-    case GL_MAX_RENDERBUFFER_SIZE: *v = OGLES2_MAX_VIEWPORT; return TRUE;
+    case GL_MAX_RENDERBUFFER_SIZE: *v = ogles2_backend->caps->max_viewport; return TRUE;
     case GL_MAX_DRAW_BUFFERS_EXT:
-    case GL_MAX_COLOR_ATTACHMENTS_EXT: *v = OGLES2_MAX_DRAW_BUFFERS; return TRUE;
+    case GL_MAX_COLOR_ATTACHMENTS_EXT: *v = ogles2_backend->caps->max_draw_buffers; return TRUE;
     case GL_RED_BITS: case GL_GREEN_BITS: case GL_BLUE_BITS: case GL_ALPHA_BITS:
         if (fb) {
             const struct OGLES2Attachment *c = &fb->att[ATT_COLOR];

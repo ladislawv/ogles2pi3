@@ -9,6 +9,7 @@
 #include <proto/utility.h>
 #include <libraries/ogles2.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 
 /* A state-only (test) context has no surface: frame entries do nothing. */
 static BOOL has_surface(struct OGLES2Context *ctx)
@@ -255,8 +256,8 @@ void ogles2_glViewport(struct OGLES2Context *ctx, GLint x, GLint y, GLsizei widt
     /* Clamped to the implementation maximum (GL_MAX_VIEWPORT_DIMS). */
     ctx->viewport[0] = x;
     ctx->viewport[1] = y;
-    ctx->viewport[2] = width > OGLES2_MAX_VIEWPORT ? OGLES2_MAX_VIEWPORT : width;
-    ctx->viewport[3] = height > OGLES2_MAX_VIEWPORT ? OGLES2_MAX_VIEWPORT : height;
+    ctx->viewport[2] = width > ogles2_backend->caps->max_viewport ? ogles2_backend->caps->max_viewport : width;
+    ctx->viewport[3] = height > ogles2_backend->caps->max_viewport ? ogles2_backend->caps->max_viewport : height;
     ctx->state_ver++;
 }
 

@@ -17,7 +17,7 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 ln -sfn "$(cd "$HERE/../.." && pwd)" "$HOME/.ogles2-repo" # a path without the space of "- CPP"
 REPO=$HOME/.ogles2-repo
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 TC16=${TC16:-$HOME/amiga-gcc162-install}
 J=${J:-8}
 CTS_URL=${CTS_URL:-https://github.com/KhronosGroup/VK-GL-CTS.git}

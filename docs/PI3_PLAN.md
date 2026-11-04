@@ -408,6 +408,64 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   then `IDENT0` must match (read after power-on: before it, the Pi 3's registers read
   `0xdeadbeef`). Neither: the context fails, as on a
   machine without a GPU today. Emu68 hands AmigaOS the firmware's device tree (§7) (verify P5).
+- **The coupling, surveyed (2026-11-04):** the V3D-specific code is in `job.c` (render lists,
+  submission: `build_render`, `build_render_fbo`, `grow_binning`, `zs_get`, the V3D half of
+  `ogles2_job_begin`/`_flush`/`after_render`/`take_gpu`), `draw.c` (`emit_state` with its
+  dedup, `shader_record`, `draw_packets`, `write_uniforms`, `code_address`, `spill_area`,
+  `default_attribs`, the attribute encoding), the storage half of `texture.c` (`storage_of`,
+  packing, `store_box`/`load_box`, `upload_all`'s allocation, the TMU records of
+  `ogles2_texture_state`, the TFU paths), `fbo.c` (`rb_zs_storage`, `rb_surface`, `pools`, the
+  tile-size part of `ogles2_fbo_target`), `device.c` (all) and `v3dp.c` (the VARIANT section,
+  the device check, the code upload, `ogles2_image_variant`); `program.c` holds the built-in
+  image (PiStorm3D's shaders), `draw.c` the internal programs `clear_mrt_v3dp.h` and
+  `copy_tex_v3dp.h`. Elsewhere `ctx->v3d` is mostly a "has a GPU" test (frame.c, fbo.c, share.c,
+  copy.c, state.c, context.c), plus `frame_active` reads and deferred frees on the context's
+  frame. **Shared state to retire:** `g_v3d_cl_generation` (a cache key in draw.c, texture.c and
+  `OGLES2Program.us_gen`), the `g_v3d_requested_*` handshake before `v3d_context_init`,
+  `g_v3d_uif_fast`; and **a block's CPU address is its GPU address** in about 20 places
+  (draw.c, buffer.c, job.c, fbo.c, texture.c), true under Emu68 on the Pi 4, not on the Pi 3
+  (the `0xC0000000` alias). Hard-coded V3D limits: `state.c` (lines, points, uniform vectors,
+  16 varyings, samples), `texture.c` (size 4096, anisotropy, LOD bias), `OGLES2_MAX_VIEWPORT`,
+  the extension string (`context.c`).
+- **The interface (settled 2026-11-04):** `ogles2/backend.h`, one table
+  (`const struct OGLES2Backend *ogles2_backend`, chosen at device open) with opaque per-context,
+  per-texture and per-variant objects; groups in the order the steps below take them:
+  1. **device and capabilities:** open, reset, renderer, bytes in use, the GPU lock; a
+     capabilities struct the front end reads instead of its constants (limits, extension
+     string, formats, MSAA, TFU present);
+  2. **memory:** blocks with a CPU pointer *and* a bus address, alloc/free/free-after-the-job;
+     a front-end job generation counter (`ctx->job_gen`) replaces `g_v3d_cl_generation` as the
+     front end's cache key;
+  3. **jobs:** begin, clear snapshot, flush (lists and submission), wait, discard; the front end
+     keeps the serials, the overlap and discard policy, the statistics; "can the tile buffer
+     clear this" becomes a backend query;
+  4. **draw:** one call with the resolved variants, vertex sources, indices and the state
+     version; `emit_state` and the rest move behind it;
+  5. **textures:** storage format, packing, allocation and tiling, load/store, sampler records;
+     the front end keeps completeness, the fallback texture and the CPU copies;
+  6. **framebuffer targets** (surfaces, tile pools) and the optional **TFU/blit** paths;
+  7. **programs:** the VARIANT section's parsing and the code upload, variant choice, the
+     uniform writer, the internal programs, the extra variant files (`.v3dw`, `.v3da`); a
+     variant becomes a few shared fields plus the backend's own data.
+  Each step moves code without changing it, builds, and runs the Pi 4 checks below the same
+  day against a baseline taken that day: m5-1 (255 PASS), m7-6 (36 of 36), m2-5's 14 pictures
+  byte for byte, the speed of m6-1 (gears) and Quake III's timedemo. Then, step 8, the MIT
+  rewrite of the shared parts that still adapt PiStorm3D (§5.3: `display.c`'s RTG paths and
+  what remains of `job.c`, `draw.c`, `texture.c`, `program.c` in the front end), checked the
+  same way; then the acceptance below. **Baseline of 2026-11-04** (Pi 4 card, this
+  repository's library before the split): m5-1 255 PASS and no FAIL, m7-6 36 of 36, m2-5 14 of
+  14 pictures identical to 2026-10-14's, m6-1 window 469 fps, screen 1114, bitmap arrays 821
+  (TEETH=1), Quake III renderergl2's whole demo 89.0 and 88.9 fps
+  (`tests/a1200/results/*-20261104-1502*` to `-1505*`). `tests/a1200/p2_checks.sh` builds and
+  runs the checks and prints what to compare.
+- **Step 1 done (2026-11-04):** `ogles2/backend.h` (the table, `struct OGLES2Caps`) and
+  `ogles2/v3d/backend_v3d.c` (the V3D 4.2 table with the values 1.3.3 hard-coded); the front
+  end reads the extension string, `GL_RENDERER`, texture and viewport sizes, draw buffers,
+  varyings, uniform vectors, line and point limits, anisotropy and LOD bias from
+  `ogles2_backend->caps` (`context.c`, `state.c`, `texture.c`, `fbo.c`, `frame.c`); the table
+  starts as V3D's, so a context without a GPU reports the same. Pi 4 checks the same day: m5-1
+  255 PASS, no FAIL; m7-6 36 of 36; m2-5 14 of 14 identical; m6-1 window 467, screen 1115,
+  bitmap arrays 829 fps; Quake III 88.8 fps: as the baseline.
 - **Acceptance of P2:** the Pi 4 build behaves exactly as 1.3.3: the A1200 regression packages,
   dEQP-GLES2's must-pass list and the benchmarks (gears, Quake III) give the same results and the
   same speed (the 1.3.3 checks of DEVELOPMENT_PLAN §13 are the list). The function table costs
@@ -612,7 +670,7 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 | **P4** | `v3dglslc` with the vc4 driver: S1 in WSL (`.v3dp` device 21), the format (§4.3), the patches (§4.1), PD7 applied, the request's device field (§4.5), then S2 for m68k. S1 needs no Pi: it starts right after P0 | the Pi 4's `.v3dp` files unchanged; the VC4 corpus compiles; S1 and S2 bit-identical; P3's tests take their shaders from it |
 | **P5** | The VC4 backend behind the interface (`ogles2/vc4/` on `vc4core`); on the A1200 with the Pi 3: Emu68's facts (§7), the probe under AmigaOS, then the test packages | the M1 to M7 packages pass on the Pi 3 card, and still on the Pi 4 card |
 | **P6** | Conformance and speed on both cards: dEQP-GLES2's must-pass list on the A1200; gears, the examples, Quake III with its GLES2 renderer, SDL | the Pi 3 no worse than Mesa vc4's baseline (P0) except documented deviations; the Pi 4 as 1.3.3; benchmarks recorded for both |
-| **P7** | Into `ogles2` (PD8): this repository's work merged there, checked again on both cards; then the release: one `ogles2.library`, one `v3dglslc`, the installer, the archives | a release from `ogles2`, tested on both cards |
+| **P7** | Into `ogles2` (PD8): this repository's work merged there (the build root back to `~/ogles2-build`), checked again on both cards; then the release: one `ogles2.library`, one `v3dglslc`, the installer, the archives | a release from `ogles2`, tested on both cards |
 
 ## 9. Decisions
 
@@ -693,11 +751,17 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 - P2's variant count measured on the A1200 with the Pi 4 card (§4.2): probe V
   (`ogles2/vc4keys.c`); the corpus, SDL2, SDL3 and Quake III (both renderers) need 1 to 9
   fragment keys per program, 39 + 25 for Quake III's renderergl2, 1 or 2 first needed in play.
-  This repository's library builds go to `~/ogles2-build/m68k-pi3` (B=...), never to
-  `~/ogles2-build/m68k`, which the `ogles2` checkout builds the Pi 4's releases into: make
-  compares timestamps and would mix the two trees' objects. The WSL Mesa tree
-  (`~/mesa-build/mesa`) is shared: it now has vc4 configured and patches 0015 and 0016 applied,
-  which change nothing of the V3D build (54 of 54 files unchanged).
+  **This repository builds into its own root, `~/ogles2-build-pi3`** (every script's and the
+  Makefile's default, 110 paths in 68 files; `~/ogles2-build-pi3/m68k`, `.../m68k-sync`,
+  `.../v3dglslc`, `.../release`, `.../pi3`), never into `~/ogles2-build`, which the `ogles2`
+  checkout builds the Pi 4's releases into: make compares timestamps and would mix the two
+  trees' objects (the package scripts use `B` for the log-sync build in some packages and the
+  plain one in others). The `ogles2` checkout's host compiler, which had been rebuilt from this
+  repository's sources earlier the same day, was rebuilt from its own (V3D output identical
+  either way). P7 (the merge into `ogles2`) returns the defaults to `~/ogles2-build`. Shared
+  still: the toolchains, the ports' source clones, and the WSL Mesa tree (`~/mesa-build/mesa`),
+  which now has vc4 configured and patches 0015 and 0016 applied; neither changes the V3D build
+  (54 of 54 files unchanged).
 - P4's S1 begun (§4.1): `v3dglslc -g 21` compiles with Mesa's vc4 driver, its code identical to
   the Pi's Mesa for the reference programs; the variant hook (patch 0015) reports code and
   uniform recipes; the Pi 4's output unchanged (54 files). Then the format (§4.3): 1.1 with a

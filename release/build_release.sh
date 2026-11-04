@@ -1,8 +1,8 @@
 #!/bin/bash
-# Builds the release: ~/ogles2-build/release/ogles2/ (the tree) and the
+# Builds the release: ~/ogles2-build-pi3/release/ogles2/ (the tree) and the
 # archives ogles2-<version>.lha (users), ogles2-<version>-sdk.lha (with the
 # SDK) and ogles2-<version>-sdk.zip (the SDK alone). Run inside WSL:
-#   bash release/build_release.sh        (into ~/ogles2-build/release)
+#   bash release/build_release.sh        (into ~/ogles2-build-pi3/release)
 #   bash release/build_release.sh dist   (and copies them to release/dist/)
 #   bash release/build_release.sh sdl    (also the SDL archive; with dist too)
 # The SDL archive, ogles2-<version>-sdl.lha and -sdl.zip, holds SDL2 and SDL3
@@ -19,13 +19,13 @@
 set -eu
 REPO=$(cd "$(dirname "$0")/.." && pwd)
 HERE=$REPO/release
-B=${B:-$HOME/ogles2-build/m68k}
-V=${V:-$HOME/ogles2-build/v3dglslc}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
+V=${V:-$HOME/ogles2-build-pi3/v3dglslc}
 TC=${TC:-$HOME/amiga-gcc-install}
 VBCC=${VBCC:-$HOME/vbcc}
 MESA=${MESA:-$HOME/mesa-build/mesa}
 LHA=${LHA:-$HOME/tools/bin/lha}
-OUT=${OUT:-$HOME/ogles2-build/release}
+OUT=${OUT:-$HOME/ogles2-build-pi3/release}
 PISTORM3D_SDK=${PISTORM3D_SDK:-/mnt/c/- CPP/pistorm3d/SDK}
 DIST=0
 SDL=0

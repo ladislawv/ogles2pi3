@@ -15,7 +15,7 @@ CC       ?= m68k-amigaos-gcc
 # -fbbb=...: bebbo's optimiser without "e" (it breaks float-to-int rounding).
 CFLAGS   ?= -O2 -m68020 -m68881 -mcrt=clib2 -fno-builtin -fbbb=abcfhilmnprsz0 -Wall
 OGLES2   ?= /mnt/c/GitHub/ogles2
-V3DGLSLC ?= $(HOME)/ogles2-build/v3dglslc/host/v3dglslc
+V3DGLSLC ?= $(HOME)/ogles2-build-pi3/v3dglslc/host/v3dglslc
 
 SHADERS  := shaders/ball.vert shaders/ball.frag shaders/room.vert shaders/room.frag \
             shaders/screen.vert shaders/blur.frag shaders/composite.frag \

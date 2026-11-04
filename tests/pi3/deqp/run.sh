@@ -20,7 +20,7 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../.." && pwd)
 PI=${PI:-pi3}
-OUT=${OUT:-$HOME/ogles2-build/pi3/deqp}
+OUT=${OUT:-$HOME/ogles2-build-pi3/pi3/deqp}
 NAME=${1:-main}
 CASES=${2:-}
 POLL=${POLL:-60}

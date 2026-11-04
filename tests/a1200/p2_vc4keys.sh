@@ -1,8 +1,9 @@
 #!/bin/bash
 # PI3_PLAN P2 (§4.2): the probe-V packages. Takes built packages (from the
 # ogles2 checkout's tests/a1200/out, or $SRC), swaps in this repository's
-# ogles2.library (built into $B, which must not be the ogles2 checkout's
-# ~/ogles2-build/m68k) and the run scripts with the PROBE= argument, and
+# ogles2.library (built into $B: this repository's ~/ogles2-build-pi3/m68k,
+# never the ogles2 checkout's ~/ogles2-build) and the run scripts with the
+# PROBE= argument, and
 # writes them as tests/a1200/out/p2v-<name>. Run in WSL:
 #   bash tests/a1200/p2_vc4keys.sh
 # Then, with the Pi 4 card in the A1200 (amictl from Windows or WSL):
@@ -18,10 +19,9 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
 SRC=${SRC:-"/mnt/c/- CPP/ogles2/tests/a1200/out"}
-B=${B:-$HOME/ogles2-build/m68k-pi3}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 OUT=$HERE/out
 
-[ "$B" != "$HOME/ogles2-build/m68k" ] || { echo "B must be this repository's own build directory"; exit 1; }
 make -C "$REPO" -j16 B="$B" "$B/ogles2.library" > /dev/null
 for name in m2-5 m6-2 m6-3 m6-4 m6-5; do
     [ -d "$SRC/ogles2-$name" ] || { echo "no $SRC/ogles2-$name (build it in the ogles2 checkout)"; exit 1; }

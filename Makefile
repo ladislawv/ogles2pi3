@@ -1,11 +1,11 @@
 # ogles2.library, libogles2.a and their tests. Run in WSL:  make [-j]
-# Output goes to $(B) (default ~/ogles2-build/m68k), outside the source tree.
+# Output goes to $(B) (default ~/ogles2-build-pi3/m68k), outside the source tree.
 #
 # Toolchain: GCC 6.5.0b + clib2 headers (plan section 2.3), the compiler
 # PiStorm3D 29.1 is built with. The library is freestanding: no C library
 # startup, no libc; exec/dos/utility are called directly.
 
-B      ?= $(HOME)/ogles2-build/m68k
+B      ?= $(HOME)/ogles2-build-pi3/m68k
 TC     ?= $(HOME)/amiga-gcc-install
 CROSS  := $(TC)/bin/m68k-amigaos-
 CC     := $(CROSS)gcc
@@ -19,7 +19,7 @@ PYTHON ?= python3
 # tools/check_fpconv.py, plan section 2.3). The other letters are the default.
 CPU    := -mcpu=68020 -m68881 -fbbb=abcfhilmnprsz0
 # EXTRA_CFLAGS=-DOGLES2_LOG_SYNC: write every log line at once (hardware bring-up:
-# a hang loses nothing). Use its own B, e.g. B=~/ogles2-build/m68k-sync.
+# a hang loses nothing). Use its own B, e.g. B=~/ogles2-build-pi3/m68k-sync.
 CFLAGS := -std=gnu99 -O2 -Wall -Wextra -Wno-unused-parameter -fno-strict-aliasing $(CPU) -mcrt=clib2 \
           $(EXTRA_CFLAGS)
 INC    := -Iinclude -I$(B)/gen/include -Iogles2 -I$(B)/gen/ogles2
@@ -40,7 +40,7 @@ LIB_SRC   := ogles2/library.c ogles2/log.c ogles2/context.c ogles2/device.c ogle
              ogles2/state.c ogles2/display.c ogles2/job.c ogles2/frame.c ogles2/program.c \
              ogles2/draw.c ogles2/v3dp.c ogles2/blake3.c ogles2/texture.c \
              ogles2/buffer.c ogles2/compiler.c ogles2/etc1.c ogles2/fbo.c ogles2/copy.c ogles2/share.c \
-             ogles2/debug.c ogles2/vc4keys.c
+             ogles2/debug.c ogles2/vc4keys.c ogles2/v3d/backend_v3d.c
 # Library files that use v3dcore directly
 V3D_USERS := device job draw v3dp texture buffer fbo share
 GEN_LIB   := $(B)/gen/ogles2/dispatch_table.c $(B)/gen/ogles2/stubs.c
@@ -309,7 +309,7 @@ builtin-shaders: $(B)/tools/mkshaders
 # ---- the test programs' binaries (plan 8.2): the GLSL of tests/common,
 # compiled by v3dglslc (host build) and named <hash>.v3dp, as the runtime
 # looks them up. Packages ship $(B)/v3dp/*.v3dp next to the tests.
-V3DGLSLC ?= $(HOME)/ogles2-build/v3dglslc/host/v3dglslc
+V3DGLSLC ?= $(HOME)/ogles2-build-pi3/v3dglslc/host/v3dglslc
 .PHONY: test-v3dp
 test-v3dp: $(B)/v3dp/.stamp
 $(B)/v3dp/.stamp: $(wildcard tests/common/*.h) tools/v3dp_tests/emit.c v3dp/v3dp_hashname.py \

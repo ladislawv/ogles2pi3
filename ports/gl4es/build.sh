@@ -8,7 +8,7 @@
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 TC=${TC:-$HOME/amiga-gcc-install}
 GL4ES_SRC=${GL4ES_SRC:-$HOME/gl4es}
 GL4ES_COMMIT=ec16bedd8819c475326f4f1a3063772c6d986e06 # the plan's reference (dev/fetch_external.sh)

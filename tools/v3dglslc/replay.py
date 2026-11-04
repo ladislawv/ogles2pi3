@@ -166,7 +166,7 @@ def run(job):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=os.path.expanduser(os.environ.get("OUT", "~/ogles2-build/v3dglslc")))
+    ap.add_argument("--out", default=os.path.expanduser(os.environ.get("OUT", "~/ogles2-build-pi3/v3dglslc")))
     ap.add_argument("--jobs", type=int, default=24)
     ap.add_argument("--libs", default="tool", help="comma list, \"tool\" or \"all\"")
     ap.add_argument("--extra-flags", default="")

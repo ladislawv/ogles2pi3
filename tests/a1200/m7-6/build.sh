@@ -11,10 +11,10 @@ PKG=$1
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../.." && pwd)
 if [ "${SYNC:-0}" = 1 ]; then
-    B=${B:-$HOME/ogles2-build/m68k-sync}
+    B=${B:-$HOME/ogles2-build-pi3/m68k-sync}
     make -C "$REPO" -j8 B="$B" EXTRA_CFLAGS=-DOGLES2_LOG_SYNC > /dev/null
 else
-    B=${B:-$HOME/ogles2-build/m68k}
+    B=${B:-$HOME/ogles2-build-pi3/m68k}
     make -C "$REPO" -j8 B="$B" > /dev/null
 fi
 make -C "$REPO" B="$B" test-v3dp > /dev/null

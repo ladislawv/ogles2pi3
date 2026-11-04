@@ -11,6 +11,7 @@
 #include <proto/dos.h>
 #include <libraries/ogles2.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 
 void ogles2_error(struct OGLES2Context *ctx, GLenum error)
 {
@@ -305,24 +306,13 @@ const GLubyte *ogles2_glGetString(struct OGLES2Context *ctx, GLenum name)
     case GL_VENDOR:
         return (const GLubyte *)"ogles2.library";
     case GL_RENDERER:
-        return (const GLubyte *)ogles2_device_renderer();
+        return (const GLubyte *)ogles2_backend->renderer();
     case GL_VERSION: /* must begin "OpenGL ES 2.0" (plan section 7.10) */
         return (const GLubyte *)"OpenGL ES 2.0 ogles2.library 1.3";
     case GL_SHADING_LANGUAGE_VERSION: /* must begin "OpenGL ES GLSL ES 1.00" */
         return (const GLubyte *)"OpenGL ES GLSL ES 1.00";
-    case GL_EXTENSIONS:
-        return (const GLubyte *)"GL_OES_element_index_uint GL_OES_compressed_ETC1_RGB8_texture GL_EXT_texture_format_BGRA8888 "
-                                 "GL_OES_mapbuffer GL_EXT_blend_minmax GL_OES_draw_elements_base_vertex "
-                                 "GL_OES_rgb8_rgba8 GL_OES_packed_depth_stencil GL_OES_fbo_render_mipmap "
-                                 "GL_EXT_discard_framebuffer GL_OES_texture_npot GL_EXT_read_format_bgra "
-                                 "GL_EXT_texture_filter_anisotropic GL_EXT_texture_lod_bias GL_SGIS_texture_lod "
-                                 "GL_ARB_texture_mirror_clamp_to_edge GL_OES_standard_derivatives "
-                                 "GL_OES_get_program_binary GL_OES_texture_float GL_OES_texture_half_float "
-                                 "GL_OES_texture_half_float_linear GL_OES_depth_texture GL_ARB_texture_rectangle "
-                                 "GL_EXT_debug_marker GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_s3tc "
-                                 "GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5 GL_EXT_clip_control "
-                                 "GL_EXT_draw_buffers GL_NV_fbo_color_attachments GL_OES_required_internalformat "
-                                 "GL_EXT_color_buffer_half_float";
+    case GL_EXTENSIONS: /* the backend's (ogles2/backend.h) */
+        return (const GLubyte *)ogles2_backend->caps->extensions;
     default:
         ogles2_error(ctx, GL_INVALID_ENUM);
         return 0;

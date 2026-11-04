@@ -3,7 +3,7 @@
 #   usage: build_m68k.sh        -> $OUT/v3dglslc (and v3dglslc.stripped)
 # Needs the Mesa objects first: replay.py (default --libs tool).
 set -u
-OUT=${OUT:-$HOME/ogles2-build/v3dglslc}
+OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
 TC=${M68K_TC:-$HOME/amiga-gcc162-install}
 P=$TC/bin/m68k-amigaos-
 H="$(dirname "$(readlink -f "$0")")"

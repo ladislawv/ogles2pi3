@@ -8,7 +8,7 @@
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
-V3DGLSLC=${V3DGLSLC:-$HOME/ogles2-build/v3dglslc/host/v3dglslc}
+V3DGLSLC=${V3DGLSLC:-$HOME/ogles2-build-pi3/v3dglslc/host/v3dglslc}
 W=$(mktemp -d)
 cp "$HERE/clear_mrt.vert" "$HERE/clear_mrt.frag" "$W/"
 (cd "$W" && "$V3DGLSLC" -o . clear_mrt.vert clear_mrt.frag > log.txt 2>&1) || { cat "$W/log.txt"; exit 1; }

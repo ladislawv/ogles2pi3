@@ -12,7 +12,7 @@
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 TC=${TC:-$HOME/amiga-gcc-install}
 SDL68K_SRC=${SDL68K_SRC:-$HOME/sdl2-msn}
 SDL68K_COMMIT=3632f48dc4d085355954322ae452ecc7b007ebc6 # 2026-10-06, SDL 2.33.0 (Aminet SDL_68k 2026-10-07)

@@ -9,6 +9,7 @@
  * from both GCC and vbcc programs (plan section 6.3).
  */
 #include "ogles2_internal.h"
+#include "backend.h"
 
 
 static ULONG cap_bit(GLenum cap)
@@ -580,10 +581,10 @@ static int lookup(struct OGLES2Context *ctx, GLenum pname, struct value *v)
         return 1;
     /* Mesa's V3D limits (v3d_limits.h): V3D_MAX_LINE_WIDTH, V3D_MAX_POINT_SIZE. */
     case GL_ALIASED_LINE_WIDTH_RANGE:
-        v->kind = K_FLOAT; v->n = 2; v->f[0] = 1.0f; v->f[1] = 32.0f;
+        v->kind = K_FLOAT; v->n = 2; v->f[0] = 1.0f; v->f[1] = ogles2_backend->caps->line_width_max;
         return 1;
     case GL_ALIASED_POINT_SIZE_RANGE:
-        v->kind = K_FLOAT; v->n = 2; v->f[0] = 1.0f; v->f[1] = 512.0f;
+        v->kind = K_FLOAT; v->n = 2; v->f[0] = 1.0f; v->f[1] = ogles2_backend->caps->point_size_max;
         return 1;
     case GL_LINE_WIDTH:
         v->kind = K_FLOAT; v->n = 1; v->f[0] = s->line_width;
@@ -604,7 +605,7 @@ static int lookup(struct OGLES2Context *ctx, GLenum pname, struct value *v)
      * clipper works in 1/256 pixel, V3D_COORD_SHIFT is 6). dEQP's reference
      * context asks for it in every test that compares against it. */
     case GL_SUBPIXEL_BITS:
-        v->kind = K_INT; v->n = 1; v->i[0] = 4;
+        v->kind = K_INT; v->n = 1; v->i[0] = ogles2_backend->caps->subpixel_bits;
         return 1;
     /* The compiler's, as its gl_MaxVertexUniformVectors and
      * gl_MaxFragmentUniformVectors say (they must match: dEQP-GLES2
@@ -612,13 +613,13 @@ static int lookup(struct OGLES2Context *ctx, GLenum pname, struct value *v)
      * 4096 vec4, less what Mesa keeps for itself. V3D_MAX_FS_INPUTS / 4
      * varyings. */
     case GL_MAX_VERTEX_UNIFORM_VECTORS:
-        v->kind = K_INT; v->n = 1; v->i[0] = 4088;
+        v->kind = K_INT; v->n = 1; v->i[0] = ogles2_backend->caps->max_vs_uniform_vectors;
         return 1;
     case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
-        v->kind = K_INT; v->n = 1; v->i[0] = 4095;
+        v->kind = K_INT; v->n = 1; v->i[0] = ogles2_backend->caps->max_fs_uniform_vectors;
         return 1;
     case GL_MAX_VARYING_VECTORS:
-        v->kind = K_INT; v->n = 1; v->i[0] = 16;
+        v->kind = K_INT; v->n = 1; v->i[0] = ogles2_backend->caps->max_varyings;
         return 1;
     case GL_VIEWPORT:
         v->kind = K_INT; v->n = 4;
@@ -631,7 +632,7 @@ static int lookup(struct OGLES2Context *ctx, GLenum pname, struct value *v)
             v->i[k] = ctx->scissor[k];
         return 1;
     case GL_MAX_VIEWPORT_DIMS:
-        v->kind = K_INT; v->n = 2; v->i[0] = v->i[1] = OGLES2_MAX_VIEWPORT;
+        v->kind = K_INT; v->n = 2; v->i[0] = v->i[1] = ogles2_backend->caps->max_viewport;
         return 1;
     case GL_GENERATE_MIPMAP_HINT:
         v->kind = K_INT; v->n = 1; v->i[0] = (GLint)s->generate_mipmap_hint;

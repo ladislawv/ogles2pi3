@@ -29,6 +29,7 @@
 #include <proto/exec.h>
 #include <string.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 #include "v3d_context.h"
 #include "v3d_clbuf.h"
 #include "v3d_hw.h"
@@ -40,7 +41,7 @@
 extern v3d_u32 g_v3d_cl_generation; /* v3d_frame.c: bumped whenever a control list restarts */
 
 #define MAX_LEVELS 13 /* 4096 = 2^12 */
-#define MAX_SIZE   4096
+#define MAX_SIZE   ((int)ogles2_backend->caps->max_texture_size) /* the backend's (backend.h) */
 
 /* The images of one face (a 2D texture has one). */
 struct OGLES2Face
@@ -498,8 +499,8 @@ static struct OGLES2Texture *bound(struct OGLES2Context *ctx, struct OGLES2TexSt
 
 /* The largest anisotropy (the sampler's 2, 4, 8 or 16) and LOD bias (its
  * s8.8 field holds more; Mesa's v3d screen offers 15). */
-#define MAX_ANISOTROPY 16.0f
-#define MAX_LOD_BIAS   15.0f
+#define MAX_ANISOTROPY (ogles2_backend->caps->max_anisotropy)
+#define MAX_LOD_BIAS   (ogles2_backend->caps->max_lod_bias)
 
 /* A parameter given as `i` (glTexParameteri*) or `f` (glTexParameterf*):
  * enums and levels read i, the float parameters f (GL converts either way). */

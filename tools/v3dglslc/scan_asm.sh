@@ -5,7 +5,7 @@
 #   usage: scan_asm.sh [GCC 6 source root, default ~/check/src: PiStorm3D 29.1 driver]
 D="$(dirname "$(readlink -f "$0")")"
 C="$D/check_saves_asm.py"
-B=${OUT_ROOT:-$HOME/ogles2-build}
+B=${OUT_ROOT:-$HOME/ogles2-build-pi3}
 
 # GCC 16.2: the Mesa sources of the compiler module and v3dglslc.
 out=$B/asm-gcc16.2

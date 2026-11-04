@@ -5,7 +5,7 @@
 # the independent reader (v3dp/v3dp_dump.py).
 #   usage: compare_v3dp.sh
 set -u
-OUT=${OUT:-$HOME/ogles2-build/v3dglslc}
+OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
 T="$(dirname "$(readlink -f "$0")")"
 V="$(dirname "$(dirname "$(dirname "$T")")")/v3dp"
 W=$OUT/v3dpcmp && rm -rf $W && mkdir -p $W/host $W/m68k && cd $W

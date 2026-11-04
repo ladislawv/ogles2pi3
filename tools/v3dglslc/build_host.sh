@@ -5,7 +5,7 @@
 # the reference the m68k ones must match byte for byte (test/compare_v3dp.sh).
 #   usage: build_host.sh            -> $OUT/host/v3dglslc
 set -u
-OUT=${OUT:-$HOME/ogles2-build/v3dglslc}
+OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
 H="$(dirname "$(readlink -f "$0")")"
 V="$(dirname "$(dirname "$H")")/v3dp"
 M=~/mesa-build/mesa

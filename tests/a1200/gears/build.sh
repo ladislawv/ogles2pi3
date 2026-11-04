@@ -6,7 +6,7 @@ set -eu
 PKG=$1
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../.." && pwd)
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 make -C "$REPO" -j8 B="$B" > /dev/null
 B="$B" bash "$REPO/tests/corpus/build_corpus.sh" > /dev/null 2>&1 || { echo "build_corpus.sh failed"; exit 1; }
 mkdir -p "$PKG/libs" "$PKG/bin"

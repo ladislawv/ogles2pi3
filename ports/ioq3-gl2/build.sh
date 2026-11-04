@@ -16,7 +16,7 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 ln -sfn "$(cd "$HERE/../.." && pwd)" "$HOME/.ogles2-repo" # a path without the space of "- CPP"
 REPO=$HOME/.ogles2-repo
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 TC=${TC:-$HOME/amiga-gcc-install}
 IOQ3_WANT_UPSTREAM=1
 . "$HERE/../ioq3/sources.sh" # IOQ3_SRC, IOQ3_UP_SRC: pinned clones unless set

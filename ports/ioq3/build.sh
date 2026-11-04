@@ -14,7 +14,7 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 ln -sfn "$(cd "$HERE/../.." && pwd)" "$HOME/.ogles2-repo" # a path without the space of "- CPP"
 REPO=$HOME/.ogles2-repo
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 TC=${TC:-$HOME/amiga-gcc-install}
 . "$HERE/sources.sh" # IOQ3_SRC
 GL4ES_SRC=${GL4ES_SRC:-$HOME/gl4es}

@@ -6,7 +6,7 @@ set -eu
 PKG=$1
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../.." && pwd)
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 
 make -C "$REPO" -j8 B="$B" "$B/amictl/amictld" > /dev/null
 cp "$B/amictl/amictld" "$PKG/"

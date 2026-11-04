@@ -4,9 +4,9 @@
 # written (with its variants) or failed, and why (the driver's message).
 #   usage: vc4_corpus.sh      -> $OUT/vc4corpus/<set>/*.vc4p, *.log
 set -u
-OUT=${OUT:-$HOME/ogles2-build/v3dglslc}
-B=${B:-$HOME/ogles2-build/m68k}
-RW=${RW:-$HOME/ogles2-build/release/work}
+OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
+RW=${RW:-$HOME/ogles2-build-pi3/release/work}
 T="$(dirname "$(readlink -f "$0")")"
 REPO="$(dirname "$(dirname "$(dirname "$T")")")"
 V3DGLSLC=$OUT/host/v3dglslc

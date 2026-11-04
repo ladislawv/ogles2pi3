@@ -8,8 +8,8 @@ set -eu
 PKG=$1
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../../.." && pwd)
-B=${B:-$HOME/ogles2-build/m68k-sync}
-V=${V:-$HOME/ogles2-build/v3dglslc}
+B=${B:-$HOME/ogles2-build-pi3/m68k-sync}
+V=${V:-$HOME/ogles2-build-pi3/v3dglslc}
 
 make -C "$REPO" -j8 B="$B" EXTRA_CFLAGS=-DOGLES2_LOG_SYNC > /dev/null
 make -C "$REPO" B="$B" test-v3dp > /dev/null

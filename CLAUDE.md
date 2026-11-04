@@ -14,7 +14,8 @@ behaving as release 1.3.3 (PI3_PLAN §5.1).
 ## Build machine
 
 Ubuntu 24.04, on Windows inside WSL; everything builds there, the repository may live on a
-Windows drive (`/mnt/c/...`), output goes to `~/ogles2-build`; the release archive is built
+Windows drive (`/mnt/c/...`), output goes to `~/ogles2-build-pi3` (this repository's own root,
+never `~/ogles2-build`, which the `ogles2` checkout builds into; PI3_PLAN §10); the release archive is built
 by `bash release/build_release.sh` (CONTRIBUTING.md, "Building"; `sdl` adds the SDL archive); `... dist` also refreshes the
 committed archives in `release/dist/` (only when a release changes: ~10 MB of history each). Set it up with the scripts in
 [`dev/host-setup/`](dev/host-setup/README.md) in the order its README gives (the toolchains

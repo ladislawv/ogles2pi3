@@ -24,10 +24,10 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 ln -sfn "$(cd "$HERE/../.." && pwd)" "$HOME/.ogles2-repo"
 REPO=$HOME/.ogles2-repo
 HERE=$REPO/tests/corpus
-B=${B:-$HOME/ogles2-build/m68k}
+B=${B:-$HOME/ogles2-build-pi3/m68k}
 CORPUS_SRC=${CORPUS_SRC:-$HOME/corpus-src}
 FRAMES=${FRAMES:-60}
-V3DGLSLC=${V3DGLSLC:-$HOME/ogles2-build/v3dglslc/host/v3dglslc}
+V3DGLSLC=${V3DGLSLC:-$HOME/ogles2-build-pi3/v3dglslc/host/v3dglslc}
 TC=${TC:-$HOME/amiga-gcc-install}
 OUT=$B/corpus
 DEMOS=$CORPUS_SRC/demos
