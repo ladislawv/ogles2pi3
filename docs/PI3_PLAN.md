@@ -16,7 +16,8 @@ repository; Mesa at the pinned commit `74b6971` (`~/mesa-build/mesa` in WSL, wit
 Linux (`raspberrypi/linux`, branch `rpi-6.12.y`: device trees, `drivers/gpu/drm/vc4/`,
 `raspberrypi-firmware.h`, `bcm2711_defconfig`); Raspberry Pi's userland (`hello_fft`); Broadcom's
 reference guide (`VideoCoreIV-AG100-R.pdf`, 2013-09-16, §2.2). The source is named where it
-matters. **(verify)** marks what is still inferred; it is checked in the phase named, and the mark
+matters. Facts marked **(Pi 3)** were measured on the test Pi 3 on 2026-11-04 (§6, §10).
+**(verify)** marks what is still inferred; it is checked in the phase named, and the mark
 replaced by the result.
 
 Names: phases are P0 to P7 (§8); decisions about the Pi 3 work are PD1, PD2, ... (§9), not to be
@@ -62,29 +63,29 @@ confused with the phases or with DEVELOPMENT_PLAN's D1, D2, ...
 
 | | Pi 4 (`v3dcore`) | Pi 3 (BCM2837, BCM2837B0; Zero 2 W: RP3A0) |
 |---|---|---|
-| 3D core | V3D 4.2, `IDENT0` = `0x04443356` | VideoCore IV 3D, V3D 2.1: `IDENT0` = `0x02443356` (Linux's `V3D_EXPECTED_IDENT0`: "V3D", tech version 2); `IDENT1` holds VPM size, semaphores, TMUs and QPUs per slice, slices, revision (`vc4_regs.h`) |
-| Device-tree node | `/v3dbus/v3d@7ec04000`, compatible `brcm,2711-v3d` (`bcm2711-rpi-ds.dtsi`) | `/soc/v3d@7ec00000`, compatible `brcm,vc4-v3d` in Raspberry Pi's tree (`bcm270x.dtsi`, `status = "disabled"` until the KMS overlay enables it; upstream: `brcm,bcm2835-v3d`, `reg <0x7ec00000 0x1000>`) |
-| Registers (ARM) | `0xFEC00000` | `0x3FC00000`; `/soc` `ranges` = `<0x7e000000 0x3f000000 0x1000000>` (`bcm2837.dtsi`) |
+| 3D core | V3D 4.2, `IDENT0` = `0x04443356` | VideoCore IV 3D, V3D 2.1: `IDENT0` = `0x02443356` (Linux's `V3D_EXPECTED_IDENT0`: "V3D", tech version 2); `IDENT1` holds VPM size, semaphores, TMUs and QPUs per slice, slices, revision (`vc4_regs.h`). **(Pi 3)** `IDENT0` `0x02443356`, `IDENT1` `0xc1102431` (revision 1, 3 slices, 4 QPUs and 2 TMUs per slice, 16 semaphores, VPM 12 KB), `IDENT2` `0x00000121` |
+| Device-tree node | `/v3dbus/v3d@7ec04000`, compatible `brcm,2711-v3d` (`bcm2711-rpi-ds.dtsi`) | `/soc/v3d@7ec00000`, compatible `brcm,vc4-v3d` in Raspberry Pi's tree (`bcm270x.dtsi`, `status = "disabled"` until the KMS overlay enables it; upstream: `brcm,bcm2835-v3d`, `reg <0x7ec00000 0x1000>`). **(Pi 3)** as said: `reg` `0x7ec00000`, size `0x1000`; `okay` with the overlay, `disabled` without it, and the 3D core works either way, so the backend's choice (§5.1) does not look at `status` |
+| Registers (ARM) | `0xFEC00000` | `0x3FC00000`; `/soc` `ranges` = `<0x7e000000 0x3f000000 0x1000000>` (`bcm2837.dtsi`; **(Pi 3)** plus `<0x40000000 0x40000000 0x1000>`, the ARM-local block) |
 | Registers (68k, Emu68) | `0xF2C00000` (`v3d_regs.h`: Emu68 maps `/soc` from `0xF2000000`) | the same `0xF2C00000` by the same rule (`map_peripheral_ranges` maps `/soc` and, on BCM2711 only, `/scb`) (verify P5) |
-| Mailbox | `0xFE00B880`, found through `/aliases/mailbox` and `/soc`'s `ranges` (`v3d_device.c`) | `0x3F00B880` (`bcm283x.dtsi`); the alias exists (`bcm270x-rpi.dtsi`) |
-| GPU addresses | identity (bus = physical) | **bus = `0xC0000000` + physical** (`/soc` `dma-ranges` = `<0xc0000000 0x00000000 0x3f000000>`, `bcm2837.dtsi`): the uncached alias, which the ARM side must use because it cannot see the VideoCore's L2 (`hello_fft` uses the same alias on the Pi 2 and 3). Every address the GPU or the firmware reads gets it, **the mailbox's message buffer too** (`v3d_device.c` passes the 68k address as is) |
-| Power | `power_on_V3D`: PM_GRAFX and the ASB bridges at BCM2711's addresses (ASB `0x7EC11000`) | Raspberry Pi's Linux powers V3D through the firmware: power domain `RPI_POWER_DOMAIN_V3D` = 10 (`SET_DOMAIN_STATE`, `0x00038030`); older user-space code uses `SET_ENABLE_QPU` (`0x00030012`, `hello_fft`). Direct PM/ASB writes are possible too (Linux's `bcm2835-power`: `PM_GRAFX` `0x10C`, `ASB_V3D_S_CTRL`/`M_CTRL` `0x08`/`0x0C` at BCM2835's ASB, whose address comes from the PM node) (verify P1: which works) |
-| RAM | 1 to 8 GB | 3B, 3B+: 1 GB; 3A+, Zero 2 W: 512 MB. Shared with the firmware's `gpu_mem`, Emu68's JIT cache and its RTG memory (`vc4-mem`) |
+| Mailbox | `0xFE00B880`, found through `/aliases/mailbox` and `/soc`'s `ranges` (`v3d_device.c`) | `0x3F00B880` (`bcm283x.dtsi`); the alias exists (`bcm270x-rpi.dtsi`; **(Pi 3)** `/soc/mailbox@7e00b880`) |
+| GPU addresses | identity (bus = physical) | **bus = `0xC0000000` + physical** (`/soc` `dma-ranges` = `<0xc0000000 0x00000000 0x3f000000>`, `bcm2837.dtsi`; **(Pi 3)** plus `<0x7e000000 0x3f000000 0x1000000>` for the peripherals): the uncached alias, which the ARM side must use because it cannot see the VideoCore's L2 (`hello_fft` uses the same alias on the Pi 2 and 3). Every address the GPU or the firmware reads gets it, **the mailbox's message buffer too** (`v3d_device.c` passes the 68k address as is). **(Pi 3)** `ALLOCATE_MEMORY` with flag `0x4` and `LOCK_MEMORY` gave bus `0xFE001000` (physical `0x3E001000`, in `gpu_mem`); the GPU used it as is |
+| Power | `power_on_V3D`: PM_GRAFX and the ASB bridges at BCM2711's addresses (ASB `0x7EC11000`) | **(Pi 3) the mailbox's `SET_ENABLE_QPU` (`0x00030012`, value 1), as `hello_fft`**: the registers answer at once. `SET_DOMAIN_STATE` (`0x00038030`, domain 10, `RPI_POWER_DOMAIN_V3D`) alone reports the domain on, but the registers read `0xdeadbeef` (Linux also enables the V3D clock, `vc4_v3d.c`, `clk_prepare_enable`); `GET_DOMAIN_STATE` keeps answering 0 after `SET_ENABLE_QPU`. Direct PM/ASB writes (Linux's `bcm2835-power`) not needed |
+| RAM | 1 to 8 GB | 3B, 3B+: 1 GB; 3A+, Zero 2 W: 512 MB. Shared with the firmware's `gpu_mem`, Emu68's JIT cache and its RTG memory (`vc4-mem`). **(Pi 3)** Linux sees 905 MB with `gpu_mem` 76 MB (the KMS default), 855 MB with `gpu_mem=128` |
 | CPU for Emu68 | Cortex-A72, 1.5 to 1.8 GHz | Cortex-A53: 1.2 GHz (3B), 1.4 GHz (3B+, 3A+), 1.0 GHz (Zero 2 W) |
-| Shader cores | 8 QPUs, QPU v4 | 12 QPUs (3 slices of 4), QPU v2; the V3D clock depends on the model (verify: `vcgencmd measure_clock v3d`) |
+| Shader cores | 8 QPUs, QPU v4 | 12 QPUs (3 slices of 4), QPU v2; **(Pi 3, 3B)** V3D clock 300 MHz (`vcgencmd measure_clock v3d`, both boots; core 400 MHz, ARM 1200 MHz) |
 | Vertex input | VPM; formats converted by the hardware | VPM through the vertex DMA; **formats converted in the vertex shader**: `vc4_vs_key.attr_formats[8]`; at most 8 attributes (`max_inputs = 8`) |
 | Blending | fixed-function | **in the fragment shader**, which reads the tile buffer (`vc4_nir_lower_blend.c`): the whole blend state (`pipe_rt_blend_state`: enable, equations, factors, colour mask), the logic op and the target's format (`color_format`: RGBA, BGRA, 565) are in the fragment key |
 | Depth, stencil | per-draw packets | the fragment key has `depth_enabled`, `stencil_enabled`, `stencil_twoside`, `stencil_full_writemasks`; the stencil set-up words come in the uniform stream (`QUNIFORM_STENCIL`) |
-| Command lists | V3D 4.x packets; the render list loops over supertiles by itself | VC4 packets, `src/broadcom/cle/vc4_packet.xml` (packers `v3d_packet_v21_pack.h`); the same scheme (binner, tile lists, renderer, semaphores), other encoding; **the render list names every tile** (coordinates, loads, branch to its bin list, stores). Linux builds it in the kernel; Mesa keeps an MIT copy of that code (`src/gallium/drivers/vc4/kernel/vc4_render_cl.c`, for the simulator) |
+| Command lists | V3D 4.x packets; the render list loops over supertiles by itself | VC4 packets, `src/broadcom/cle/vc4_packet.xml` (packers `v3d_packet_v21_pack.h`); the same scheme (binner, tile lists, renderer, semaphores), other encoding; **the render list names every tile** (coordinates, loads, branch to its bin list, stores). Linux builds it in the kernel; Mesa keeps an MIT copy of that code (`src/gallium/drivers/vc4/kernel/vc4_render_cl.c`, for the simulator). **(Pi 3) Mesa's copy is older than Linux's and wrong on the hardware:** it puts `CLEAR_COLORS` and the None-mode store after `TILE_RENDERING_MODE_CONFIG`, and then every job stores the previous job's clear colour (all tiles); Linux puts them first, which works (`tests/pi3_probe`, `clearseq`, `--variant=mesa`). The clear values are taken when the rendering-mode packet is processed. `vc4core` follows Linux's order |
 | Binner memory | tile state, tile allocation, overflow | tile state 48 bytes and allocation 32 bytes per tile, the allocation 4 KB-aligned after the state (`kernel/vc4_validate.c`); **the tile state's pointers have 28 bits: state, allocation and overflow must lie in one 256 MB-aligned segment** (Linux `vc4_v3d.c`, `bin_bo_alloc`); overflow through `BPOA`/`BPOS`, `INTCTL`'s `OUTOMEM` bit |
 | Shader state | GL shader state record, v4 | GL shader state record, v2; three shaders per program as now (fragment, vertex, coordinate); the vertex shader is compiled for the fragment shader it feeds (`vc4_vs_key.fs_inputs`) |
-| Textures | UIF, UBLINEAR, LT; many formats; TFU | T and LT tilings (LT for small levels), sizes up to 2048 (`max_texture_2d_size`); types (guide, table 18): RGBA8888, RGBX8888, RGBA4444, RGBA5551, RGB565, LUMINANCE, ALPHA, LUMALPHA, ETC1, S16F, S8, S16, BW1, A4, A1, **RGBA64 (16-bit float per channel, filtered, read as two 32-bit results)**, RGBA32R and YUYV422R (raster). Mesa uses RGBA8888 (also for RGBX, BGRA and depth Z24S8, by swizzle and scaling), RGBA4444, RGBA5551, RGB565, ALPHA (A8, L8, I8, R8 by swizzle), LUMALPHA (LA8, RG8) and ETC1 (`vc4_formats.c`). Base addresses in 4 KB units (`VC4_TEX_P0_OFFSET`); mip levels stored before level 0, levels above 0 padded to powers of two. Raster textures: the guide supports them, Mesa says the Pi cannot sample them (`vc4_state.c`) (verify P1). **No TFU** |
+| Textures | UIF, UBLINEAR, LT; many formats; TFU | T and LT tilings (LT for small levels), sizes up to 2048 (`max_texture_2d_size`); types (guide, table 18): RGBA8888, RGBX8888, RGBA4444, RGBA5551, RGB565, LUMINANCE, ALPHA, LUMALPHA, ETC1, S16F, S8, S16, BW1, A4, A1, **RGBA64 (16-bit float per channel, filtered, read as two 32-bit results)**, RGBA32R and YUYV422R (raster). Mesa uses RGBA8888 (also for RGBX, BGRA and depth Z24S8, by swizzle and scaling), RGBA4444, RGBA5551, RGB565, ALPHA (A8, L8, I8, R8 by swizzle), LUMALPHA (LA8, RG8) and ETC1 (`vc4_formats.c`). Base addresses in 4 KB units (`VC4_TEX_P0_OFFSET`); mip levels stored before level 0, levels above 0 padded to powers of two. Raster textures: the guide supports them, Mesa says the Pi cannot sample them (`vc4_state.c`) (verify P1, not yet tried: needs a texturing shader from a Mesa dump). **No TFU** |
 | Wrap modes | repeat, clamp, mirror, mirror-clamp | repeat, clamp to edge, mirror, clamp to border (`translate_wrap`) |
 | Texture LOD | bias, min/max LOD in the sampler | none in the sampler: a mip-level count only (`MIPLVLS`); a first level other than 0 by an explicit LOD in the shader (`force_first_level`) or a copy (`vc4_state.c`) |
-| Render targets | RGBA8, RGB565, RGBA4, RGB5A1, RGBA16F; up to 4 (MRT) | **one** colour buffer, RGBA8888 (BGRA by the shader's swizzle) or RGB565 (`vc4_formats.c`); 64×64 tiles, 32×32 with 4× MSAA (`vc4_job.c`); stored as raster, T or LT; up to 4096 (the shaded vertex format's 12.4 fixed point, `kernel/vc4_validate.c`), textures up to 2048 |
-| Raster stores | stride field | no stride field: a raster image's stride is its width rounded up to 4 pixels × bytes per pixel (`kernel/vc4_validate.c`). An RTG bitmap is rendered into directly by setting the frame's width to `BytesPerRow` / 4 and clipping to the visible width (verify P1) |
+| Render targets | RGBA8, RGB565, RGBA4, RGB5A1, RGBA16F; up to 4 (MRT) | **one** colour buffer, RGBA8888 (BGRA by the shader's swizzle) or RGB565 (`vc4_formats.c`); 64×64 tiles, 32×32 with 4× MSAA (`vc4_job.c`); stored as raster, T or LT; up to 4096 (the shaded vertex format's 12.4 fixed point, `kernel/vc4_validate.c`), textures up to 2048; **(Pi 3)** Mesa reports 2048 for the viewport and renderbuffers |
+| Raster stores | stride field | no stride field: a raster image's stride is its width rounded up to 4 pixels × bytes per pixel (`kernel/vc4_validate.c`). **(Pi 3)** confirmed: frames 129 and 130 wide are stored with a stride of 132 pixels, the padding pixels written too (with the clear colour), nothing beyond the frame's height. So an RTG bitmap is rendered into directly, with the frame's width set to `BytesPerRow` / 4 and the clip window to the visible width, when `BytesPerRow` is a multiple of 16; otherwise into a buffer of our own and copied (the padding columns of the bitmap get the clear colour) |
 | Indices | 8, 16, 32 bit | 8 and 16 bit; Mesa makes a 16-bit shadow copy of 32-bit indices, and caps the index at 65535 (`vc4_draw.c`); non-indexed draws are split into pieces of at most 65535 vertices (GFXH-515) |
-| Limits | DEVELOPMENT_PLAN §7.10 | from `vc4_screen.c`: 8 vertex attributes, 8 varyings, 16 samplers, textures 2048, points 1 to 512, lines 1 to 32, 4× MSAA (`VC4_MAX_SAMPLES`); the rest from the Pi's `glGetIntegerv` (P0) |
+| Limits | DEVELOPMENT_PLAN §7.10 | from `vc4_screen.c`: 8 vertex attributes, 8 varyings, 16 samplers, textures 2048, points 1 to 512, lines 1 to 32, 4× MSAA (`VC4_MAX_SAMPLES`). **(Pi 3)** Mesa vc4 (26.2.2, `tests/pi3/ref/mesa_limits.c`): vertex attributes 8, uniform vectors 4088 (vertex) and 4095 (fragment) as on the Pi 4, **varyings 8** (the Pi 4 front end says 16: the backend gives it), texture units 16 per stage and 32 combined, texture, cube map and renderbuffer 2048, viewport 2048×2048, subpixel bits 4, points 1 to 512, lines 1 to 32, `MAX_SAMPLES` 4, draw buffers 1, read format RGBA/UNSIGNED_BYTE; every precision (vertex and fragment, low to high float) range 127 and 23 bits, int range 31/30 |
 | Errata | — | those Mesa works around: HW-2116 (flush before `0x1ef0` draws in a job), GFXH-515/SW-5891 (16-bit binner indices), two-vertex line loops (drawn as lines), HW-2905 (early Z with a full-resolution load), HW-2726 (zero-size points) (`vc4_draw.c`, `vc4_emit.c`, `vc4_state.c`) |
 | Speed | — | unknown until measured (P6). On paper the shader throughput is close (12 QPUs at the Pi 3's V3D clock against 8 at 500 MHz); against the Pi 3: blending in the shader, CPU tiling without the TFU, Emu68 on an A53 |
 
@@ -110,10 +111,26 @@ The extension string (`ogles2/context.c`) has 33 names. The Pi 4 keeps its list 
 Pi 3 the library keeps every one too (PD6), as below. Mesa vc4's own string on the Pi 3 (P0) is
 the reference for what the hardware does natively.
 
+**(Pi 3) Mesa vc4's ES 2.0 string** (Mesa 26.2.2, `tests/pi3/ref/mesa_limits.c`): of our 33 it
+has `OES_compressed_ETC1_RGB8_texture`, `OES_packed_depth_stencil`, `EXT_blend_minmax`,
+`EXT_texture_format_BGRA8888`, `OES_texture_npot`, `OES_fbo_render_mipmap`, `OES_depth_texture`,
+`OES_element_index_uint`, `OES_mapbuffer`, `EXT_discard_framebuffer`, `EXT_read_format_bgra`,
+`OES_get_program_binary` (with no binary format), `OES_required_internalformat`,
+`OES_rgb8_rgba8`, `OES_draw_elements_base_vertex`, the four S3TC/DXT names, and
+`EXT_draw_buffers`/`NV_fbo_color_attachments` with one draw buffer. The S3TC names (and ASTC)
+come from Mesa decompressing on the CPU at upload, as PD6 does. It lacks
+`OES_standard_derivatives` (below), the half-float and float texture names,
+`EXT_color_buffer_half_float`, `EXT_texture_lod_bias`, `EXT_texture_filter_anisotropic`,
+`SGIS_texture_lod`, `ARB_texture_mirror_clamp_to_edge`, `EXT_clip_control` and
+`EXT_debug_marker` (it has `KHR_debug`). `ARB_texture_rectangle` is a desktop name (Mesa's GL
+2.1 string has it). Beyond ours it has `OES_vertex_half_float`, `EXT_frag_depth`,
+`EXT_shadow_samplers`, `EXT_texture_border_clamp`, `APPLE_texture_max_level`, `EXT_sRGB`,
+`OES_vertex_array_object` and others not planned here.
+
 | Kind | Extensions | How |
 |---|---|---|
 | Front end only | `OES_mapbuffer`, `EXT_discard_framebuffer`, `EXT_read_format_bgra`, `OES_get_program_binary`, `EXT_debug_marker`, `OES_required_internalformat`, `OES_rgb8_rgba8`, `OES_draw_elements_base_vertex` | as on the Pi 4 (base vertex: the attribute addresses offset per draw, as `vc4_draw.c` does) |
-| Native | `OES_compressed_ETC1_RGB8_texture`, `OES_packed_depth_stencil`, `EXT_blend_minmax`, `EXT_texture_format_BGRA8888`, `OES_texture_npot`, `OES_fbo_render_mipmap`, `OES_standard_derivatives`, `OES_depth_texture`, `ARB_texture_rectangle` | ETC1 texture type; depth is always 24 + 8 bits; min/max in the shader's blending; BGRA by swizzle; NPOT with padded mip levels; derivatives by QPU rotations (`ntq_fddx`); depth sampled as Z24S8 through RGBA8888 with the compare in the shader; `QUNIFORM_TEXRECT_SCALE_X/Y` |
+| Native | `OES_compressed_ETC1_RGB8_texture`, `OES_packed_depth_stencil`, `EXT_blend_minmax`, `EXT_texture_format_BGRA8888`, `OES_texture_npot`, `OES_fbo_render_mipmap`, `OES_standard_derivatives`, `OES_depth_texture`, `ARB_texture_rectangle` | ETC1 texture type; depth is always 24 + 8 bits; min/max in the shader's blending; BGRA by swizzle; NPOT with padded mip levels; derivatives by QPU rotations within each 2×2 quad (`ntq_fddx`, `ntq_fddy`: complete, used by Mesa's GL 2.1, but the driver has never reported the capability, once `PIPE_CAP_SM3`, now `fragment_shader_derivatives`, so Mesa's ES string lacks the extension; dEQP-GLES2 has no derivative cases, so `tests/m6_ext` checks it, P3); depth sampled as Z24S8 through RGBA8888 with the compare in the shader; `QUNIFORM_TEXRECT_SCALE_X/Y` |
 | Near native | `OES_element_index_uint` | the 16-bit copy works while a draw's indices span at most 65536 (rebased by the minimum index); a wider draw is split by the CPU into pieces whose vertices are copied and re-indexed (Mesa does not do this: indices above 65535 break there) |
 | Emulated, texture data | `EXT_texture_compression_s3tc`, `EXT_texture_compression_dxt1`, `ANGLE_texture_compression_dxt3`, `ANGLE_texture_compression_dxt5` | decoded on the CPU at upload (Mesa's `util/format` S3TC decoders, MIT) into RGBA8888, or RGB565/RGBA5551 for DXT1; 4 to 8 times the memory |
 | Emulated, half-float textures | `OES_texture_half_float`, `OES_texture_half_float_linear` | the RGBA64 texture type (filtered by the hardware); the shader reads two results (RG, BA) and unpacks halves: a vc4 compiler change (key bit per sampler). RGB, LUMINANCE, ALPHA, LUMINANCE_ALPHA expanded to RGBA at upload |
@@ -136,9 +153,10 @@ textures, the texture-parameter ones, then multiple render targets, then half-fl
   `vc4_qir.h`, key set-up in `vc4_program.c`, uniforms in `vc4_uniforms.c`, draws in
   `vc4_draw.c`, state in `vc4_emit.c`/`vc4_state.c`, jobs in `vc4_job.c`, layout in
   `vc4_resource.c`, tiling in `vc4_tiling*.c`), its `kernel/` copy of the kernel's render list
-  and validation (MIT), `src/broadcom/cle/vc4_packet.xml`, `src/broadcom/drm-shim/vc4_noop.c`.
-  `external/reference/mesa/` is a sparse checkout without the vc4 directories:
-  `dev/fetch_external.sh` gets them added.
+  and validation (MIT; older than Linux's: its render list clears late on the hardware, §2
+  "Command lists"), `src/broadcom/cle/vc4_packet.xml`, `src/broadcom/drm-shim/vc4_noop.c`.
+  `dev/fetch_external.sh` fetches them into `external/reference/mesa/` (with
+  `include/drm-uapi/vc4_drm.h` and `docs/drivers/vc4.rst`; done 2026-11-04).
 - Linux's `drivers/gpu/drm/vc4/` (binner memory, overflow, power, caches). **Licences differ per
   file:** `vc4_v3d.c` and `vc4_regs.h` are GPL-2.0-only, `vc4_gem.c`, `vc4_render_cl.c` and
   `vc4_irq.c` MIT. GPL files are read for behaviour, never copied (PD9). Copied code comes from
@@ -312,7 +330,9 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   the VC4 backend in `ogles2/vc4/` (MIT); `v3dcore/` and `vc4core/` beside them.
 - **Choice at start** (`ogles2_device_open`, at the first context, as the device is opened now):
   `/v3dbus` with a `brcm,2711-v3d` node takes V3D 4.2; `/soc/v3d@7ec00000` (`brcm,vc4-v3d` or
-  `brcm,bcm2835-v3d`) takes VC4; then `IDENT0` must match. Neither: the context fails, as on a
+  `brcm,bcm2835-v3d`, whatever its `status`: `disabled` without the KMS overlay, §2) takes VC4;
+  then `IDENT0` must match (read after power-on: before it, the Pi 3's registers read
+  `0xdeadbeef`). Neither: the context fails, as on a
   machine without a GPU today. Emu68 hands AmigaOS the firmware's device tree (§7) (verify P5).
 - **Acceptance of P2:** the Pi 4 build behaves exactly as 1.3.3: the A1200 regression packages,
   dEQP-GLES2's must-pass list and the benchmarks (gears, Quake III) give the same results and the
@@ -386,6 +406,19 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    - **reference:** `dtoverlay=vc4-kms-v3d` (it enables the V3D node; Mesa's vc4 works);
    - **bare:** the overlay commented out (the V3D node stays `disabled`, no kernel driver owns the
      3D core), `gpu_mem=128` for the firmware's allocator.
+
+   **The test Pi (2026-11-04):** a Raspberry Pi 3 Model B Rev 1.2 (revision `a02082`, BCM2837,
+   1 GB) at `192.168.137.191`, user `pi`; Raspberry Pi OS 64-bit with the desktop (Debian 13
+   "trixie", labwc), kernel `6.18.50+rpt-rpi-v8`, firmware `a8698392` (2026-09-14), Mesa
+   `26.2.2-1~bpo13+0~rpt1`. From WSL `ssh pi3` (`~/.ssh/config`, key `~/.ssh/id_ed25519`); `sudo`
+   asks for the password (the scripts take it in `PI_PASS`; it is not written in this
+   repository). Installed for the tests: `mesa-utils`, `kmscube`, `libegl-dev`, `libgles-dev`;
+   the work lives in `~/pi3/` on the Pi. `tests/pi3/boot.sh reference|bare|status` switches the
+   boot set-up (two lines of `config.txt`, the original kept as `config.txt.ogles2pi3-orig`) and
+   reboots the Pi; the Pi is left in the reference boot, as it was. **The Pi's power supply sags:**
+   `vcgencmd get_throttled` reads `0x50000` (under-voltage and throttling have occurred) minutes
+   after each boot, and the Pi rebooted once in the middle of dEQP (the run went on, §6.1). A
+   stronger supply is wanted before timing anything.
 1. **References from Mesa** (reference boot):
    - Mesa vc4's extension string and limits (`eglinfo`, `glGetIntegerv`), `IDENT0..2` (§6.2's
      probe can read them in the bare boot);
@@ -398,6 +431,30 @@ Everything that can run here runs here first (the developer, 2026-11-03).
      compiler; the Pi's own Mesa may differ. Mesa's binning lists carry relocations (filled in by
      the kernel) and the render list is the kernel's, so the references are shaders, list contents
      and pictures, not lists ready to run.
+
+   **Done (2026-11-04):**
+   - the string and limits: `tests/pi3/ref/mesa_limits.c` (surfaceless EGL, built on the Pi),
+     results in §2 ("Limits") and §2.1;
+   - one reference picture and its dump: `tests/pi3/ref/mesa_triangle.c` (a triangle in a
+     128×128 renderbuffer, `VC4_DEBUG=qpu,cl,qir,shaderdb`): the QPU code as hex, uniforms named
+     in the QIR, the binning list decoded; the probe (§6.2) uses them;
+   - **the dEQP-GLES2 baseline:** `tests/pi3/deqp/build.sh` builds `deqp-gles2` in WSL from the
+     sources `ports/deqp` uses, with the same lists of sources and a small platform of our own
+     (`tcuPi3Platform.cpp`: an EGL pbuffer on Mesa's surfaceless platform, so the desktop is left
+     alone), because the CTS's CMake wants SPIRV-Tools, glslang and Vulkan's layers present just
+     to configure; `tests/pi3/deqp/run.sh` runs it on the Pi with the A1200 runs' options, in
+     parts that resume after a reboot (`remaining.py`). The must-pass list (17,165 cases) took
+     about 15 minutes: **16,906 pass, 234 not supported, 20 fail, 5 quality warnings**
+     (`rasterization`). The failures: `texture.mipmap.2d.basic.*_non_square` 6,
+     `texture.filtering.2d.nearest_mipmap_*_linear_{mirror,repeat}_rgba8888` 4,
+     `texture.wrap.clamp_clamp_nearest_npot_etc1`, `clipping.line.wide_line_clip_viewport_{center,corner}`,
+     `clipping.triangle_vertex.clip_three.clip_neg_x_and_pos_x_and_neg_x_neg_y_neg_z`,
+     `depth_stencil_clear.depth_stencil_masked`, `fragment_ops.scissor.outside_render_line`,
+     `multisample.depth` and `multisample.sample_coverage_invert` (in 4× MSAA),
+     `uniform_api.random.3` and `.79`. Not supported: `fbo` 91, `shaders` 90, `texture` 41,
+     `clip_control` 8, `debug_marker` 3, `multisampled_render_to_texture` 1. These are the
+     hardware's (and Mesa's) baseline for P6: the Pi 3 backend is to fail no case beyond them,
+     except documented deviations.
 2. **The bare GPU from user space** (bare boot, root): the 3D core's registers mapped through
    `/dev/mem` (Raspberry Pi's arm64 kernel has `CONFIG_STRICT_DEVMEM` unset); power and GPU memory
    from the firmware mailbox (`/dev/vcio`, `CONFIG_BCM_VCIO=y`): `SET_DOMAIN_STATE` or
@@ -407,6 +464,19 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    CMA buffer, whose physical address user space cannot learn without a driver. Registers are read
    only after power-on. This is the position `vc4core` is in under Emu68, with gdb and fast
    rebuilds.
+
+   **Done (2026-11-04), `tests/pi3_probe/`** (`pi3_probe.c`, the lists and checks; `plat.h` with
+   `plat_linux.c`, the platform, so that the m68k build swaps one file; `build.sh` builds it in
+   WSL, statically linked). In the bare boot, as root, all pass: power with `SET_ENABLE_QPU`
+   (`SET_DOMAIN_STATE` alone leaves the registers reading `0xdeadbeef`); `IDENT0..2`; a
+   render-only clear of a 128×128 RGBA8888 raster frame (4 tiles; about 10 µs); **a triangle
+   from Mesa's QPU code in our own binning and render lists, identical to Mesa's picture (0 of
+   16,384 pixels differ)**, binning about 3 µs and rendering 25 µs; raster stores 128, 129 and
+   130 pixels wide (§2, "Raster stores"). Found on the way: the clear values must come before
+   `TILE_RENDERING_MODE_CONFIG` (§2, "Command lists"). The GPU memory's CPU mapping through
+   `/dev/mem` is a device mapping (memory Linux does not own): aligned 32-bit accesses only, so
+   the probe copies word by word (a `memcpy` or `memset` there may fault). Not tried yet: raster
+   texture sampling (§2, "Textures").
 3. **`vc4core` on Linux with its own tests** (`tests/pi3/`, Linux programs calling `vc4core`
    directly, shaders from S1 in WSL): clears, each primitive type, attributes in every format,
    indices (8, 16, 32-bit with splitting), textures (each type, T and LT, NPOT, mipmaps by
@@ -508,16 +578,30 @@ Everything that can run here runs here first (the developer, 2026-11-03).
   library with two; PD8: the work lives here until finished and tested, then goes into `ogles2`);
   PD7 waits for P2's counts. The A1200's PiStorm32-lite takes a Pi 3.
 
+**Done (2026-11-04), on the test Pi 3 (§6.0):**
+- P0: the Pi reachable from WSL (`ssh pi3`); its model, OS, kernel, firmware, Mesa, `gpu_mem` and
+  clocks recorded (§6.0, §2); Mesa vc4 renders (`tests/pi3/ref/`); its ES 2.0 string and limits
+  (§2.1, §2 "Limits"); `IDENT0..2` and the device tree (`/soc` `ranges` and `dma-ranges`, the
+  V3D node, the mailbox alias) read (§2); both boot set-ups made and switched by
+  `tests/pi3/boot.sh`; `fetch_external.sh` fetches the vc4 sources; **the dEQP-GLES2 baseline**:
+  16,906 of 17,165 pass, 20 fail (§6.1).
+- P1, its goal reached: `tests/pi3_probe/` powers the bare 3D core (`SET_ENABLE_QPU`), clears,
+  and draws a triangle with Mesa's shaders in our own lists, identical to Mesa's picture (§6.2).
+  Found: Mesa's `kernel/` render list clears a job late on the hardware (Linux's order works,
+  §2 "Command lists"); `SET_DOMAIN_STATE` alone does not power the registers (§2 "Power");
+  raster strides round up to 4 pixels and the padding is written (§2 "Raster stores"); the V3D
+  node's `status` cannot be relied on (§5.1); Mesa's vc4 lacks `OES_standard_derivatives` by
+  policy, not hardware (§2.1).
+- The Pi's power supply sags (under-voltage flagged after every boot, one reboot under load):
+  to be replaced before P3's speed measurements (§6.0).
+
 **Next:**
-1. P0: the Pi 3 with Raspberry Pi OS reachable (host name, user, ssh key from WSL); record its
-   model, firmware (`vcgencmd version`), kernel and Mesa versions, `gpu_mem`, the V3D clock; check
-   that Mesa vc4 runs `es2gears`; record its extension string and limits.
-2. P0: the boot set-ups; `IDENT0..2` and the device tree (`/soc` `dma-ranges`, the V3D node, the
-   mailbox alias) read on the Pi; `fetch_external.sh` gets the vc4 directories.
-3. P2 on the build machine and the A1200 with the Pi 4 card, beside the Pi work: first the
-   variant-count probe (the numbers PD7 needs), then the backend interface and the MIT rewrite of
-   the shared front end's PiStorm3D parts.
-4. P4's S1 part in WSL (Mesa with vc4, the VC4 fake device, the hook; the Pi 4's `.v3dp` files
-   unchanged): can start after item 2.
-5. P0: dEQP-GLES2 with Mesa vc4 on the Pi 3: the baseline.
-6. P1: the Linux probe (`tests/pi3_probe/`).
+1. P1's remainder: raster texture sampling (and T/LT textures) with a texturing shader taken
+   from a Mesa dump (a textured `mesa_triangle`), in the probe.
+2. P2 on the build machine and the A1200 with the Pi 4 card: first the variant-count probe (the
+   numbers PD7 needs), then the backend interface and the MIT rewrite of the shared front end's
+   PiStorm3D parts.
+3. P4's S1 part in WSL (Mesa with vc4, the VC4 fake device, the hook; the Pi 4's `.v3dp` files
+   unchanged): can start now.
+4. P3: `vc4core` on Linux, starting from the probe's lists (Linux's render-list order), with its
+   tests in `tests/pi3/` against Mesa's pictures.

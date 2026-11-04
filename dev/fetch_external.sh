@@ -16,6 +16,10 @@ fetch() {
     shift 3
     local d=$DIR/$name
     if [ -d "$d/.git" ] && [ "$(git -C "$d" rev-parse HEAD 2>/dev/null)" = "$commit" ]; then
+        # The paths may have grown since (Mesa's vc4 for PI3_PLAN.md).
+        if [ $# -gt 0 ]; then
+            printf '%s\n' "$@" | git -C "$d" sparse-checkout set --no-cone --stdin
+        fi
         echo "$name: already at ${commit:0:7}"
         return
     fi
@@ -41,7 +45,8 @@ fetch minigl-library-v3d $MINIGL 7a07368c57381b2ac81ceeb6bdf1245d7d4ba07b
 fetch MiniGL_Library_68k $MINIGL b899c4779354d180ae17a4206077fe32287cd850
 fetch Warp3DPiStorm4 https://github.com/SteffenHaeuser/Warp3DPiStorm4.git 541fc31141e8ee4005b58d5ed44d28a28db96917
 fetch reference/mesa https://gitlab.freedesktop.org/mesa/mesa.git 74b69717c52b73494200e11e2dd97aa346d552dd \
-    /src/broadcom/ /src/gallium/drivers/v3d/ /include/drm-uapi/v3d_drm.h /docs/drivers/v3d.rst /docs/license.rst
+    /src/broadcom/ /src/gallium/drivers/v3d/ /include/drm-uapi/v3d_drm.h /docs/drivers/v3d.rst /docs/license.rst \
+    /src/gallium/drivers/vc4/ /include/drm-uapi/vc4_drm.h /docs/drivers/vc4.rst
 fetch reference/sdl-os4 https://github.com/AmigaPorts/SDL.git fca1fa7792c9441cce3ee43dddd4ef038600d9ac \
     /src/video/amigaos4/ /LICENSE.txt /docs/README-amigaos4.md
 fetch reference/gl4es https://github.com/ptitSeb/gl4es.git ec16bedd8819c475326f4f1a3063772c6d986e06 \
