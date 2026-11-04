@@ -175,9 +175,9 @@ def vc4_variant(r):
         k["point_sprite_mask"], k["ubo_1_size"] = r.u32(), r.u32()
         k["ucp_enables"] = r.u8()
         for f in ("blend_enable rgb_func rgb_src_factor rgb_dst_factor alpha_func "
-                  "alpha_src_factor alpha_dst_factor colormask").split():
+                  "alpha_src_factor alpha_dst_factor colormask draw_buffer").split():
             k[f] = r.u8()
-        r.pad(3)
+        r.pad(2)
     else:
         k["attr_formats"] = r.u32s(8)
         k["is_coord"], k["per_vertex_point_size"] = r.u8(), r.u8()

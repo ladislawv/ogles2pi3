@@ -66,6 +66,7 @@ struct renderonly;
 struct pipe_screen *vc4_screen_create(int fd, const struct pipe_screen_config *config, struct renderonly *ro);
 void vc4_variants_install(FILE *f); /* vc4_variants.c */
 void vc4_variants_capture(int on);
+extern uint8_t vc4_draw_buffer; /* Mesa patch 0016 */
 static int run_pairs_vc4(int argc, char **argv, int first);
 #endif
 
@@ -655,6 +656,23 @@ static int draw_vc4_reference(GLuint p)
         }
     }
     _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+    /* A fragment shader that writes gl_FragData[1] or up: the variants that
+     * take gl_FragData[k] as the colour (patch 0016), one per output it
+     * writes; the library draws attachment k with variant k. */
+    {
+        GET_CURRENT_CONTEXT(ctx);
+        struct gl_shader_program *sp = _mesa_lookup_shader_program(ctx, p);
+        struct gl_linked_shader *fsh = sp ? sp->_LinkedShaders[MESA_SHADER_FRAGMENT] : NULL;
+        int k;
+        for (k = 1; k < 4; k++) {
+            if (!fsh || !fsh->Program || !(fsh->Program->info.outputs_written & BITFIELD64_BIT(FRAG_RESULT_DATA0 + k)))
+                continue;
+            vc4_draw_buffer = (uint8_t)k;
+            _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+            _mesa_Flush();
+        }
+        vc4_draw_buffer = 0;
+    }
     _mesa_Flush(); /* submits the job to the fake device */
     for (i = 0; i < 8; i++)
         _mesa_DisableVertexAttribArray(i);
@@ -825,6 +843,10 @@ int main(int argc, char **argv)
         {
             GET_CURRENT_CONTEXT(ctx);
             ctx->Extensions.OES_standard_derivatives = GL_TRUE;
+            /* EXT_draw_buffers, emulated (§2.1): the library reports four
+             * draw buffers on the Pi 3 too, and draws them one per pass
+             * (patch 0016's draw_buffer in the fragment key). */
+            ctx->Const.MaxDrawBuffers = 4;
         }
         /* The driver's own limits for now (one draw buffer, 8 varyings);
          * the library's for the Pi 3 are settled in P4. */

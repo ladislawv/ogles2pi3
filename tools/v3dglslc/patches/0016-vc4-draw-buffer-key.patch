@@ -1,0 +1,84 @@
+ogles2: EXT_draw_buffers on VC4's one colour buffer (docs/PI3_PLAN.md §2.1).
+The fragment key gets draw_buffer: gl_FragData[draw_buffer] is the colour
+(output setup and the blending in the shader), gl_FragColor in every pass;
+ogles2.library draws a framebuffer with N attachments in N passes, one
+variant each. v3dglslc sets it through vc4_draw_buffer while it compiles a
+program's variants for gl_FragData[1..3]. Applies after 0015. Off (0),
+nothing changes.
+
+--- a/src/gallium/drivers/vc4/vc4_qir.h
++++ b/src/gallium/drivers/vc4/vc4_qir.h
+@@ -332,6 +332,11 @@
+         bool sample_alpha_to_coverage;
+         bool sample_alpha_to_one;
+         uint8_t logicop_func;
++        /* ogles2 (docs/PI3_PLAN.md §2.1, EXT_draw_buffers on one colour
++         * buffer): the output gl_FragData[draw_buffer] is the colour; the
++         * library draws a framebuffer with N attachments in N passes.
++         * gl_FragColor is the colour in every pass. */
++        uint8_t draw_buffer;
+         uint32_t point_sprite_mask;
+         uint32_t ubo_1_size;
+         uint8_t ucp_enables;
+--- a/src/gallium/drivers/vc4/vc4_program.c
++++ b/src/gallium/drivers/vc4/vc4_program.c
+@@ -1578,11 +1578,13 @@
+                         add_output(c, loc + i, var->data.location, i);
+ 
+                 if (c->stage == QSTAGE_FRAG) {
+-                        switch (var->data.location) {
+-                        case FRAG_RESULT_COLOR:
+-                        case FRAG_RESULT_DATA0:
++                        if (var->data.location == FRAG_RESULT_COLOR ||
++                            var->data.location ==
++                            FRAG_RESULT_DATA0 + c->fs_key->draw_buffer) {
+                                 c->output_color_index = loc;
+-                                break;
++                                continue;
++                        }
++                        switch (var->data.location) {
+                         case FRAG_RESULT_DEPTH:
+                                 c->output_position_index = loc;
+                                 break;
+@@ -1771,7 +1773,10 @@
+                  * bit value.
+                  */
+                 if (c->stage == QSTAGE_FRAG && instr->num_components == 4) {
+-                        assert(offset == c->output_color_index);
++                        /* ogles2 (patch 0016): another draw buffer's
++                         * gl_FragData, not this variant's colour. */
++                        if (offset != c->output_color_index)
++                                break;
+                         for (int i = 0; i < 4; i++) {
+                                 c->sample_colors[i] =
+                                         qir_MOV(c, ntq_get_src(c, instr->src[0],
+@@ -2759,6 +2764,10 @@
+         }
+ }
+ 
++/* ogles2 (v3dglslc): the fragment key's draw_buffer while it compiles a
++ * program's variants for gl_FragData[1..3] (docs/PI3_PLAN.md §2.1). */
++uint8_t vc4_draw_buffer;
++
+ static void
+ vc4_update_compiled_fs(struct vc4_context *vc4, enum mesa_prim prim_mode)
+ {
+@@ -2786,6 +2795,7 @@
+         key->is_lines = (prim_mode >= MESA_PRIM_LINES &&
+                          prim_mode <= MESA_PRIM_LINE_STRIP);
+         key->blend = vc4->blend->rt[0];
++        key->draw_buffer = vc4_draw_buffer;
+         if (vc4->blend->logicop_enable) {
+                 key->logicop_func = vc4->blend->logicop_func;
+         } else {
+--- a/src/gallium/drivers/vc4/vc4_nir_lower_blend.c
++++ b/src/gallium/drivers/vc4/vc4_nir_lower_blend.c
+@@ -575,7 +575,7 @@
+         unsigned loc = nir_intrinsic_io_semantics(intr).location;
+ 
+         if (loc != FRAG_RESULT_COLOR &&
+-            loc != FRAG_RESULT_DATA0) {
++            loc != FRAG_RESULT_DATA0 + c->fs_key->draw_buffer) {
+                 return false;
+         }
+ 

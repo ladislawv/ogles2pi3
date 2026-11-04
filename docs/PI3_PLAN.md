@@ -136,7 +136,7 @@ come from Mesa decompressing on the CPU at upload, as PD6 does. It lacks
 | Emulated, half-float textures | `OES_texture_half_float`, `OES_texture_half_float_linear` | the RGBA64 texture type (filtered by the hardware); the shader reads two results (RG, BA) and unpacks halves: a vc4 compiler change (key bit per sampler). RGB, LUMINANCE, ALPHA, LUMINANCE_ALPHA expanded to RGBA at upload |
 | Emulated, float textures | `OES_texture_float` | stored as RGBA64 half floats (range ±65504, 11-bit precision): a documented deviation (accepted by the developer, 2026-11-03). Not planned: exact storage as raw 32-bit values in RGBA8888 texels decoded in the shader |
 | Emulated, in the shader | `ARB_texture_mirror_clamp_to_edge` (the coordinate's absolute value, then the hardware's clamp to edge); `EXT_texture_lod_bias` (a uniform added through the TMU's bias input); `SGIS_texture_lod` (base and max level through `MIPLVLS` and a first-level copy as Mesa makes; min/max LOD by an LOD computed from derivatives and an explicit-LOD lookup); `EXT_texture_filter_anisotropic` (extra lookups along the major axis from the derivatives, up to the maximum reported, at least 2) | key bits per sampler and vc4 compiler changes (§4.1); the cost falls only on programs that use them |
-| Emulated, render targets | `EXT_draw_buffers`, `NV_fbo_color_attachments` | **one pass per colour attachment:** the framebuffer object's job is binned and rendered once per attachment, each pass with a fragment variant that writes that attachment's output (key: output index) and loads the depth and stencil the job started with; only the last pass stores them. Costs N times the work; needs a vc4 compiler change (Mesa's vc4 has one colour output, `max_outputs` 1 for fragment shaders: the compiler's screen reports four draw buffers, and the key picks one output) |
+| Emulated, render targets | `EXT_draw_buffers`, `NV_fbo_color_attachments` | **one pass per colour attachment:** the framebuffer object's job is binned and rendered once per attachment, each pass with a fragment variant that writes that attachment's output (key: output index) and loads the depth and stencil the job started with; only the last pass stores them. Costs N times the work; needs a vc4 compiler change (Mesa's vc4 has one colour output, `max_outputs` 1 for fragment shaders: the compiler's screen reports four draw buffers, and the key picks one output). **Compiler side done (2026-11-04):** patch 0016 adds the fragment key's `draw_buffer` (`gl_FragData[draw_buffer]` is the colour, `gl_FragColor` in every pass, the other outputs dropped), `v3dglslc -g 21` reports four draw buffers and compiles one fragment variant per `gl_FragData[k]` written; the format's key has the byte (FORMAT.md 1.1) |
 | Emulated, render targets | `EXT_color_buffer_half_float` | the fragment shader packs two half floats into each 32-bit tile-buffer pixel and blends them itself (VC4 blends in the shader anyway): RGBA16F as two packed images (RG, BA) through the passes above, sampled as packed textures and unpacked in the shader (filtering done in the shader). The largest change of all: a new packed colour format in `vc4_nir_lower_blend.c` |
 | Emulated, depth | `EXT_clip_control` | origin by the front end's flips as now; `ZERO_TO_ONE` by a twin of patch 0013 (z lerped towards w by a uniform) in the vc4 vertex and coordinate shaders (verify P4: how VC4 clips z) |
 
@@ -225,6 +225,8 @@ textures, the texture-parameter ones, then multiple render targets, then half-fl
   request names when it first needs it (`v3d_screen_create` or `vc4_screen_create`, each on its
   fake device); a machine only ever asks for its own.
 - **Patches:** the v3d ones (0001 to 0014) stay as they are. New, numbered on from 0015:
+  - done: 0015 (the hook, below) and 0016 (the fragment key's `draw_buffer` for
+    `EXT_draw_buffers`, §2.1);
   - the variant hook (twin of 0009) in `vc4_get_compiled_shader` (`vc4_program.c`), called before
     `vc4_bo_alloc_shader` with stage, key, prog data and QPU code; the driver's in-memory cache
     (`fs_cache`, `vs_cache`) bypassed while it is set (vc4 has no disk cache);
@@ -324,9 +326,9 @@ textures, the texture-parameter ones, then multiple render targets, then half-fl
   pairs at hand (`v42_unchanged.sh`'s), 35 compile and are written. `OES_standard_derivatives`
   is enabled for VC4 in `v3dglslc` (§2.1: compiled, never reported by the driver); without it
   Boing 2026's `ball` and `room` (`fwidth`) failed; `ball`'s fragment shader is 944 instructions
-  on VC4. The one failure is `mrt.frag` (`gl_FragData[1]`: the driver has one draw buffer),
-  which waits for the multiple-render-target emulation (§2.1). No register-allocation failure
-  in the set.
+  on VC4. `mrt.frag` (`gl_FragData[0..3]`: the driver has one draw buffer) failed until patch
+  0016 (§2.1): now **all 36 compile**, `mrt` with a fragment variant per draw buffer (13
+  instructions each). No register-allocation failure in the set.
 - The Pi 4's extra variant files (`.v3dw`: 32-bit samplers, `.v3da`: alpha to coverage) stay; on
   VC4 the extra files are whatever PD7 decides.
 
@@ -675,7 +677,7 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
    canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the
    compiler (8 varyings, draw buffers per the emulation); the corpus compiled for VC4 as a
-   whole is done (35 of 36, §4.3); next the draw-buffers emulation in the compiler (§2.1).
+   whole is done (36 of 36, §4.3, with the draw-buffers variants of patch 0016).
 4. P3: `vc4core` on Linux, starting from the probe's lists (Linux's render-list order, the reset
    at take-over, `ERRSTAT` checks), with its tests in `tests/pi3/` against Mesa's pictures; early
    in it a long soak (hours of mixed draws) and the cause of the not-reset core's lost tiles.

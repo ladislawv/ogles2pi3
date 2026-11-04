@@ -141,7 +141,7 @@ static void serialize(enum qstage stage, const struct vc4_key *key, uint32_t key
         s_u8(&b, k->blend.alpha_src_factor);
         s_u8(&b, k->blend.alpha_dst_factor);
         s_u8(&b, k->blend.colormask);
-        s_u8(&b, 0);
+        s_u8(&b, k->draw_buffer); /* patch 0016 */
         s_u8(&b, 0);
         s_u8(&b, 0);
     } else {

@@ -303,7 +303,9 @@ per input `u8 slot`, `u8 swizzle`, zero padding to 4 bytes.
 `sample_alpha_to_coverage`, `sample_alpha_to_one`, `logicop_func`; `u32 point_sprite_mask`,
 `u32 ubo_1_size`; `u8 ucp_enables`, then the blend state (`pipe_rt_blend_state`) as `u8` each
 `blend_enable`, `rgb_func`, `rgb_src_factor`, `rgb_dst_factor`, `alpha_func`,
-`alpha_src_factor`, `alpha_dst_factor`, `colormask`; `u8 pad[3]`.
+`alpha_src_factor`, `alpha_dst_factor`, `colormask`; `u8 draw_buffer` (`tools/v3dglslc/patches/0016`:
+the `gl_FragData[draw_buffer]` that is the colour, for `EXT_draw_buffers` drawn one attachment
+per pass; `gl_FragColor` is the colour in every pass), `u8 pad[2]`.
 
 **Prog data, every stage** (`struct vc4_compiled_shader`, what the draw needs): `u8` each
 `fs_threaded` (the shader record's single-thread flag is its inverse), `num_inputs`,
