@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <string.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 #include "v3d_device.h"
 #include "v3d_context.h"
 #include "v3d_frame.h"
@@ -487,7 +488,6 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
         }
         im->code_total = off;
     } else {
-        V3DDevice *dev = ogles2_device();
         struct v3d_mem *m = alloc(im, sizeof(*m));
         ULONG off = 0, clen;
         if (!m)
@@ -496,7 +496,7 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
             vars[k].code_offset = off;
             off += vars[k].code_bytes;
         }
-        if (!off || v3d_mem_alloc(dev, m, off) < 0)
+        if (!off || ogles2_mem_alloc(m, off) < 0)
             FAIL("out of GPU memory for the code", 0, ~0UL);
         im->code_mem = m;
         im->code_total = off;
@@ -525,7 +525,7 @@ struct OGLES2Image *ogles2_v3dp_load(const UBYTE *file, ULONG len, char *why, UL
 fail:
     if (im) {
         if (im->code_mem && im->code_mem->hostptr)
-            v3d_mem_free(ogles2_device(), im->code_mem);
+            ogles2_mem_free(im->code_mem);
         free_blocks(im);
         FreeVec(im);
     }
@@ -539,10 +539,10 @@ void ogles2_image_free(struct OGLES2Image *im, struct OGLES2Context *ctx)
     if (im->code_mem && im->code_mem->hostptr) {
         /* The GPU may still run this code in the open job: free it after
          * that job (v3d_frame_defer_free), or now. */
-        if (ctx && ctx->v3d && ctx->v3d->frame_active)
+        if (ctx && ctx->job_open)
             v3d_frame_defer_free(&ctx->v3d->frame, im->code_mem);
         else
-            v3d_mem_free(ogles2_device(), im->code_mem);
+            ogles2_mem_free(im->code_mem);
     }
     if (im->binary)
         FreeVec(im->binary);

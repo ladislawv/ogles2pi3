@@ -27,6 +27,7 @@
 #include <proto/exec.h>
 #include <string.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 #include "v3d_context.h"
 
 /* Every member takes the group's semaphore while there are two or more. */
@@ -94,7 +95,7 @@ struct OGLES2Context *ogles2_job_user(struct OGLES2Context *ctx, ULONG serial)
         return 0;
     m = ctx->share ? ctx->share->first : ctx;
     for (; m; m = ctx->share ? m->share_next : 0)
-        if ((m->v3d && m->v3d->frame_active && serial == m->job_serial) || (m->pend && serial == m->pend_serial))
+        if ((m->job_open && serial == m->job_serial) || (m->pend && serial == m->pend_serial))
             return m;
     return 0;
 }
@@ -107,7 +108,7 @@ void ogles2_share_defer_free(struct OGLES2Context *ctx, ULONG serial, struct v3d
     if ((user = ogles2_job_user(ctx, serial)) && user->v3d)
         v3d_frame_defer_free(&user->v3d->frame, m);
     else
-        v3d_mem_free(ogles2_device(), m);
+        ogles2_mem_free(m);
     memset(m, 0, sizeof(*m));
 }
 

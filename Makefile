@@ -40,9 +40,9 @@ LIB_SRC   := ogles2/library.c ogles2/log.c ogles2/context.c ogles2/device.c ogle
              ogles2/state.c ogles2/display.c ogles2/job.c ogles2/frame.c ogles2/program.c \
              ogles2/draw.c ogles2/v3dp.c ogles2/blake3.c ogles2/texture.c \
              ogles2/buffer.c ogles2/compiler.c ogles2/etc1.c ogles2/fbo.c ogles2/copy.c ogles2/share.c \
-             ogles2/debug.c ogles2/vc4keys.c ogles2/v3d/backend_v3d.c
+             ogles2/debug.c ogles2/vc4keys.c ogles2/v3d/backend_v3d.c ogles2/v3d/job_v3d.c
 # Library files that use v3dcore directly
-V3D_USERS := device job draw v3dp texture buffer fbo share
+V3D_USERS := device job draw v3dp texture buffer fbo share v3d/backend_v3d v3d/job_v3d
 GEN_LIB   := $(B)/gen/ogles2/dispatch_table.c $(B)/gen/ogles2/stubs.c
 CLIENT_SRC := client/ogles2_open.c client/agl.c
 GEN_CLIENT := $(B)/gen/client/agl_gen.c $(B)/gen/client/procaddr.c
@@ -90,13 +90,13 @@ $(B)/libv3dcore.a: $(V3D_OBJ)
 	$(AR) rcs $@ $^
 
 # ---- library
-$(V3D_USERS:%=$(B)/obj/ogles2/%.o): $(B)/obj/ogles2/%.o: ogles2/%.c ogles2/ogles2_internal.h $(V3D_HDR) $(GEN_STAMP) Makefile
+$(V3D_USERS:%=$(B)/obj/ogles2/%.o): $(B)/obj/ogles2/%.o: ogles2/%.c ogles2/ogles2_internal.h ogles2/backend.h $(V3D_HDR) $(GEN_STAMP) Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INC) -Iv3dcore/include -Iv3dcore/hw -c $< -o $@
 $(B)/obj/ogles2/start.o: ogles2/start.s
 	@mkdir -p $(dir $@)
 	$(CC) $(CPU) -c $< -o $@
-$(B)/obj/ogles2/%.o: ogles2/%.c ogles2/ogles2_internal.h $(GEN_STAMP) Makefile
+$(B)/obj/ogles2/%.o: ogles2/%.c ogles2/ogles2_internal.h ogles2/backend.h $(GEN_STAMP) Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 $(B)/obj/gen/%.o: $(B)/gen/ogles2/%.c $(GEN_STAMP) Makefile

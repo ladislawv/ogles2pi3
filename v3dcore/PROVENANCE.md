@@ -38,7 +38,7 @@ Each change is marked in the source with `ogles2:`.
 
 Still file-scope state, to move when first used: `hw/v3d_texture.c` (park list, pool),
 `hw/v3d_hw.c` (overflow scratch block), `hw/v3d_assembler.c` (assembler work buffers). Process-wide
-values that stay global on purpose for now: `g_v3d_cl_generation` (a monotonic cache key, safe to
-share), `g_v3d_requested_zbuffer_bits` (read only inside `v3d_context_init`, which ogles2 calls
+values that stay global on purpose for now: the control-list generation (a monotonic cache key, safe to
+share; ogles2's `ogles2_job_gen` since PI3_PLAN P2 step 2), `g_v3d_requested_zbuffer_bits` (read only inside `v3d_context_init`, which ogles2 calls
 under its library lock), `g_v3d_render_timeout_iterations` (set by the last context created; a
 per-context value comes with the job manager's multi-context work).

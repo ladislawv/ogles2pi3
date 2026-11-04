@@ -22,6 +22,7 @@
 #include <proto/exec.h>
 #include <string.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 #include "v3d_context.h"
 #include "v3d_frame.h"
 #include "v3d_hw.h"
@@ -611,7 +612,7 @@ ULONG ogles2_buffer_copy(struct OGLES2Context *ctx, struct OGLES2Buffer *b, ULON
     n = (b->size - phase - elem_bytes) / src_stride + 1;
     c = victim;
     c->dst_stride = (elem_bytes + 3) & ~3UL;
-    if (v3d_mem_alloc(ogles2_device(), &c->mem, c->dst_stride * n) < 0) {
+    if (ogles2_mem_alloc(&c->mem, c->dst_stride * n) < 0) {
         memset(c, 0, sizeof(*c));
         return 0;
     }

@@ -159,7 +159,7 @@ static void rb_free_storage(struct OGLES2Context *ctx, struct OGLES2Renderbuffer
         ogles2_texture_hidden_free(ctx, rb->color);
     rb->color = 0;
     if (rb->mem.hostptr)
-        v3d_mem_free(ogles2_device(), &rb->mem);
+        ogles2_mem_free(&rb->mem);
     memset(&rb->mem, 0, sizeof(rb->mem));
     rb->base = rb->ub = rb->bytes = 0;
 }
@@ -197,7 +197,7 @@ static BOOL rb_zs_storage(struct OGLES2Renderbuffer *rb)
     ULONG ub_w = 2 * v3d_utile_width((int)cpp), ub_h = 2 * v3d_utile_height((int)cpp);
     ULONG pw = (rb->w + 4 * ub_w - 1) / (4 * ub_w) * (4 * ub_w);
     ULONG ph = (rb->h + ub_h - 1) / ub_h * ub_h;
-    if (v3d_mem_alloc(ogles2_device(), &rb->mem, pw * ph * cpp + 4096) < 0)
+    if (ogles2_mem_alloc(&rb->mem, pw * ph * cpp + 4096) < 0)
         return FALSE;
     rb->base = ((ULONG)rb->mem.hostptr + 4095) & ~4095UL;
     rb->ub = ph / ub_h;
@@ -212,7 +212,7 @@ static BOOL rb_zs_storage(struct OGLES2Renderbuffer *rb)
  * render into an object finishes first (M6 overlap). */
 static void before_fb_change(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb)
 {
-    if (ctx->v3d && ctx->v3d->frame_active && ctx->job_fb == fb && fb)
+    if (ctx->job_open && ctx->job_fb == fb && fb)
         ogles2_job_flush(ctx, FALSE);
     if (ctx->pend && ctx->pend_fb)
         ogles2_job_finish(ctx);
@@ -225,7 +225,7 @@ static void before_rb_change(struct OGLES2Context *ctx, struct OGLES2Renderbuffe
     int a;
     if (ctx->pend && ctx->pend_fb)
         ogles2_job_finish(ctx);
-    if (!ctx->v3d || !ctx->v3d->frame_active || !fb)
+    if (!ctx->job_open || !fb)
         return;
     for (a = 0; a < NATT; a++)
         if (fb->att[a].type == GL_RENDERBUFFER && fb->att[a].rb == rb) {
@@ -251,7 +251,7 @@ static BOOL draws_into(const struct OGLES2Framebuffer *fb, const struct OGLES2Te
 
 void ogles2_fbo_texture_changing(struct OGLES2Context *ctx, struct OGLES2Texture *t)
 {
-    if (ctx->v3d && ctx->v3d->frame_active && draws_into(ctx->job_fb, t))
+    if (ctx->job_open && draws_into(ctx->job_fb, t))
         ogles2_job_flush(ctx, FALSE);
     if (ctx->pend && draws_into(ctx->pend_fb, t)) /* the running render writes it */
         ogles2_job_finish(ctx);
@@ -428,9 +428,9 @@ void ogles2_glGenRenderbuffers(struct OGLES2Context *ctx, GLsizei n, GLuint *ren
 static void fb_free(struct OGLES2Framebuffer *fb)
 {
     if (fb->pool_alloc.hostptr)
-        v3d_mem_free(ogles2_device(), &fb->pool_alloc);
+        ogles2_mem_free(&fb->pool_alloc);
     if (fb->pool_state.hostptr)
-        v3d_mem_free(ogles2_device(), &fb->pool_state);
+        ogles2_mem_free(&fb->pool_state);
     FreeVec(fb);
 }
 
@@ -769,14 +769,14 @@ void ogles2_glDiscardFramebufferEXT(struct OGLES2Context *ctx, GLenum target, GL
     }
     if (!ctx->draw_fb) {
         if (bits & (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL)) {
-            if (ctx->v3d && ctx->v3d->frame_active && !ctx->job_fb)
+            if (ctx->job_open && !ctx->job_fb)
                 ctx->job_discard |= OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL;
             else
                 ctx->zs_saved = FALSE;
         }
         return;
     }
-    if (ctx->v3d && ctx->v3d->frame_active && ctx->job_fb == ctx->draw_fb)
+    if (ctx->job_open && ctx->job_fb == ctx->draw_fb)
         ctx->job_discard |= bits;
     ctx->draw_fb->discarded |= bits;
 }
@@ -815,7 +815,7 @@ void ogles2_glDrawBuffersEXT(struct OGLES2Context *ctx, GLsizei n, const GLenum 
             ogles2_error(ctx, GL_INVALID_OPERATION);
             return;
         }
-        if (ctx->v3d && ctx->v3d->frame_active && !ctx->job_fb && bufs[0] != ctx->default_draw_buffer)
+        if (ctx->job_open && !ctx->job_fb && bufs[0] != ctx->default_draw_buffer)
             ctx->state_ver++; /* the write masks follow it (draw.c) */
         ctx->default_draw_buffer = bufs[0];
         ogles2_fb_update(ctx);
@@ -1048,18 +1048,18 @@ static BOOL pools(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb, struc
     if (fb->pool_tiles < tiles) {
         ogles2_job_finish(ctx); /* a running render may use the old pools */
         if (fb->pool_alloc.hostptr)
-            v3d_mem_free(ogles2_device(), &fb->pool_alloc);
+            ogles2_mem_free(&fb->pool_alloc);
         if (fb->pool_state.hostptr)
-            v3d_mem_free(ogles2_device(), &fb->pool_state);
+            ogles2_mem_free(&fb->pool_state);
         fb->pool_tiles = 0;
         /* sized for 32x32 tiles when the job's are smaller than 64x64; for
          * 32x16 ones (four 64-bit targets) as 32x32 over twice the height */
         v3d_frame_compute_pool_sizes(t->w, t->tile_h < 32 ? 2 * t->h : t->h, 16, t->tile_w < 64 || t->tile_h < 64,
                                      &zs, &ts, &ta, &tx, &ty);
-        if (v3d_mem_alloc(ogles2_device(), &fb->pool_alloc, ta + 4096) < 0)
+        if (ogles2_mem_alloc(&fb->pool_alloc, ta + 4096) < 0)
             return FALSE;
-        if (v3d_mem_alloc(ogles2_device(), &fb->pool_state, ts + 4096) < 0) {
-            v3d_mem_free(ogles2_device(), &fb->pool_alloc);
+        if (ogles2_mem_alloc(&fb->pool_state, ts + 4096) < 0) {
+            ogles2_mem_free(&fb->pool_alloc);
             return FALSE;
         }
         {

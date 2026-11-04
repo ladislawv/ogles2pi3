@@ -38,7 +38,6 @@
 #include "v3d_gpu_lock.h"
 #include "etc1.h"
 
-extern v3d_u32 g_v3d_cl_generation; /* v3d_frame.c: bumped whenever a control list restarts */
 
 #define MAX_LEVELS 13 /* 4096 = 2^12 */
 #define MAX_SIZE   ((int)ogles2_backend->caps->max_texture_size) /* the backend's (backend.h) */
@@ -77,7 +76,7 @@ struct OGLES2Texture
      * while what they hold is the same: by every later job when they are in
      * the texture's own block (rec), else by the job's later draws (in its
      * state buffer: a job still used the block when they changed). */
-    ULONG st_gen;                   /* the control list they are in (g_v3d_cl_generation) */
+    ULONG st_gen;                   /* the control list they are in (ogles2_job_gen) */
     APTR st_mem;                    /* the GPU copy they point at */
     ULONG st_pver;                  /* the parameters they were made from */
     ULONG st_tex, st_smp;
@@ -173,7 +172,7 @@ static void free_gpu(struct OGLES2Texture *t)
         t->gpu = 0;
     }
     if (t->rec.hostptr)
-        v3d_mem_free(ogles2_device(), &t->rec);
+        ogles2_mem_free(&t->rec);
     t->st_own = FALSE;
 }
 
@@ -1593,9 +1592,9 @@ static BOOL cube_memory(struct OGLES2Texture *t)
     v3d_mem m;
     ULONG tree = g->levels[0].offset + (ULONG)g->levels[0].padded_h * g->levels[0].stride;
     t->face_stride = (tree + 4095) & ~4095UL;
-    if (v3d_mem_alloc(ogles2_device(), &m, t->face_stride * 6 + 256) < 0)
+    if (ogles2_mem_alloc(&m, t->face_stride * 6 + 256) < 0)
         return FALSE;
-    v3d_mem_free(ogles2_device(), &g->texture_mem);
+    ogles2_mem_free(&g->texture_mem);
     g->texture_mem = m;
     return TRUE;
 }
@@ -2763,7 +2762,7 @@ BOOL ogles2_texture_state(struct OGLES2Context *ctx, int unit, int kind, ULONG *
      * images change (before_change); its parameters are compared here.
      * Records in the texture's own block hold across jobs (Quake III: most
      * of a frame's textures are drawn once a frame, 2.5 us a record). */
-    if (t->gpu && (t->st_own || (t->st_gen == g_v3d_cl_generation && t->st_ctx == ctx)) &&
+    if (t->gpu && (t->st_own || (t->st_gen == ogles2_job_gen && t->st_ctx == ctx)) &&
         t->st_mem == t->gpu->texture_mem.hostptr && t->st_pver == t->pver) {
         t->used_serial = ctx->job_serial;
         *tex_state = t->st_tex;
@@ -2792,7 +2791,7 @@ BOOL ogles2_texture_state(struct OGLES2Context *ctx, int unit, int kind, ULONG *
      * the records it holds (the last job that drew with the texture): then
      * into this job's state buffer, as before. */
     own = !t->used_serial || !ogles2_job_uses(ctx, t->used_serial);
-    if (own && !t->rec.hostptr && v3d_mem_alloc(ogles2_device(), &t->rec, 64) < 0)
+    if (own && !t->rec.hostptr && ogles2_mem_alloc(&t->rec, 64) < 0)
         own = FALSE;
     t->used_serial = ctx->job_serial;
     g = t->gpu;
@@ -2887,7 +2886,7 @@ BOOL ogles2_texture_state(struct OGLES2Context *ctx, int unit, int kind, ULONG *
     swivel16[2] = LE16(swivel16[2]); /* the bias */
     swivel16[3] = LE16(swivel16[3]);
     *sampler_state = (ULONG)ss;
-    t->st_gen = g_v3d_cl_generation;
+    t->st_gen = ogles2_job_gen;
     t->st_ctx = ctx;
     t->st_own = own;
     t->st_mem = g->texture_mem.hostptr;

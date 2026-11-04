@@ -455,8 +455,11 @@ struct OGLES2Context
     UBYTE depth_bits, stencil_bits; /* of the default framebuffer */
     UBYTE depth_format;             /* OGLES2_DEPTH_*: the tile buffer's depth type */
     BOOL msaa;                      /* 4x MSAA on the default framebuffer (OGLES2_CCT_PISTORM_MSAA) */
+    BOOL job_open;                  /* a job is open (job.c; the backend's lists are begun) */
+    BOOL job_clear_color, job_clear_zs; /* its glClears for the tile buffer (job.c) */
     UBYTE job_clear_stencil;        /* the open job's stencil clear value (job.c) */
-    GLfloat job_clear_rgba[4];      /* its colour clear value, for 16F targets (job.c) */
+    GLfloat job_clear_depth;        /* its depth clear value */
+    GLfloat job_clear_rgba[4];      /* its colour clear value as GL gave it */
     UBYTE copy_logged;              /* glCopyTex* on the GPU: 1 from the default framebuffer, 2 from
                                      * an object, logged (copy.c) */
     GLint viewport[4];              /* x, y, width, height */

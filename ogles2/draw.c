@@ -25,12 +25,12 @@
 #include <proto/exec.h>
 #include <string.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 #include "v3d_context.h"
 #include "v3d_commands.h"
 #include "v3d_clbuf.h"
 #include "v3d_hw.h"
 
-extern v3d_u32 g_v3d_cl_generation; /* v3d_frame.c: bumped whenever a control list restarts */
 
 /* Last packet values emitted into the current binning list (Mesa's dirty
  * flags, PiStorm3D's mglv3d_dedup_cache). Valid while gen matches. */
@@ -208,7 +208,7 @@ static ULONG code_address(struct OGLES2Draw *d, const struct OGLES2Image *im,
     if (!d->builtin_code.hostptr) {
         ULONG len;
         UWORD i;
-        if (v3d_mem_alloc(ogles2_device(), &d->builtin_code, im->code_total) < 0) {
+        if (ogles2_mem_alloc(&d->builtin_code, im->code_total) < 0) {
             d->builtin_code.hostptr = 0;
             return 0;
         }
@@ -227,9 +227,9 @@ void ogles2_draw_free(struct OGLES2Context *ctx)
     if (!d)
         return;
     if (d->builtin_code.hostptr)
-        v3d_mem_free(ogles2_device(), &d->builtin_code);
+        ogles2_mem_free(&d->builtin_code);
     if (d->spill.hostptr)
-        v3d_mem_free(ogles2_device(), &d->spill);
+        ogles2_mem_free(&d->spill);
     if (d->quad_ready)
         ogles2_program_builtin_free(&d->quad);
     if (d->mrt_ready)
@@ -401,7 +401,7 @@ static BOOL spill_area(struct OGLES2Context *ctx, const struct OGLES2Variant *co
         memset(&d->spill, 0, sizeof(d->spill));
     }
     d->spill_size = 0;
-    if (v3d_mem_alloc(ogles2_device(), &d->spill,
+    if (ogles2_mem_alloc(&d->spill,
                       (ULONG)ogles2_device()->deviceInfo.qpu_count * 4 * need + 256) < 0) {
         memset(&d->spill, 0, sizeof(d->spill));
         return FALSE;
@@ -573,13 +573,13 @@ static ULONG vertex_uniforms(struct OGLES2Context *ctx, struct OGLES2Program *p,
                              const struct OGLES2Variant *var, const struct tex_states *tst)
 {
     ULONG addr;
-    if (p->us_var[k] == var && p->us_gen[k] == g_v3d_cl_generation && p->us_ctx[k] == ctx &&
+    if (p->us_var[k] == var && p->us_gen[k] == ogles2_job_gen && p->us_ctx[k] == ctx &&
         p->us_cbuf_ver[k] == p->cbuf_ver[0] && p->us_state_ver[k] == ctx->ustate_ver)
         return p->us_addr[k];
     addr = write_uniforms(ctx, p, var, tst);
     if (addr && var->no_textures && var->uidx) {
         p->us_var[k] = var;
-        p->us_gen[k] = g_v3d_cl_generation;
+        p->us_gen[k] = ogles2_job_gen;
         p->us_ctx[k] = ctx;
         p->us_cbuf_ver[k] = p->cbuf_ver[0];
         p->us_state_ver[k] = ctx->ustate_ver;
@@ -610,7 +610,7 @@ static ULONG default_attribs(struct OGLES2Context *ctx, struct OGLES2Draw *dd)
 {
     ULONG *p;
     int i;
-    if (dd->defattr_gen == g_v3d_cl_generation)
+    if (dd->defattr_gen == ogles2_job_gen)
         return dd->defattr;
     if (!(p = claim(ctx->v3d, 16 * 16, 16)))
         return 0;
@@ -618,7 +618,7 @@ static ULONG default_attribs(struct OGLES2Context *ctx, struct OGLES2Draw *dd)
         p[i * 4 + 0] = p[i * 4 + 1] = p[i * 4 + 2] = 0;
         p[i * 4 + 3] = le32(float_bits(1.0f));
     }
-    dd->defattr_gen = g_v3d_cl_generation;
+    dd->defattr_gen = ogles2_job_gen;
     dd->defattr = (ULONG)p;
     return dd->defattr;
 }
@@ -1106,9 +1106,9 @@ static void emit_state(struct OGLES2Context *ctx, struct dedup *dd, int prim,
 
     viewport_z(ctx, &zs, &zo);
 
-    if (dd->gen != g_v3d_cl_generation) { /* a new control list: emit everything */
+    if (dd->gen != ogles2_job_gen) { /* a new control list: emit everything */
         memset(dd, 0, sizeof(*dd));
-        dd->gen = g_v3d_cl_generation;
+        dd->gen = ogles2_job_gen;
         dd->prim = -1;
     } else if (dd->ver == ctx->state_ver && dd->prim == prim && dd->fs == fs && dd->fb == ctx->draw_fb &&
                dd->fb_w == ctx->fb_w && dd->fb_h == ctx->fb_h && dd->fb_depth_bits == ctx->fb_depth_bits &&

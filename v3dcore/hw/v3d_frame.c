@@ -22,25 +22,8 @@ int g_v3d_requested_zbuffer_bits = 32;
 
 int g_v3d_requested_msaa = 0;
 
-/* Monotonic CL-restart counter. Bumped at EVERY build_slot flip
- * (gl_FramePresent and the doing_intermediate_pass path, context.c) and used
- * as the invalidation key for every cache that holds addresses into a CL
- * buffer.
- *
- * PROCESS-GLOBAL, NOT a context field, and NEVER reset -- both properties are
- * load-bearing:
- *
- *  - build_slot is a 2-slot toggle, so an intermediate render pass that flips
- *    it mid-frame with no draws after it hands the next frame the same slot
- *    value. A cache keyed on slot parity then believes its addresses are still
- *    live when the buffer has been reset underneath them.
- *  - A per-context counter would restart at 0 when a context is destroyed and
- *    re-created, while draw.c's cache statics survive, so a fresh context
- *    could match a stale key and reuse addresses into the destroyed
- *    context's state_buf.
- *
- * Monotonic and global means no cache can ever observe a repeated value. */
-v3d_u32 g_v3d_cl_generation = 0;
+/* ogles2: the control-list generation is the front end's (ogles2_job_gen,
+ * ogles2/job.c, PI3_PLAN §5.1 step 2). */
 
 void v3d_frame_compute_pool_sizes(v3d_u16 width, v3d_u16 height,
                                    int zbuffer_bits, int msaa,
@@ -132,7 +115,7 @@ v3d_u32 g_mglv3d_retire_leaks = 0;
  * A dropped frame never increments s_build_seq, so its blocks simply retire
  * with the next submitted job -- nothing names them, so that is safe.
  *
- * Process-global and never reset, like g_v3d_cl_generation and the texture
+ * Process-global and never reset, like ogles2_job_gen and the texture
  * park list: the driver is single-context, and v3d_frame_end empties the list
  * at teardown. 32 entries: at most 8 spills per job plus a few state_buf
  * growths (each doubles the buffer, so they are rare). */

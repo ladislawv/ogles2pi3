@@ -433,9 +433,11 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   1. **device and capabilities:** open, reset, renderer, bytes in use, the GPU lock; a
      capabilities struct the front end reads instead of its constants (limits, extension
      string, formats, MSAA, TFU present);
-  2. **memory:** blocks with a CPU pointer *and* a bus address, alloc/free/free-after-the-job;
-     a front-end job generation counter (`ctx->job_gen`) replaces `g_v3d_cl_generation` as the
-     front end's cache key;
+  2. **memory:** blocks with a CPU pointer *and* a bus address (`struct v3d_mem`'s `hostptr`
+     and `busaddr`), alloc/free through the backend; the front end keeps CPU addresses and a
+     backend turns them into bus addresses where it writes its own GPU records; the front end
+     owns the job generation (`ogles2_job_gen`), the cache key that was `g_v3d_cl_generation`
+     (process-global and never reset, not per context: a re-created context would repeat keys);
   3. **jobs:** begin, clear snapshot, flush (lists and submission), wait, discard; the front end
      keeps the serials, the overlap and discard policy, the statistics; "can the tile buffer
      clear this" becomes a backend query;
@@ -466,6 +468,46 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   starts as V3D's, so a context without a GPU reports the same. Pi 4 checks the same day: m5-1
   255 PASS, no FAIL; m7-6 36 of 36; m2-5 14 of 14 identical; m6-1 window 467, screen 1115,
   bitmap arrays 829 fps; Quake III 88.8 fps: as the baseline.
+- **Step 2 done (2026-11-04):** GPU memory through the table (`ogles2_mem_alloc`/`_free`,
+  `backend.h`; V3D's are `v3d_mem_alloc`/`_free` on AllocVec'd fast RAM, all 28 calls of the
+  front end); `ogles2_job_gen` (`job.c`) in place of v3dcore's `g_v3d_cl_generation` in
+  `draw.c`, `texture.c` and `job.c`. The address rule settles the survey's "about 20 places":
+  all of them write V3D records (shader records, uniforms, TMU records, tile lists, submission)
+  and move with steps 3 to 7 into the V3D backend, where the bus address is the CPU address; a
+  front end holding bus addresses would mix them with CPU ones (`draw.c`'s attribute addresses
+  come from a buffer's GPU copy or from the control list's own memory, the display's bitmap is
+  read by the CPU too). Pi 4 checks the same day: m5-1 255 PASS, no FAIL; m7-6 36 of 36;
+  m2-5 14 of 14 identical; m6-1 window 466, screen 1102, bitmap arrays 818 fps; Quake III
+  89.3 fps: as the baseline (gears within 1 %, its run-to-run spread; no draw path changed).
+- **Step 3 done (2026-11-04):** jobs. `ogles2/v3d/job_v3d.c` (Hyperion, it adapts PiStorm3D)
+  has the V3D half of `job.c`: the binning list and its growth, the render lists of the
+  default framebuffer and of an object, depth and stencil kept across a mid-frame flush,
+  submission, the waits, the retire list; twelve entries in the table (`job_begin` …
+  `job_free`, `backend.h`) and the wait results `OGLES2_WAIT_*`. `job.c` keeps the serials,
+  the clear snapshot (`ctx->job_clear_*`, the colour as GL gave it: the backend converts it),
+  `ctx->job_open` (it replaces `v3d->frame_active` in `fbo.c`, `share.c`, `v3dp.c`), the
+  locks, the overlap with the CPU, the statistics and the drop reasons. Still V3D's in
+  `job.c`: the GPU lock and the reset (`v3d_gpu_lock`, `ogles2_device_reset`; the device
+  group). Differences only under probes: probe S's render may be left running like any
+  other; the flush's "cache before" time no longer holds the GPU's cache invalidation (in the
+  binning time now). The frame.c test "can the tile buffer clear this" stays in the front
+  end: VC4's tile buffer also clears depth and stencil together. Pi 4 checks the same day:
+  m5-1 255 PASS, no FAIL; m7-6 36 of 36; m2-5 14 of 14 identical; speed below.
+- **Measuring speed between steps (learnt at step 3):** runs of one library minutes apart are
+  not enough. Quake III's timedemo drifts by about 1.5 % within an hour (step 1's library:
+  87.9 to 89.3 fps the same afternoon), and where the code lies moves gears: step 3 with 64
+  or 160 bytes of unused code added early in the library ran the screen mode between 1077
+  and 1097 fps, bitmap arrays between 769 and 779. So each step is compared with the last
+  commit's library built in a tree of its own (`git archive HEAD`, its own `B`), the two
+  alternating on the station, three runs each. Step 3 against step 1 that way: Quake III
+  89.7, 89.1, 89.1 against 88.8, 88.2, 88.2 fps; gears bitmap arrays 772 to 780 against 781
+  to 789, screen 1070 to 1103 against 1089 to 1118. Gears, at about 1.3 ms a frame and one
+  job each, is about 1 % (some 20 us a frame) slower in every pair, the padded builds too;
+  Quake III is not. Step 2 alone sat between them (bitmap arrays 778 to 780); two variants of
+  it (memory through the table only; the job generation moved only) did not separate in
+  Quake III. To watch at the next steps (the draw step puts the table into the per-draw
+  path): if gears keeps losing, a direct call when the backend is V3D's is the remedy. The
+  acceptance (below) compares the whole of P2 against 1.3.3 the same way.
 - **Acceptance of P2:** the Pi 4 build behaves exactly as 1.3.3: the A1200 regression packages,
   dEQP-GLES2's must-pass list and the benchmarks (gears, Quake III) give the same results and the
   same speed (the 1.3.3 checks of DEVELOPMENT_PLAN §13 are the list). The function table costs
@@ -547,12 +589,16 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    repository). Installed for the tests: `mesa-utils`, `kmscube`, `libegl-dev`, `libgles-dev`;
    the work lives in `~/pi3/` on the Pi. `tests/pi3/boot.sh reference|bare|status` switches the
    boot set-up (two lines of `config.txt`, the original kept as `config.txt.ogles2pi3-orig`) and
-   reboots the Pi; the Pi is left in the reference boot, as it was. **The Pi's power supply sags:**
-   `vcgencmd get_throttled` reads `0x50000` (under-voltage and throttling have occurred) minutes
-   after each boot, and the Pi rebooted once in the middle of dEQP (the run went on, §6.1). With
-   the second supply (2026-11-04) it reads `0x50005`: under-voltage and throttling *now*, from a
-   minute after boot, idle too. Mesa's pictures stayed exact through it (400 runs), but a supply
-   (or cable) that holds 5 V is wanted before timing anything.
+   reboots the Pi; the Pi is left in the reference boot, as it was. **Power (2026-11-04):** with
+   the first supplies `vcgencmd get_throttled` read `0x50000`, then `0x50005` (under-voltage and
+   throttling now, the ARM held at 600 MHz) a minute after boot, idle too, and the Pi rebooted
+   once in the middle of dEQP (the run went on, §6.1); a short thick cable and a supply soldered
+   to the board did not help. **Solved by another supply, 5.2 V at the board** (the developer's
+   meter): `0x0` and 1200 MHz, also after a minute of all four cores busy with the GPU drawing
+   (61 to 74 °C; the Pi 3 throttles at 80 °C, so a heatsink before long speed runs). Mesa's
+   pictures had stayed exact through the low voltage (400 runs). Results taken before this
+   (dEQP's baseline, the probe's timings) ran at the low voltage; their pass/fail results stand,
+   their times are not speed figures.
 1. **References from Mesa** (reference boot):
    - Mesa vc4's extension string and limits (`eglinfo`, `glGetIntegerv`), `IDENT0..2` (§6.2's
      probe can read them in the bare boot);
@@ -770,10 +816,11 @@ Everything that can run here runs here first (the developer, 2026-11-03).
   suspect (§6.0).
 
 **Next:**
-1. A power supply and cable that hold 5 V on the test Pi (`vcgencmd get_throttled` 0 after an
-   hour).
+1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0). A heatsink before long speed
+   runs on it.
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
-   the Pi 4 card (PD7 decided: option 1).
+   the Pi 4 card (PD7 decided: option 1): steps 1 to 3 done (§5.1), step 4 (draw) next; each
+   step's speed compared with the last commit's library, alternating runs (§5.1).
 3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
    canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the
    compiler (8 varyings, draw buffers per the emulation); the corpus compiled for VC4 as a

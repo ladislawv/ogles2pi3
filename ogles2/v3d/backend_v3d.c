@@ -2,12 +2,16 @@
  * The V3D 4.2 backend's table (ogles2/backend.h, docs/PI3_PLAN.md §5.1):
  * the Raspberry Pi 4. Step 1 of P2: its capabilities, with the values the
  * front end hard-coded until then (state.c, texture.c, context.c, fbo.c,
- * frame.c; release 1.3.3).
+ * frame.c; release 1.3.3). Step 2: GPU memory, AllocVec'd fast RAM
+ * (v3dcore/hw/v3d_mem_allocvec.c), whose bus address is its CPU address.
+ * Step 3: jobs (job_v3d.c).
  *
  * MIT licence (LICENSE).
  */
 #include "../ogles2_internal.h"
 #include "../backend.h"
+#include "backend_v3d.h"
+#include "v3d_device.h"
 
 static const struct OGLES2Caps caps = {
     /* the 33 extensions of release 1.3 */
@@ -35,11 +39,35 @@ static const struct OGLES2Caps caps = {
     15.0f, /* LOD bias */
 };
 
+static int mem_alloc(struct v3d_mem *m, ULONG size)
+{
+    return v3d_mem_alloc(ogles2_device(), m, (unsigned)size);
+}
+
+static void mem_free(struct v3d_mem *m)
+{
+    v3d_mem_free(ogles2_device(), m);
+}
+
 const struct OGLES2Backend ogles2_backend_v3d = {
     "V3D 4.2",
     42,
     &caps,
     ogles2_device_renderer,
+    mem_alloc,
+    mem_free,
+    ogles2_v3d_job_begin,
+    ogles2_v3d_job_has_draws,
+    ogles2_v3d_job_keep_zs,
+    ogles2_v3d_job_check,
+    ogles2_v3d_job_build,
+    ogles2_v3d_job_bin,
+    ogles2_v3d_job_render,
+    ogles2_v3d_wait_render,
+    ogles2_v3d_job_retire,
+    ogles2_v3d_job_end,
+    ogles2_v3d_job_report_stop,
+    ogles2_v3d_job_free,
 };
 
 const struct OGLES2Backend *ogles2_backend = &ogles2_backend_v3d;
