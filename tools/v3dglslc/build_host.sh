@@ -29,7 +29,7 @@ commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=src_root,
                         capture_output=True, text=True).stdout.strip()[:12]
 rc = 0
 for src in (os.path.join(h, "v3dglslc.c"), os.path.join(v, "v3dp_writer.c"),
-            os.path.join(compat, "fake_drm.c")):
+            os.path.join(compat, "fake_drm.c"), os.path.join(h, "vc4_variants.c")):
     out = os.path.join(w, os.path.basename(src)[:-2] + ".o")
     cmd, skip = [], False
     for c in base:
@@ -45,10 +45,12 @@ for src in (os.path.join(h, "v3dglslc.c"), os.path.join(v, "v3dp_writer.c"),
     cmd[1:1] = ["-I" + os.path.join(src_root, "src/gallium/drivers/v3d"),
                 "-I" + os.path.join(build, "src/gallium/drivers/v3d"),
                 "-I" + os.path.join(src_root, "src/gallium/auxiliary/pipe-loader"),
+                "-I" + os.path.join(src_root, "src/gallium/drivers/vc4"),
+                "-I" + os.path.join(build, "src/gallium/drivers/vc4"),
                 "-I" + os.path.join(src_root, "src/broadcom"),
                 "-I" + os.path.join(build, "src/broadcom"),
                 "-I" + os.path.join(src_root, "include"),
-                "-I" + h, "-I" + v, '-DV3DP_MESA_COMMIT="%s"' % commit]
+                "-I" + h, "-I" + v, '-DV3DP_MESA_COMMIT="%s"' % commit, "-DV3DGLSLC_VC4"]
     cmd += ["-c", src, "-o", out]
     p = subprocess.run(cmd, cwd=build, capture_output=True, text=True)
     print("%s compile rc=%d" % (os.path.basename(src), p.returncode))
@@ -58,10 +60,11 @@ sys.exit(rc)
 PY
 [ $? -eq 0 ] || exit 1
 
-# ---- archives of the same Mesa targets the m68k build uses (replay.py TOOL)
+# ---- archives of the same Mesa targets the m68k build uses (replay.py TOOL),
+# and the VC4 driver (replay.py VC4; docs/PI3_PLAN.md §4.1)
 DIRS=$(python3 -I -c "
 import sys; sys.path.insert(0, '$H'); import replay
-print(' '.join(replay.LIBS[n] for n in replay.TOOL))")
+print(' '.join(replay.LIBS[n] for n in replay.TOOL + replay.VC4))")
 # x86-only helpers the m68k build replaces (compat/driver_stubs.c, plain C paths)
 DIRS="$DIRS src/mesa/libmesa_sse41.a.p src/util/libmesa_util_simd.a.p"
 for d in $DIRS; do
@@ -71,7 +74,7 @@ for d in $DIRS; do
 done
 LIBS=$(ls $W/lib/*.a | sed -E 's|.*/lib(.*)\.a|-l\1|' | tr '\n' ' ')
 LLVM=$(llvm-config --ldflags --libs 2>/dev/null || echo -lLLVM)
-g++ -o $W/v3dglslc $W/v3dglslc.o $W/v3dp_writer.o $W/fake_drm.o \
+g++ -o $W/v3dglslc $W/v3dglslc.o $W/v3dp_writer.o $W/fake_drm.o $W/vc4_variants.o \
     -L$W/lib -Wl,--start-group $LIBS -Wl,--end-group \
     $LLVM -lSPIRV-Tools-opt -lSPIRV-Tools -lSPIRV-Tools-link \
     -lexpat -lzstd -lz -ldrm -lpthread -ldl -lm > $W/link.log 2>&1

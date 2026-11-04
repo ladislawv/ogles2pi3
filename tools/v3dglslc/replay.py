@@ -61,6 +61,11 @@ PART1 = ["util", "c11", "blake3", "compiler", "nir", "glcpp", "glsl", "v3d_compi
          "v3d_common", "glsl_util", "glsl_standalone", "glsl_compiler_main"]
 # What v3dglslc links: everything but the standalone GLSL compiler.
 TOOL = [l for l in PART1 if l not in ("glsl_standalone", "glsl_compiler_main")] + PART2
+# The Raspberry Pi 3's VC4 driver (docs/PI3_PLAN.md §4.1): linked by the host
+# build (build_host.sh) for now; the m68k build (S2) adds it in P4.
+LIBS["vc4_driver"] = "src/gallium/drivers/vc4/libvc4.a.p"
+LIBS["vc4_winsys"] = "src/gallium/winsys/vc4/drm/libvc4winsys.a.p"
+VC4 = ["vc4_driver", "vc4_winsys"]
 
 # Defines that describe the build host or features the compiler module does not use.
 DROP_DEFINE = re.compile(

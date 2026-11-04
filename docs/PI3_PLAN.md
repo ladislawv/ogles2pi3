@@ -238,6 +238,31 @@ textures, the texture-parameter ones, then multiple render targets, then half-fl
   corpus and of the release's examples is byte for byte the one 1.3.3's compiler writes (apart from
   the compiler id, `compiler.c`, which makes caches compile again).
 - Output: the `.v3dp` container with device version 42 or 21 (PD2), §4.3.
+- **Done (2026-11-04), S1's first steps:**
+  - the WSL Mesa build reconfigured with `-Dgallium-drivers=v3d,vc4,llvmpipe` (and
+    `build_mesa.sh`); every file now gets `-DHAVE_VC4`, which `replay.py` drops, so the m68k
+    build's commands are unchanged;
+  - `tools/v3dglslc/test/v42_unchanged.sh save|check`: the Pi 4's output of every shader pair at
+    hand (the test shaders, the corpus, the release's examples, Boing 2026: 54 files) against a
+    baseline taken before; after the reconfiguration, with vc4 linked and with patch 0015:
+    **54 of 54 identical**;
+  - `compat/fake_drm.c` serves both GPUs (a second descriptor for VC4: the Pi 3's `IDENT0..2`,
+    branches, ETC1, threaded fragment shaders and fixed render order yes, madvise and perfmon
+    no; `CREATE_SHADER_BO` copies the code in as the kernel does; `drmGetCap` answers "no sync
+    objects", which the m68k build needed);
+  - `v3dglslc -g 21 [-b attr0,attr1,...]` links Mesa's vc4 driver (`replay.py` `VC4`, host build
+    only until S2) and draws each program once in the reference state of `tests/pi3/ref/`
+    (`run_pairs_vc4`); **its QPU code is identical to what the Pi's own Mesa (26.2.2) compiles
+    for the triangle and the textured quad, all six stages** (`tests/pi3/ref/shaders/`,
+    `test/compare_vc4_qpu.py`);
+  - patch `0015-vc4-compiled-variant-hook.patch` (the twin of 0009) and `vc4_variants.c`, which
+    prints each variant: stage, threading, the fragment inputs, the attribute layout, the
+    uniform recipe and the code. It confirms the recipes `tests/pi3_probe` was built with by
+    hand. Until the format (§4.3) is settled, this listing is what `tests/pi3` takes its shaders
+    from;
+  - the VC4 path is compiled into the host build only (`-DV3DGLSLC_VC4`, `build_host.sh`); the
+    m68k build still compiles and links as it was (checked in a separate output directory:
+    0 undefined symbols; the release's `v3dglslc.stripped` was not rebuilt).
 
 ### 4.2 Keys and variants (the main risk)
 - **Mesa vc4's keys** (`vc4_qir.h`, filled in `vc4_update_compiled_fs`/`_vs` and
@@ -613,13 +638,22 @@ Everything that can run here runs here first (the developer, 2026-11-03).
   `vc4core` power-cycles the core into its reset state when it takes it and watches `ERRSTAT`
   (§2 "Power", §6.2). The second power supply still flags under-voltage (§6.0).
 
+- P4's S1 begun (§4.1): `v3dglslc -g 21` compiles with Mesa's vc4 driver, its code identical to
+  the Pi's Mesa for the reference programs; the variant hook (patch 0015) reports code and
+  uniform recipes; the Pi 4's output unchanged (54 files). The third power supply still flags
+  under-voltage one minute after boot, idle (`0x50005`, ARM at 600 MHz): the cable is the next
+  suspect (§6.0).
+
 **Next:**
-1. A power supply that holds 5 V on the test Pi (`vcgencmd get_throttled` 0 after an hour).
+1. A power supply and cable that hold 5 V on the test Pi (`vcgencmd get_throttled` 0 after an
+   hour).
 2. P2 on the build machine and the A1200 with the Pi 4 card: first the variant-count probe (the
    numbers PD7 needs), then the backend interface and the MIT rewrite of the shared front end's
    PiStorm3D parts.
-3. P4's S1 part in WSL (Mesa with vc4, the VC4 fake device, the hook; the Pi 4's `.v3dp` files
-   unchanged): can start now.
+3. P4's S1, next: the VC4 file format (§4.3: format 1.1 with VC4 key, prog-data and recipe
+   sections, from what `vc4_variants.c` prints) and its writer; the key states to compile
+   (canonical keys, §4.2); the library's limits for the Pi 3 in the compiler (8 varyings, draw
+   buffers per the emulation).
 4. P3: `vc4core` on Linux, starting from the probe's lists (Linux's render-list order, the reset
    at take-over, `ERRSTAT` checks), with its tests in `tests/pi3/` against Mesa's pictures; early
    in it a long soak (hours of mixed draws) and the cause of the not-reset core's lost tiles.

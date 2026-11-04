@@ -1,6 +1,8 @@
 /*
  * Mesa's V3D driver on a fake DRM device, no window system.
  *   usage: v3dglslc [-d <V3D_DEBUG flags>] [-o <dir>] vs.vert fs.frag [vs2 fs2 ...]
+ *          v3dglslc -g 21 [-d <VC4_DEBUG flags>] [-b attr0,attr1,...] vs.vert fs.frag ...
+ *            (the Raspberry Pi 3's VC4: see run_pairs_vc4)
  *          v3dglslc SERVER   (AmigaOS: the on-target compiler, v3dp/v3dglsl_port.h)
  * Creates a V3D 4.2 screen (compat/fake_drm.c), a surfaceless GLES2 context
  * through the state tracker, and calls Mesa's GL entry points directly.
@@ -51,6 +53,19 @@ static int write_program(GLuint p, const char *path, const char *vs_src, const c
 #endif
 
 int fake_drm_open(void);
+int fake_drm_vc4_open(void);
+
+/* The Raspberry Pi 3's VideoCore IV (docs/PI3_PLAN.md §4.1, P4): -g 21 takes
+ * Mesa's vc4 driver on its fake device (compat/fake_drm.c) instead of v3d.
+ * For now (S1's first step) without the .v3dp writer: each program is drawn
+ * once in a reference state and the driver prints its code (-d qpu). */
+static int device = 42;
+#ifdef V3DGLSLC_VC4 /* build_host.sh; the m68k build (S2) links vc4 in P4 */
+struct renderonly;
+struct pipe_screen *vc4_screen_create(int fd, const struct pipe_screen_config *config, struct renderonly *ro);
+void vc4_variants_install(FILE *f); /* vc4_variants.c */
+static int run_pairs_vc4(int argc, char **argv, int first);
+#endif
 
 /* The build's stamp (build_m68k.sh: its time and the commits), which
  * ogles2.library reads from the file's tail to tell compilers apart
@@ -540,6 +555,155 @@ static int serve(void)
 }
 #endif
 
+/* -b a,b,c: attribute a at location 0, b at 1, ... (link_bindings' "index
+ * name" lines), as a program's glBindAttribLocation calls would. */
+static const char *bindings_from_list(const char *list)
+{
+    static char buf[1024];
+    size_t n = 0;
+    int index = 0;
+    while (*list && n + 40 < sizeof(buf)) {
+        const char *end = strchr(list, ',');
+        size_t len = end ? (size_t)(end - list) : strlen(list);
+        if (len > 31)
+            len = 31;
+        n += (size_t)snprintf(buf + n, sizeof(buf) - n, "%d %.*s\n", index++, (int)len, list);
+        list += len + (end ? 1 : 0);
+    }
+    buf[n] = 0;
+    return buf;
+}
+
+#ifdef V3DGLSLC_VC4
+/* -g 21: draw a linked program once so that the vc4 driver compiles its
+ * variants for the reference state of tests/pi3/ref (mesa_triangle.c,
+ * mesa_texture.c): a 128x128 RGBA8 target without depth, every attribute a
+ * float array of its type's component count, every sampler on a 16x16 RGBA8
+ * texture with NEAREST filtering and CLAMP_TO_EDGE, triangles. */
+static int draw_vc4_reference(GLuint p)
+{
+    static GLuint fbo, rb, tex2d, texcube;
+    static const GLfloat zeros[4 * 4 * 3];
+    static GLubyte texels[16 * 16 * 4];
+    GLint n = 0, i, err, unit = 0;
+
+    if (!fbo) {
+        GLenum face;
+        _mesa_GenRenderbuffers(1, &rb);
+        _mesa_BindRenderbuffer(GL_RENDERBUFFER, rb);
+        _mesa_RenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 128, 128);
+        _mesa_GenFramebuffers(1, &fbo);
+        _mesa_BindFramebuffer(GL_FRAMEBUFFER, fbo);
+        _mesa_FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rb);
+        if (_mesa_CheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            fprintf(stderr, "v3dglslc: the VC4 reference target is incomplete\n");
+            return 0;
+        }
+        _mesa_Viewport(0, 0, 128, 128);
+        _mesa_GenTextures(1, &tex2d);
+        _mesa_BindTexture(GL_TEXTURE_2D, tex2d);
+        _mesa_TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, texels);
+        _mesa_TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        _mesa_TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        _mesa_TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        _mesa_TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        _mesa_GenTextures(1, &texcube);
+        _mesa_BindTexture(GL_TEXTURE_CUBE_MAP, texcube);
+        for (face = GL_TEXTURE_CUBE_MAP_POSITIVE_X; face <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z; face++)
+            _mesa_TexImage2D(face, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, texels);
+        _mesa_TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        _mesa_TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        _mesa_TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        _mesa_TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+    _mesa_UseProgram(p);
+    _mesa_GetProgramiv(p, GL_ACTIVE_UNIFORMS, &n);
+    for (i = 0; i < n; i++) {
+        char name[256];
+        GLint size, loc;
+        GLenum type;
+        _mesa_GetActiveUniform(p, i, sizeof(name), NULL, &size, &type, name);
+        if (type != GL_SAMPLER_2D && type != GL_SAMPLER_CUBE)
+            continue;
+        loc = _mesa_GetUniformLocation(p, name);
+        _mesa_ActiveTexture(GL_TEXTURE0 + unit);
+        _mesa_BindTexture(type == GL_SAMPLER_CUBE ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D,
+                          type == GL_SAMPLER_CUBE ? texcube : tex2d);
+        if (loc >= 0)
+            _mesa_Uniform1i(loc, unit);
+        unit++;
+    }
+    _mesa_ActiveTexture(GL_TEXTURE0);
+    _mesa_GetProgramiv(p, GL_ACTIVE_ATTRIBUTES, &n);
+    for (i = 0; i < n; i++) {
+        char name[256];
+        GLint size, loc, col, cols, comps;
+        GLenum type;
+        _mesa_GetActiveAttrib(p, i, sizeof(name), NULL, &size, &type, name);
+        loc = _mesa_GetAttribLocation(p, name);
+        if (loc < 0)
+            continue;
+        cols = type == GL_FLOAT_MAT2 ? 2 : type == GL_FLOAT_MAT3 ? 3 : type == GL_FLOAT_MAT4 ? 4 : 1;
+        comps = type == GL_FLOAT ? 1 : type == GL_FLOAT_VEC2 || type == GL_FLOAT_MAT2 ? 2
+              : type == GL_FLOAT_VEC3 || type == GL_FLOAT_MAT3 ? 3 : 4;
+        for (col = 0; col < cols; col++) {
+            _mesa_EnableVertexAttribArray(loc + col);
+            _mesa_VertexAttribPointer(loc + col, comps, GL_FLOAT, GL_FALSE, 0, zeros);
+        }
+    }
+    _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+    _mesa_Flush(); /* submits the job to the fake device */
+    for (i = 0; i < 8; i++)
+        _mesa_DisableVertexAttribArray(i);
+    _mesa_UseProgram(0);
+    err = _mesa_GetError();
+    if (err != GL_NO_ERROR) {
+        fprintf(stderr, "v3dglslc: GL error 0x%04x in the VC4 reference draw\n", (unsigned)err);
+        return 0;
+    }
+    return 1;
+}
+
+static int run_pairs_vc4(int argc, char **argv, int first)
+{
+    int i, failed = 0;
+    for (i = first; i + 1 < argc; i += 2) {
+        char *vs_src = load_text(argv[i]), *fs_src = load_text(argv[i + 1]);
+        GLuint p, vs, fs;
+        GLint ok = 0;
+        int vs_ok = 0, fs_ok = 0;
+        if (!vs_src || !fs_src) {
+            fprintf(stderr, "v3dglslc: cannot read %s\n", !vs_src ? argv[i] : argv[i + 1]);
+            failed++;
+            free(vs_src);
+            free(fs_src);
+            continue;
+        }
+        fprintf(stderr, "v3dglslc: ==== program %s + %s (VC4)\n", argv[i], argv[i + 1]);
+        vs = compile_src(GL_VERTEX_SHADER, argv[i], vs_src, &vs_ok, NULL, 0);
+        fs = compile_src(GL_FRAGMENT_SHADER, argv[i + 1], fs_src, &fs_ok, NULL, 0);
+        p = glCreateProgram();
+        if (vs_ok && fs_ok) {
+            glAttachShader(p, vs);
+            glAttachShader(p, fs);
+            apply_bindings(p, link_bindings);
+            glLinkProgram(p);
+            glGetProgramiv(p, GL_LINK_STATUS, &ok);
+        }
+        fprintf(stderr, "v3dglslc: link: %s\n", ok ? "ok" : "FAILED");
+        if (!ok || !draw_vc4_reference(p))
+            failed++;
+        glDeleteProgram(p);
+        glDeleteShader(vs);
+        glDeleteShader(fs);
+        free(vs_src);
+        free(fs_src);
+    }
+    fprintf(stderr, "v3dglslc: done, %d program(s) failed\n", failed);
+    return failed ? 10 : 0;
+}
+#endif /* V3DGLSLC_VC4 */
+
 int main(int argc, char **argv)
 {
     int first = 1;
@@ -575,13 +739,31 @@ int main(int argc, char **argv)
             debug = argv[first + 1];
         else if (!strcmp(argv[first], "-o"))
             out_dir = argv[first + 1];
+        else if (!strcmp(argv[first], "-g"))
+            device = atoi(argv[first + 1]);
+        else if (!strcmp(argv[first], "-b"))
+            link_bindings = bindings_from_list(argv[first + 1]);
         else
             break;
         first += 2;
     }
+    if (device != 42 && device != 21) {
+        fprintf(stderr, "v3dglslc: -g takes 42 (V3D 4.2, Raspberry Pi 4) or 21 (VC4, Raspberry Pi 3)\n");
+        return 20;
+    }
+#ifndef V3DGLSLC_VC4
+    if (device == 21) {
+        fprintf(stderr, "v3dglslc: this build has no VC4 driver (-g 21)\n");
+        return 20;
+    }
+#endif
+    if (device == 21 && out_dir) {
+        fprintf(stderr, "v3dglslc: -g 21 cannot write files yet (docs/PI3_PLAN.md §4.3)\n");
+        return 20;
+    }
     if (debug) {
         snprintf(debug_flags, sizeof(debug_flags), "%s", debug);
-        set_option("V3D_DEBUG", debug_flags);
+        set_option(device == 21 ? "VC4_DEBUG" : "V3D_DEBUG", debug_flags);
     }
 
     memset(&info, 0, sizeof(info));
@@ -591,9 +773,14 @@ int main(int argc, char **argv)
     config.options = &cache;
     config.options_info = &info;
 
-    screen = v3d_screen_create(fake_drm_open(), &config, NULL);
+#ifdef V3DGLSLC_VC4
+    if (device == 21)
+        screen = vc4_screen_create(fake_drm_vc4_open(), &config, NULL);
+    else
+#endif
+        screen = v3d_screen_create(fake_drm_open(), &config, NULL);
     if (!screen) {
-        fprintf(stderr, "v3dglslc: v3d_screen_create failed\n");
+        fprintf(stderr, "v3dglslc: %s_screen_create failed\n", device == 21 ? "vc4" : "v3d");
         return 20;
     }
 
@@ -613,6 +800,15 @@ int main(int argc, char **argv)
         return 20;
     }
     the_pipe = st->pipe;
+    if (device == 21) {
+        /* The driver's own limits for now (one draw buffer, 8 varyings);
+         * the library's for the Pi 3 are settled in P4. */
+        fprintf(stderr, "v3dglslc: renderer %s\n", (const char *)_mesa_GetString(GL_RENDERER));
+#ifdef V3DGLSLC_VC4
+        vc4_variants_install(stdout);
+        return run_pairs_vc4(argc, argv, first);
+#endif
+    }
     /* ogles2.library's limits, which its GL queries report too (GLSL's
      * gl_Max* constants must equal them: dEQP-GLES2 builtin_variable): four
      * draw buffers (EXT_draw_buffers, M7 step 5; OGLES2_MAX_DRAW_BUFFERS), 16

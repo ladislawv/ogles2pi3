@@ -1,6 +1,7 @@
 #!/bin/bash
 # Host Mesa for track B (offline shader compiler v3dglslc) and for reference images.
 #   - gallium v3d driver + v3d drm-shim  -> compile V3D 4.2 shaders with no Pi (V3D_GPU_ID=42)
+#   - gallium vc4 driver                 -> compile VideoCore IV (Pi 3) shaders (docs/PI3_PLAN.md §4.1)
 #   - llvmpipe                            -> software-rendered GLES2 reference images on this PC
 # Installs into ~/mesa-install. Logs in ~/mesa-build/*.log.
 set -u
@@ -22,7 +23,7 @@ git checkout -q "$MESA_COMMIT" || { echo "checkout $MESA_COMMIT failed"; exit 1;
 git log -1 --format='mesa %h %ad %s' --date=short | tee "$W/summary.log"
 
 meson setup build --prefix="$HOME/mesa-install" --buildtype=debugoptimized \
-    -Dgallium-drivers=v3d,llvmpipe -Dvulkan-drivers= \
+    -Dgallium-drivers=v3d,vc4,llvmpipe -Dvulkan-drivers= \
     -Dplatforms= -Degl=enabled -Dgbm=enabled -Dgles1=disabled -Dgles2=enabled -Dglx=disabled \
     -Dllvm=enabled -Dtools=drm-shim -Dbuild-tests=false \
     >"$W/setup.log" 2>&1 || { echo "meson setup failed, see $W/setup.log" | tee -a "$W/summary.log"; exit 1; }

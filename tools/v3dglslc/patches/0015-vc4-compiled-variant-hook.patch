@@ -1,0 +1,45 @@
+diff --git a/src/gallium/drivers/vc4/vc4_program.c b/src/gallium/drivers/vc4/vc4_program.c
+index 787b4f5df19..85cadce193c 100644
+--- a/src/gallium/drivers/vc4/vc4_program.c
++++ b/src/gallium/drivers/vc4/vc4_program.c
+@@ -2635,6 +2635,19 @@ vc4_setup_compiled_fs_inputs(struct vc4_context *vc4, struct vc4_compile *c,
+         }
+ }
+ 
++/* ogles2 offline compiler (docs/PI3_PLAN.md §4.1): called with every variant
++ * this driver compiles: the stage (QSTAGE_FRAG, _VERT, _COORD), its key, the
++ * compiled shader (uniform recipe, inputs, attribute layout, threading) and
++ * its QPU code. While it is set, the variant caches are bypassed, so each
++ * request compiles and is reported, also when another program already
++ * compiled the same shader with the same key.
++ */
++void (*vc4_compiled_variant_hook)(enum qstage stage,
++                                  const struct vc4_key *key, uint32_t key_size,
++                                  const struct vc4_compiled_shader *shader,
++                                  const uint64_t *qpu_insts,
++                                  uint32_t qpu_inst_count);
++
+ static struct vc4_compiled_shader *
+ vc4_get_compiled_shader(struct vc4_context *vc4, enum qstage stage,
+                         struct vc4_key *key)
+@@ -2655,7 +2668,7 @@ vc4_get_compiled_shader(struct vc4_context *vc4, enum qstage stage,
+ 
+         struct vc4_compiled_shader *shader;
+         struct hash_entry *entry = _mesa_hash_table_search(ht, key);
+-        if (entry)
++        if (entry && !vc4_compiled_variant_hook)
+                 return entry->data;
+ 
+         struct vc4_compile *c = vc4_shader_ntq(vc4, stage, key, try_threading);
+@@ -2698,6 +2711,11 @@ vc4_get_compiled_shader(struct vc4_context *vc4, enum qstage stage,
+ 
+         shader->fs_threaded = c->fs_threaded;
+ 
++        if (vc4_compiled_variant_hook && !shader->failed) {
++                vc4_compiled_variant_hook(stage, key, key_size, shader,
++                                          c->qpu_insts, c->qpu_inst_count);
++        }
++
+         qir_compile_destroy(c);
+ 
+         struct vc4_key *dup_key;
