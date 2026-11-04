@@ -2,7 +2,8 @@
  * The bare-GPU probe for the Raspberry Pi 3's VideoCore IV 3D core (V3D 2.1):
  * PI3_PLAN P1 (§6.2, §8). No driver: the 3D core's registers, power and
  * memory from the firmware's mailbox (plat.h), command lists built here.
- *   pi3_probe [--power=domain|qpu] [--variant=mesa] [--rotate] [--ref=FILE.ppm] [--out=DIR] [TEST...]
+ *   pi3_probe [OPTIONS] [--ref=FILE.ppm] [--texref=FILE.ppm] [--out=DIR] [TEST...]
+ *   sudo ./pi3_probe --ref=mesa_triangle.ppm --texref=mesa_texture.ppm
  * Tests (all by default, in this order):
  *   ident     IDENT0..2 decoded; IDENT0 must be 0x02443356.
  *   clear     a render list alone: a 128x128 RGBA8888 raster frame cleared
@@ -14,10 +15,27 @@
  *             (that program's picture), pixel for pixel.
  *   stride    raster stores into frames 128, 130 and 129 pixels wide: how
  *             the rows are laid out (§2, "Raster stores": no stride field).
- *   clearseq  (only when named) five render-only clears with changing
- *             colours: which colour each job stores.
- * Power: --power=qpu (the default) is the mailbox's SET_ENABLE_QPU; with
- * --power=domain (SET_DOMAIN_STATE) the registers read 0xdeadbeef.
+ *   texture   a quad sampling a 16x16 texture with Mesa's shaders for
+ *             tests/pi3/ref/mesa_texture.c, the texture stored LT (as Mesa
+ *             stores it) and raster (type RGBA32R); each compared with
+ *             --texref (that program's picture). Then raster textures of
+ *             other sizes, checked by the CPU: power-of-two widths must be
+ *             right, the others are reported (their rows are misread).
+ * Only when named:
+ *   clearseq  five render-only clears with changing colours: which colour
+ *             each job stores (with --variant=mesa: the previous one's).
+ *   texrepeat the textured quad and the triangle 40 times each (the lost
+ *             tile of a core not reset, see plat_linux.c's reset_core).
+ *   rastermap where the TMU reads raster textures of various sizes.
+ *   power     whether the firmware counts SET_ENABLE_QPU (it does).
+ * Options: --power=qpu (the default: the mailbox's SET_ENABLE_QPU, the core
+ * power-cycled at open into its reset state) or --power=domain
+ * (SET_DOMAIN_STATE: the registers then read 0xdeadbeef); --no-reset (no
+ * power cycle at open); --keep-power (leave the core on at exit);
+ * --errstat (ERRSTAT around each draw); --concurrent (binner and renderer
+ * started together) or --bin-delay=US; --no-render-flush (no texture-cache
+ * flush before the render job); --rotate (each render list at another
+ * address).
  * Lists, shaders and buffers follow Mesa's vc4 (MIT): the binning list as
  * vc4_job.c and the kernel's validation leave it (kernel/vc4_validate.c),
  * packets from src/broadcom/cle/vc4_packet.xml; the render list as Mesa's
@@ -129,10 +147,21 @@ static void wr(uint32_t off, uint32_t v)
     plat_regs()[off / 4] = v;
 }
 
+/* The CPU's view of the allocation ends at mem.size: a write past it lands in
+ * whatever the next pages map (one such bug rebooted the Pi). */
+static void in_bounds(uint32_t off, uint32_t bytes)
+{
+    if (off > mem.size || bytes > mem.size - off) {
+        fprintf(stderr, "probe bug: GPU memory access %#x+%#x beyond %#x\n", off, bytes, mem.size);
+        abort();
+    }
+}
+
 static void gpu_write(uint32_t off, const void *src, uint32_t bytes)
 {
     const uint8_t *s = src;
     uint32_t k;
+    in_bounds(off, bytes);
     for (k = 0; k < bytes; k += 4) {
         uint32_t w = 0;
         memcpy(&w, s + k, bytes - k < 4 ? bytes - k : 4);
@@ -143,12 +172,14 @@ static void gpu_write(uint32_t off, const void *src, uint32_t bytes)
 static void gpu_fill(uint32_t off, uint32_t value, uint32_t words)
 {
     uint32_t k;
+    in_bounds(off, words * 4);
     for (k = 0; k < words; k++)
         mem.cpu[off / 4 + k] = value;
 }
 
 static uint32_t gpu_word(uint32_t off)
 {
+    in_bounds(off, 4);
     return mem.cpu[off / 4];
 }
 
@@ -220,6 +251,23 @@ static void flush_caches(void)
     wr(V3D_SLCACTL, 0x0f0f0f0f); /* TMU1, TMU0, uniform and instruction caches of every slice */
 }
 
+/* Before a render job, as Linux's vc4_submit_next_render_job: the L2 and the
+ * TMU caches only (--no-render-flush leaves it out). */
+static int no_render_flush;
+/* --concurrent: start the binner and the renderer together (bin_mode 1);
+ * --bin-delay=US: wait that long between the binner's end and the
+ * renderer's start. By default the renderer starts when BFC counts the
+ * binning done. */
+static int bin_mode, bin_delay_us;
+
+static void flush_texture_caches(void)
+{
+    if (no_render_flush)
+        return;
+    wr(V3D_L2CACTL, 1u << 2);
+    wr(V3D_SLCACTL, 0x0f0f0000);
+}
+
 static void run_list(int thread, uint32_t off, uint32_t len)
 {
     uint32_t ca = thread ? V3D_CT1CA : V3D_CT0CA, ea = thread ? V3D_CT1EA : V3D_CT0EA;
@@ -232,6 +280,40 @@ static void check(int ok, const char *what)
     printf("  %s: %s\n", what, ok ? "ok" : "FAILED");
     if (!ok)
         failures++;
+}
+
+/* QPU scheduler, VPM and cache registers (guide, section 10). */
+static void show_sched(const char *when)
+{
+    printf("%s: SQRSV0 %08x SQRSV1 %08x SQCNTL %08x VPACNTL %08x VPMBASE %08x L2CACTL %08x BPOA %08x BPOS %08x "
+           "BPCA %08x BPCS %08x ERRSTAT %08x DBGE %08x\n",
+           when, rd(0x410), rd(0x414), rd(0x418), rd(0x500), rd(V3D_VPMBASE), rd(V3D_L2CACTL), rd(V3D_BPOA),
+           rd(V3D_BPOS), rd(V3D_BPCA), rd(V3D_BPCS), rd(V3D_ERRSTAT), rd(V3D_DBGE));
+}
+
+/* --- power --------------------------------------------------------------- */
+
+/* Is SET_ENABLE_QPU counted? Marks VPMBASE (reset value 0x10), enables a
+ * second time, disables once and looks; disables again, looks; enables, and
+ * the mark is gone if the core was reset. (Only when named.) */
+static void test_power(void)
+{
+    uint32_t v[1];
+    printf("power: SET_ENABLE_QPU counting\n");
+    wr(V3D_VPMBASE, 5);
+    printf("  marked: VPMBASE %08x\n", rd(V3D_VPMBASE));
+    v[0] = 1;
+    plat_mbox(0x00030012, v, 1);
+    v[0] = 0;
+    plat_mbox(0x00030012, v, 1);
+    printf("  enable, disable: IDENT0 %08x VPMBASE %08x\n", rd(V3D_IDENT0), rd(V3D_VPMBASE));
+    v[0] = 0;
+    plat_mbox(0x00030012, v, 1);
+    printf("  disable again: IDENT0 %08x VPMBASE %08x\n", rd(V3D_IDENT0), rd(V3D_VPMBASE));
+    v[0] = 1;
+    plat_mbox(0x00030012, v, 1);
+    printf("  enable: IDENT0 %08x VPMBASE %08x (0x10: reset)\n", rd(V3D_IDENT0), rd(V3D_VPMBASE));
+    check(rd(V3D_IDENT0) == 0x02443356, "powered again");
 }
 
 /* --- ident --------------------------------------------------------------- */
@@ -373,30 +455,7 @@ static void test_clearseq(void)
     }
 }
 
-/* --- triangle ------------------------------------------------------------ */
-
-/* Mesa vc4's code for tests/pi3/ref/mesa_triangle.c (Mesa 26.2.2 on the Pi,
- * VC4_DEBUG=qpu): fragment "prog 1/4", vertex "prog 0/3", coordinate
- * "prog 0/4". Uniforms, in the order the code reads them: vertex and
- * coordinate shader 1.0 (w), viewport x scale, y scale (in 1/16 pixel), z
- * offset; fragment shader the packed colour. */
-static const uint64_t fs_code[] = {
-    0x100009e7009e7000ull, 0x100009e7009e7000ull, 0x10020ba715827d80ull, /* mov tlb_color_all, uni */
-    0x300009e7009e7000ull, 0x100009e7009e7000ull, 0x500009e7009e7000ull,
-};
-static const uint64_t vs_code[] = {
-    0xd002102702821f80ull, 0xe0024c6700201a00ull, 0x100049e020c20037ull, 0x100049e1209c0007ull,
-    0x1012402227c20277ull, 0x100049e3209c0017ull, 0x10220027079e76c0ull, 0xe0025c6700001a00ull,
-    0x10020c2715027d80ull, 0x10020c2715827d80ull, 0x10020c27159c0fc0ull, 0x300009e7009e7000ull,
-    0x100009e7009e7000ull, 0x100009e7009e7000ull,
-};
-static const uint64_t cs_code[] = {
-    0xe0024c6700201a00ull, 0xe0025c6700001a00ull, 0xd002102702821f80ull, 0x1002086715c27d80ull,
-    0x10024c233582724eull, 0x100248a135c00d9full, 0x1012402027827256ull, 0x10024c20359c0487ull,
-    0xd0020c27159c0fc0ull, 0x10220027079e7000ull, 0xd0020c27159e0fc0ull, 0x10020c2715027d80ull,
-    0x10020c2715827d80ull, 0x10020c27159c0fc0ull, 0x300009e7009e7000ull, 0x100009e7009e7000ull,
-    0x100009e7009e7000ull,
-};
+/* --- pictures ----------------------------------------------------------- */
 
 static void write_ppm(const char *path, uint32_t fb_off, int w, int h)
 {
@@ -426,7 +485,7 @@ static long compare_ppm(const char *path, uint32_t fb_off, int w, int h)
 {
     FILE *f = fopen(path, "rb");
     int pw, ph, maxv, x, y;
-    long diff = 0;
+    long diff = 0, tile_diff[4] = {0, 0, 0, 0}, clear_diff = 0;
     if (!f) {
         perror(path);
         return -1;
@@ -443,73 +502,115 @@ static long compare_ppm(const char *path, uint32_t fb_off, int w, int h)
             uint32_t p = gpu_word(fb_off + (uint32_t)(y * w + x) * 4);
             if ((uint32_t)r != (p & 0xff) || (uint32_t)g != ((p >> 8) & 0xff) || (uint32_t)b != ((p >> 16) & 0xff)) {
                 if (diff < 5)
-                    printf("  differs at (%d,%d): ours %02x %02x %02x, Mesa's %02x %02x %02x\n", x, h - 1 - y,
-                           p & 0xff, (p >> 8) & 0xff, (p >> 16) & 0xff, r, g, b);
+                    printf("  differs at memory (%d,%d): ours %08x, Mesa's %02x %02x %02x\n", x, y, p, r, g, b);
                 diff++;
+                tile_diff[((y / 64) * 2 + x / 64) & 3]++;
+                if (p == 0xff400000)
+                    clear_diff++;
             }
         }
     fclose(f);
+    if (diff)
+        printf("  differing pixels by tile (x,y in tiles; memory rows): (0,0) %ld (1,0) %ld (0,1) %ld (1,1) %ld; "
+               "%ld of them hold the clear colour\n",
+               tile_diff[0], tile_diff[1], tile_diff[2], tile_diff[3], clear_diff);
     return diff;
 }
 
-static void test_triangle(const char *ref, const char *outdir)
+/* --- drawing ------------------------------------------------------------- */
+
+/* One draw into the 128x128 frame at OFF_FB, cleared first: Mesa's shaders,
+ * their uniform streams, vertex attributes, and our binning and render
+ * lists. */
+struct attr {
+    uint32_t off;    /* in the vertex buffer */
+    uint32_t bytes;  /* per vertex */
+    uint32_t stride;
+    uint32_t vs_vpm; /* VPM offsets (bytes) for the vertex and coordinate shader */
+    uint32_t cs_vpm;
+};
+
+struct draw {
+    const char *name;
+    const uint64_t *fs, *vs, *cs;
+    uint32_t fs_size, vs_size, cs_size; /* bytes */
+    const uint32_t *fs_unif, *vs_unif, *cs_unif;
+    uint32_t fs_unifs, vs_unifs, cs_unifs; /* words */
+    int fs_threaded, fs_varyings;
+    const struct attr *attr;
+    int attrs;
+    uint32_t vs_select, vs_size_attr, cs_select, cs_size_attr;
+    const void *vertices;
+    uint32_t vertices_size;
+    int mode, count; /* GL primitive mode, vertices */
+    uint32_t clear;
+};
+
+/* The tile allocation's first 1 KB, the tile state array and the pool
+ * registers after the last draw. */
+static uint32_t bin_snap[256], tsda_snap[48], bpca_snap, bpcs_snap, good_snap[2][256];
+static int have_good[2]; /* per draw: [0] triangle, [1] the others */
+
+static void dump_words(const char *what, const uint32_t *w, int n)
 {
-    static const float tri[] = {-0.75f, -0.75f, 0.75f, -0.5f, -0.25f, 0.75f};
-    const uint32_t clear = 0xff400000, color = 0xff4080ff; /* (0,0,.25,1) and (1,.5,.25,1) */
-    const float w_one = 1.0f, xs = 64.0f * 16.0f, ys = 64.0f * 16.0f, zoff = 0.5f;
-    uint32_t vs_unif[4], fs_unif[1], code_fs, code_vs, code_cs, u_fs, u_vs, u_cs, rlen;
+    int k;
+    printf("  %s:", what);
+    for (k = 0; k < n; k++)
+        printf("%s%08x", k % 8 ? " " : "\n    ", w[k]);
+    printf("\n");
+}
+
+/* --errstat: ERRSTAT around each draw. */
+static int show_err;
+static uint32_t err_before, err_binned;
+
+static int run_draw(const struct draw *d)
+{
+    uint32_t code_fs, code_vs, code_cs, u_fs, u_vs, u_cs, rlen;
     struct cl c;
-    char path[512];
-    uint32_t seg_lo = (mem.bus + OFF_TSDA) & 0xf0000000u, seg_hi = (mem.bus + OFF_OVERFLOW + OVERFLOW_SIZE - 1) & 0xf0000000u;
-
-    printf("triangle: 128x128, Mesa's shaders, our lists\n");
-    check(seg_lo == seg_hi, "binner memory in one 256 MB segment");
-
-    memcpy(&vs_unif[0], &w_one, 4);
-    memcpy(&vs_unif[1], &xs, 4);
-    memcpy(&vs_unif[2], &ys, 4);
-    memcpy(&vs_unif[3], &zoff, 4);
-    fs_unif[0] = color;
+    int k;
 
     code_fs = OFF_CODE;
-    code_vs = code_fs + sizeof fs_code;
-    code_cs = code_vs + sizeof vs_code;
-    gpu_write(code_fs, fs_code, sizeof fs_code);
-    gpu_write(code_vs, vs_code, sizeof vs_code);
-    gpu_write(code_cs, cs_code, sizeof cs_code);
+    code_vs = code_fs + d->fs_size;
+    code_cs = code_vs + d->vs_size;
+    gpu_write(code_fs, d->fs, d->fs_size);
+    gpu_write(code_vs, d->vs, d->vs_size);
+    gpu_write(code_cs, d->cs, d->cs_size);
     u_fs = OFF_UNIFORMS;
-    u_vs = u_fs + 16;
-    u_cs = u_vs + 16;
-    gpu_write(u_fs, fs_unif, sizeof fs_unif);
-    gpu_write(u_vs, vs_unif, sizeof vs_unif);
-    gpu_write(u_cs, vs_unif, sizeof vs_unif);
-    gpu_write(OFF_VERTICES, tri, sizeof tri);
+    u_vs = u_fs + 64;
+    u_cs = u_vs + 64;
+    gpu_write(u_fs, d->fs_unif, d->fs_unifs * 4);
+    gpu_write(u_vs, d->vs_unif, d->vs_unifs * 4);
+    gpu_write(u_cs, d->cs_unif, d->cs_unifs * 4);
+    gpu_write(OFF_VERTICES, d->vertices, d->vertices_size);
 
-    /* GL shader state record (36 bytes) and one attribute record. */
+    /* GL shader state record (36 bytes) and the attribute records (8 each). */
     c.n = 0;
-    u16_(&c, SHADER_ENABLE_CLIPPING | SHADER_FS_SINGLE_THREAD);
+    u16_(&c, SHADER_ENABLE_CLIPPING | (d->fs_threaded ? 0 : SHADER_FS_SINGLE_THREAD));
     u8_(&c, 0); /* fragment shader: uniforms (unused), varyings */
-    u8_(&c, 0);
+    u8_(&c, (uint32_t)d->fs_varyings);
     u32_(&c, mem.bus + code_fs);
     u32_(&c, mem.bus + u_fs);
     u16_(&c, 0); /* vertex shader: uniforms (unused), attribute select, total attribute size */
-    u8_(&c, 1);
-    u8_(&c, 8);
+    u8_(&c, d->vs_select);
+    u8_(&c, d->vs_size_attr);
     u32_(&c, mem.bus + code_vs);
     u32_(&c, mem.bus + u_vs);
     u16_(&c, 0); /* coordinate shader */
-    u8_(&c, 1);
-    u8_(&c, 8);
+    u8_(&c, d->cs_select);
+    u8_(&c, d->cs_size_attr);
     u32_(&c, mem.bus + code_cs);
     u32_(&c, mem.bus + u_cs);
-    u32_(&c, mem.bus + OFF_VERTICES); /* attribute 0: vec2 float */
-    u8_(&c, 7);                       /* bytes - 1 */
-    u8_(&c, 8);                       /* stride */
-    u8_(&c, 0);                       /* VPM offset, vertex shader */
-    u8_(&c, 0);                       /* VPM offset, coordinate shader */
+    for (k = 0; k < d->attrs; k++) {
+        u32_(&c, mem.bus + OFF_VERTICES + d->attr[k].off);
+        u8_(&c, d->attr[k].bytes - 1);
+        u8_(&c, d->attr[k].stride);
+        u8_(&c, d->attr[k].vs_vpm);
+        u8_(&c, d->attr[k].cs_vpm);
+    }
     gpu_write(OFF_SHADER_REC, c.b, c.n);
 
-    /* The binning list (Mesa's for this draw, with the kernel's binner set-up). */
+    /* The binning list (Mesa's for such a draw, with the kernel's binner set-up). */
     c.n = 0;
     u8_(&c, PKT_TILE_BINNING_MODE_CONFIG);
     u32_(&c, mem.bus + OFF_TALLOC);
@@ -549,44 +650,418 @@ static void test_triangle(const char *ref, const char *outdir)
     u8_(&c, PKT_FLAT_SHADE_FLAGS);
     u32_(&c, 0);
     u8_(&c, PKT_GL_SHADER_STATE);
-    u32_(&c, (mem.bus + OFF_SHADER_REC) | 1); /* one attribute array */
+    u32_(&c, (mem.bus + OFF_SHADER_REC) | (uint32_t)(d->attrs & 7)); /* 0 means 8 */
     u8_(&c, PKT_GL_ARRAY_PRIMITIVE);
-    u8_(&c, 4); /* triangles */
-    u32_(&c, 3);
+    u8_(&c, (uint32_t)d->mode);
+    u32_(&c, (uint32_t)d->count);
     u32_(&c, 0);
     u8_(&c, PKT_INCREMENT_SEMAPHORE);
     u8_(&c, PKT_FLUSH);
     gpu_write(OFF_BCL, c.b, c.n);
 
     gpu_fill(OFF_FB, 0x55555555, 128 * 128);
-    rlen = build_rcl(OFF_FB, 128, 128, clear, 1);
+    rlen = build_rcl(OFF_FB, 128, 128, d->clear, 1);
 
     wr(V3D_BPOA, mem.bus + OFF_OVERFLOW);
     wr(V3D_BPOS, OVERFLOW_SIZE);
     wr(V3D_BFC, 1);
     wr(V3D_RFC, 1);
     flush_caches();
-    run_list(0, OFF_BCL, c.n);
-    if (wait_count(V3D_BFC, 1, "binning")) {
-        reset_threads();
-        failures++;
-        return;
+    err_before = rd(V3D_ERRSTAT);
+    if (bin_mode == 1) {
+        /* Both threads at once: the render list's WAIT_ON_SEMAPHORE waits
+         * for the binning list's INCREMENT_SEMAPHORE. */
+        run_list(0, OFF_BCL, c.n);
+        run_list(1, rcl_off, rlen);
+        if (wait_count(V3D_BFC, 1, "binning")) {
+            reset_threads();
+            return -1;
+        }
+    } else {
+        run_list(0, OFF_BCL, c.n);
+        if (wait_count(V3D_BFC, 1, "binning")) {
+            reset_threads();
+            return -1;
+        }
+        if (bin_delay_us) {
+            uint64_t t0 = plat_time_us();
+            while (plat_time_us() - t0 < (uint64_t)bin_delay_us)
+                ;
+        }
+        err_binned = rd(V3D_ERRSTAT);
+        flush_texture_caches();
+        run_list(1, rcl_off, rlen);
     }
-    run_list(1, rcl_off, rlen);
     if (wait_count(V3D_RFC, 1, "render")) {
         reset_threads();
+        return -1;
+    }
+    if (show_err)
+        printf("  ERRSTAT before %08x, after binning %08x, after rendering %08x\n", err_before, err_binned,
+               rd(V3D_ERRSTAT));
+    {   /* the binner's results, for picture() when the picture is wrong */
+        uint32_t k;
+        for (k = 0; k < 256; k++)
+            bin_snap[k] = gpu_word(OFF_TALLOC + k * 4);
+        for (k = 0; k < 48; k++)
+            tsda_snap[k] = gpu_word(OFF_TSDA + k * 4);
+        bpca_snap = rd(V3D_BPCA) - mem.bus;
+        bpcs_snap = rd(V3D_BPCS);
+    }
+    return 0;
+}
+
+/* Writes DIR/NAME.ppm and compares the frame with ref (when given). */
+static void picture(const struct draw *d, const char *ref, const char *outdir)
+{
+    char path[512];
+    printf("  pixel (64,64) %08x, pixel (2,2) %08x\n", gpu_word(OFF_FB + (64 * 128 + 64) * 4),
+           gpu_word(OFF_FB + (2 * 128 + 2) * 4));
+    snprintf(path, sizeof path, "%s/%s.ppm", outdir, d->name);
+    write_ppm(path, OFF_FB, 128, 128);
+    if (ref) {
+        int g = strcmp(d->name, "triangle") != 0;
+        long n = compare_ppm(ref, OFF_FB, 128, 128);
+        if (n >= 0)
+            printf("  %ld of %d pixels differ from %s\n", n, 128 * 128, ref);
+        check(n == 0, "the same picture as Mesa's");
+        if (n == 0 && !have_good[g]) {
+            memcpy(good_snap[g], bin_snap, sizeof bin_snap);
+            have_good[g] = 1;
+        }
+        if (n > 0) {
+            printf("  pool after binning: BPCA offset %#x, BPCS %#x\n", bpca_snap, bpcs_snap);
+            dump_words("tile state array (48 bytes per tile)", tsda_snap, 48);
+            dump_words("tile allocation, first 1 KB, this run", bin_snap, 128);
+            if (have_good[g])
+                dump_words("tile allocation, first 1 KB, a good run", good_snap[g], 128);
+        }
+    }
+}
+
+/* The vertex and coordinate shaders' uniforms in both Mesa programs: 1.0 (w),
+ * the viewport's x and y scale (1/16 pixel), its z offset. */
+static void viewport_uniforms(uint32_t *u)
+{
+    const float f[4] = {1.0f, 64.0f * 16.0f, 64.0f * 16.0f, 0.5f};
+    memcpy(u, f, sizeof f);
+}
+
+/* --- triangle ------------------------------------------------------------ */
+
+/* Mesa vc4's code for tests/pi3/ref/mesa_triangle.c (Mesa 26.2.2 on the Pi,
+ * VC4_DEBUG=qpu): fragment "prog 1/4", vertex "prog 0/3", coordinate
+ * "prog 0/4". Uniforms, in the order the code reads them: vertex and
+ * coordinate shader as viewport_uniforms; fragment shader the packed colour.
+ * The fragment shader is not threaded. */
+static const uint64_t tri_fs[] = {
+    0x100009e7009e7000ull, 0x100009e7009e7000ull, 0x10020ba715827d80ull, /* mov tlb_color_all, uni */
+    0x300009e7009e7000ull, 0x100009e7009e7000ull, 0x500009e7009e7000ull,
+};
+static const uint64_t tri_vs[] = {
+    0xd002102702821f80ull, 0xe0024c6700201a00ull, 0x100049e020c20037ull, 0x100049e1209c0007ull,
+    0x1012402227c20277ull, 0x100049e3209c0017ull, 0x10220027079e76c0ull, 0xe0025c6700001a00ull,
+    0x10020c2715027d80ull, 0x10020c2715827d80ull, 0x10020c27159c0fc0ull, 0x300009e7009e7000ull,
+    0x100009e7009e7000ull, 0x100009e7009e7000ull,
+};
+static const uint64_t tri_cs[] = {
+    0xe0024c6700201a00ull, 0xe0025c6700001a00ull, 0xd002102702821f80ull, 0x1002086715c27d80ull,
+    0x10024c233582724eull, 0x100248a135c00d9full, 0x1012402027827256ull, 0x10024c20359c0487ull,
+    0xd0020c27159c0fc0ull, 0x10220027079e7000ull, 0xd0020c27159e0fc0ull, 0x10020c2715027d80ull,
+    0x10020c2715827d80ull, 0x10020c27159c0fc0ull, 0x300009e7009e7000ull, 0x100009e7009e7000ull,
+    0x100009e7009e7000ull,
+};
+
+static void test_triangle(const char *ref, const char *outdir)
+{
+    static const float tri[] = {-0.75f, -0.75f, 0.75f, -0.5f, -0.25f, 0.75f};
+    static const struct attr a[] = {{0, 8, 8, 0, 0}};
+    static const uint32_t fs_unif[] = {0xff4080ff}; /* (1, .5, .25, 1) */
+    uint32_t vp[4];
+    struct draw d;
+    uint32_t seg_lo = (mem.bus + OFF_TSDA) & 0xf0000000u,
+             seg_hi = (mem.bus + OFF_OVERFLOW + OVERFLOW_SIZE - 1) & 0xf0000000u;
+
+    printf("triangle: 128x128, Mesa's shaders, our lists\n");
+    check(seg_lo == seg_hi, "binner memory in one 256 MB segment");
+    viewport_uniforms(vp);
+    memset(&d, 0, sizeof d);
+    d.name = "triangle";
+    d.fs = tri_fs, d.fs_size = sizeof tri_fs;
+    d.vs = tri_vs, d.vs_size = sizeof tri_vs;
+    d.cs = tri_cs, d.cs_size = sizeof tri_cs;
+    d.fs_unif = fs_unif, d.fs_unifs = 1;
+    d.vs_unif = d.cs_unif = vp, d.vs_unifs = d.cs_unifs = 4;
+    d.attr = a, d.attrs = 1;
+    d.vs_select = d.cs_select = 1, d.vs_size_attr = d.cs_size_attr = 8;
+    d.vertices = tri, d.vertices_size = sizeof tri;
+    d.mode = 4, d.count = 3; /* GL_TRIANGLES */
+    d.clear = 0xff400000;    /* (0, 0, .25, 1) */
+    if (run_draw(&d)) {
         failures++;
         return;
     }
-    printf("  pixel (64,64) %08x, pixel (2,2) %08x\n", gpu_word(OFF_FB + (64 * 128 + 64) * 4),
-           gpu_word(OFF_FB + (2 * 128 + 2) * 4));
-    snprintf(path, sizeof path, "%s/triangle.ppm", outdir);
-    write_ppm(path, OFF_FB, 128, 128);
-    if (ref) {
-        long d = compare_ppm(ref, OFF_FB, 128, 128);
-        if (d >= 0)
-            printf("  %ld of %d pixels differ from %s\n", d, 128 * 128, ref);
-        check(d == 0, "the same picture as Mesa's");
+    picture(&d, ref, outdir);
+}
+
+/* --- texture ------------------------------------------------------------- */
+
+/* Mesa vc4's code for tests/pi3/ref/mesa_texture.c (VC4_DEBUG=qpu,qir):
+ * fragment "prog 1/1" (threaded; 2 varyings; texture2D through TMU0, which
+ * takes its configuration words P0 and P1 from the uniform stream: the stream
+ * is P0, P1), vertex "prog 0/1" (position and texture coordinate, 16 bytes),
+ * coordinate "prog 0/2" (position only); their uniforms as
+ * viewport_uniforms. */
+static const uint64_t tex_fs[] = {
+    0x100049e0203e303eull, 0x100248e1213e317eull, 0x600208a7019e7340ull, 0x10021e67159e7480ull,
+    0x10021e27159e76c0ull, 0xa00009e7009e7000ull, 0x190208e7049e7900ull, 0x1b424823849e791bull,
+    0x1d524863849e7900ull, 0x1f6248a3849e7909ull, 0x117049e3809e7012ull, 0x10020ba7159e76c0ull,
+    0x300009e7009e7000ull, 0x100009e7009e7000ull, 0x500009e7009e7000ull,
+};
+static const uint64_t tex_vs[] = {
+    0xd002102702821f80ull, 0xe0024c6700401a00ull, 0x100049e220c20037ull, 0x100049e3209c0017ull,
+    0x1012402027c206f7ull, 0x1002482135c00d87ull, 0x1022402187c27276ull, 0xe0025c6700001a00ull,
+    0x10020c2715027d80ull, 0x10020c2715827d80ull, 0x10020c27159c0fc0ull, 0x10020c27159e7000ull,
+    0x10020c27159e7240ull, 0x300009e7009e7000ull, 0x100009e7009e7000ull, 0x100009e7009e7000ull,
+};
+static const uint64_t tex_cs[] = {
+    0xe0024c6700201a00ull, 0xe0025c6700001a00ull, 0xd002102702821f80ull, 0x1002086715c27d80ull,
+    0x10024c233582724eull, 0x100248a135c00d9full, 0x1012402027827256ull, 0x10024c20359c0487ull,
+    0xd0020c27159c0fc0ull, 0x10220027079e7000ull, 0xd0020c27159e0fc0ull, 0x10020c2715027d80ull,
+    0x10020c2715827d80ull, 0x10020c27159c0fc0ull, 0x300009e7009e7000ull, 0x100009e7009e7000ull,
+    0x100009e7009e7000ull,
+};
+
+#define TEX_TYPE_RGBA8888 0
+#define TEX_TYPE_RGBA32R 16
+#define OFF_TEXTURE 0x306000 /* 4 KB aligned: P0 holds the address in 4 KB units */
+
+/* mesa_texture's 16x16 texel (x, y), as a little-endian RGBA8888 word. */
+static uint32_t texel(int x, int y)
+{
+    return (uint32_t)(x * 16) | (uint32_t)(y * 16) << 8 | ((x + y) & 1 ? 0xffu : 0) << 16 | 0xffu << 24;
+}
+
+/* Draws mesa_texture's quad with its 16x16 texture stored as layout: "lt"
+ * (4x4-pixel utiles of 64 bytes in raster order, type RGBA8888: what Mesa
+ * uses for a texture this small; the TMU picks LT by the size) or "raster"
+ * (rows of 64 bytes, type RGBA32R). */
+static void texture_case(const char *layout, const char *ref, const char *outdir)
+{
+    static const float quad[] = {-0.75f, -0.75f, 0.0f, 0.0f, 0.75f, -0.75f, 1.0f, 0.0f,
+                                 -0.75f, 0.75f,  0.0f, 1.0f, 0.75f, 0.75f,  1.0f, 1.0f};
+    static const struct attr a[] = {{0, 8, 16, 0, 0}, {8, 8, 16, 8, 0}};
+    int lt = !strcmp(layout, "lt"), type = lt ? TEX_TYPE_RGBA8888 : TEX_TYPE_RGBA32R, x, y;
+    uint32_t fs_unif[2], vp[4];
+    struct draw d;
+    char name[64];
+
+    printf("texture %s: 16x16 RGBA8, NEAREST, CLAMP_TO_EDGE, type %d\n", layout, type);
+    for (y = 0; y < 16; y++)
+        for (x = 0; x < 16; x++) {
+            uint32_t off = lt ? (uint32_t)(((y / 4) * 4 + x / 4) * 64 + (y % 4) * 16 + (x % 4) * 4)
+                              : (uint32_t)(y * 64 + x * 4);
+            in_bounds(OFF_TEXTURE + off, 4);
+            mem.cpu[(OFF_TEXTURE + off) / 4] = texel(x, y);
+        }
+    /* P0: address (4 KB units), the type's low 4 bits, no mip levels beyond
+     * 0. P1: the type's bit 4, height, width, NEAREST magnification (1) and
+     * minification (1), CLAMP wrap (1) in t and s. */
+    fs_unif[0] = (mem.bus + OFF_TEXTURE) | (uint32_t)(type & 15) << 4;
+    fs_unif[1] = (uint32_t)(type >> 4) << 31 | 16u << 20 | 16u << 8 | 1u << 7 | 1u << 4 | 1u << 2 | 1u;
+    viewport_uniforms(vp);
+
+    memset(&d, 0, sizeof d);
+    snprintf(name, sizeof name, "texture_%s", layout);
+    d.name = name;
+    d.fs = tex_fs, d.fs_size = sizeof tex_fs;
+    d.vs = tex_vs, d.vs_size = sizeof tex_vs;
+    d.cs = tex_cs, d.cs_size = sizeof tex_cs;
+    d.fs_unif = fs_unif, d.fs_unifs = 2;
+    d.vs_unif = d.cs_unif = vp, d.vs_unifs = d.cs_unifs = 4;
+    d.fs_threaded = 1, d.fs_varyings = 2;
+    d.attr = a, d.attrs = 2;
+    d.vs_select = 3, d.vs_size_attr = 16, d.cs_select = 1, d.cs_size_attr = 8;
+    d.vertices = quad, d.vertices_size = sizeof quad;
+    d.mode = 5, d.count = 4; /* GL_TRIANGLE_STRIP */
+    d.clear = 0xff400000;
+    if (run_draw(&d)) {
+        failures++;
+        return;
+    }
+    picture(&d, ref, outdir);
+}
+
+/* A raster (RGBA32R) texture of w x h, rows of w * 4 bytes, NEAREST: the
+ * same quad, checked by the CPU. Texel (x, y) holds R = x, G = y, B = x ^ y
+ * (mod 256); every pixel inside the quad (away from its edges) must decode
+ * to a texel within one of where NEAREST sampling puts it. Mesa copies
+ * raster textures to a tiled shadow ("Raspberry Pi doesn't support sampling
+ * from raster textures", vc4_state.c); this measures what the TMU does. */
+static int raster_size(int w, int h, int stride, int quiet)
+{
+    static const float quad[] = {-0.75f, -0.75f, 0.0f, 0.0f, 0.75f, -0.75f, 1.0f, 0.0f,
+                                 -0.75f, 0.75f,  0.0f, 1.0f, 0.75f, 0.75f,  1.0f, 1.0f};
+    static const struct attr a[] = {{0, 8, 16, 0, 0}, {8, 8, 16, 8, 0}};
+    uint32_t fs_unif[2], vp[4];
+    struct draw d;
+    int x, y, bad = 0, checked = 0;
+
+    if (!quiet)
+        printf("texture raster %dx%d: NEAREST, CLAMP_TO_EDGE, rows of %d texels\n", w, h, stride);
+    for (y = 0; y < h; y++)
+        for (x = 0; x < w; x++) {
+            uint32_t off = OFF_TEXTURE + (uint32_t)(y * stride + x) * 4;
+            in_bounds(off, 4);
+            mem.cpu[off / 4] =
+                (uint32_t)(x & 255) | (uint32_t)(y & 255) << 8 | (uint32_t)((x ^ y) & 255) << 16 | 0xffu << 24;
+        }
+    fs_unif[0] = (mem.bus + OFF_TEXTURE) | (uint32_t)(TEX_TYPE_RGBA32R & 15) << 4;
+    fs_unif[1] = 1u << 31 | (uint32_t)(h & 2047) << 20 | (uint32_t)(w & 2047) << 8 | 1u << 7 | 1u << 4 | 1u << 2 | 1u;
+    viewport_uniforms(vp);
+    memset(&d, 0, sizeof d);
+    d.name = "texture_raster_size";
+    d.fs = tex_fs, d.fs_size = sizeof tex_fs;
+    d.vs = tex_vs, d.vs_size = sizeof tex_vs;
+    d.cs = tex_cs, d.cs_size = sizeof tex_cs;
+    d.fs_unif = fs_unif, d.fs_unifs = 2;
+    d.vs_unif = d.cs_unif = vp, d.vs_unifs = d.cs_unifs = 4;
+    d.fs_threaded = 1, d.fs_varyings = 2;
+    d.attr = a, d.attrs = 2;
+    d.vs_select = 3, d.vs_size_attr = 16, d.cs_select = 1, d.cs_size_attr = 8;
+    d.vertices = quad, d.vertices_size = sizeof quad;
+    d.mode = 5, d.count = 4;
+    d.clear = 0xff400000;
+    if (run_draw(&d)) {
+        failures++;
+        return -1;
+    }
+    /* The quad covers pixels 16 to 111 in x and y (memory row = GL row). */
+    for (y = 18; y < 110; y++)
+        for (x = 18; x < 110; x++) {
+            uint32_t p = gpu_word(OFF_FB + (uint32_t)(y * 128 + x) * 4);
+            int tx = (int)(((x + 0.5) - 16) / 96.0 * w), ty = (int)(((y + 0.5) - 16) / 96.0 * h);
+            int rx = (int)(p & 255), ry = (int)((p >> 8) & 255), rb = (int)((p >> 16) & 255);
+            int dx = ((rx - (tx & 255)) + 256) % 256, dy = ((ry - (ty & 255)) + 256) % 256;
+            checked++;
+            if (rb != ((rx ^ ry) & 255) || (dx > 1 && dx < 255) || (dy > 1 && dy < 255)) {
+                if (bad < 4 && !quiet)
+                    printf("  pixel (%d,%d): %08x, want texel about (%d,%d)\n", x, y, p, tx, ty);
+                bad++;
+            }
+        }
+    if (!quiet) {
+        printf("  %d of %d pixels wrong\n", bad, checked);
+        check(bad == 0, "raster texture sampled");
+    }
+    return bad;
+}
+
+/* Which row strides (in texels) work for a raster texture w wide: every
+ * multiple of 4 texels from w up to the next power of two. */
+static void raster_stride(int w, int h)
+{
+    int s, p2 = 1, found = 0;
+    while (p2 < w)
+        p2 <<= 1;
+    printf("raster stride of a %dx%d texture:", w, h);
+    for (s = (w + 3) & ~3; s <= p2; s += 4)
+        if (raster_size(w, h, s, 1) == 0) {
+            printf(" %d works", s);
+            found = 1;
+        }
+    printf("%s\n", found ? "" : " none of them");
+}
+
+/* Where the TMU reads a raster texture's texels: the memory holds each word's
+ * own index (R, G, B = bits 0-7, 8-15, 16-23), and for some texels the word
+ * index fetched is printed (from the pixel at the centre of the texel's
+ * footprint in the quad). */
+static void raster_map(int w, int h)
+{
+    static const float quad[] = {-0.75f, -0.75f, 0.0f, 0.0f, 0.75f, -0.75f, 1.0f, 0.0f,
+                                 -0.75f, 0.75f,  0.0f, 1.0f, 0.75f, 0.75f,  1.0f, 1.0f};
+    static const struct attr a[] = {{0, 8, 16, 0, 0}, {8, 8, 16, 8, 0}};
+    uint32_t fs_unif[2], vp[4], k;
+    struct draw d;
+    int ty, tx;
+
+    for (k = 0; k < (MEM_SIZE - OFF_TEXTURE) / 4; k++) /* to the end of the allocation, no further */
+        mem.cpu[OFF_TEXTURE / 4 + k] = k | 0xffu << 24;
+    fs_unif[0] = (mem.bus + OFF_TEXTURE) | (uint32_t)(TEX_TYPE_RGBA32R & 15) << 4;
+    fs_unif[1] = 1u << 31 | (uint32_t)(h & 2047) << 20 | (uint32_t)(w & 2047) << 8 | 1u << 7 | 1u << 4 | 1u << 2 | 1u;
+    viewport_uniforms(vp);
+    memset(&d, 0, sizeof d);
+    d.name = "texture_raster_map";
+    d.fs = tex_fs, d.fs_size = sizeof tex_fs;
+    d.vs = tex_vs, d.vs_size = sizeof tex_vs;
+    d.cs = tex_cs, d.cs_size = sizeof tex_cs;
+    d.fs_unif = fs_unif, d.fs_unifs = 2;
+    d.vs_unif = d.cs_unif = vp, d.vs_unifs = d.cs_unifs = 4;
+    d.fs_threaded = 1, d.fs_varyings = 2;
+    d.attr = a, d.attrs = 2;
+    d.vs_select = 3, d.vs_size_attr = 16, d.cs_select = 1, d.cs_size_attr = 8;
+    d.vertices = quad, d.vertices_size = sizeof quad;
+    d.mode = 5, d.count = 4;
+    d.clear = 0xff400000;
+    if (run_draw(&d)) {
+        failures++;
+        return;
+    }
+    /* Each row's first texel (w <= 96: every texel has its own pixel). */
+    printf("raster map %dx%d, word fetched for texel (0, y), y = 0, 1, ...:", w, h);
+    for (ty = 0; ty < h; ty++) {
+        int py = 16 + (int)((ty + 0.5) * 96.0 / h);
+        int px = 16 + (int)(0.5 * 96.0 / w);
+        (void)tx;
+        printf(" %u", gpu_word(OFF_FB + (uint32_t)(py * 128 + px) * 4) & 0xffffffu);
+    }
+    printf("\n");
+}
+
+static void test_rastermap(void)
+{
+    static const int widths[] = {16, 20, 24, 32, 36, 48, 64, 72, 80, 88, 96};
+    /* w, h, row stride in texels */
+    static const int sizes[][3] = {{64, 60, 64}, {64, 37, 64}, {32, 100, 32}, {128, 7, 128},
+                                   {72, 64, 128}, {100, 64, 128}, {72, 32, 128}, {72, 16, 128},
+                                   {72, 8, 128}, {72, 4, 128}, {100, 60, 128}, {72, 60, 128}};
+    unsigned i;
+    for (i = 0; i < sizeof widths / sizeof widths[0]; i++)
+        raster_map(widths[i], 16);
+    for (i = 0; i < sizeof sizes / sizeof sizes[0]; i++) {
+        int bad = raster_size(sizes[i][0], sizes[i][1], sizes[i][2], 1);
+        printf("raster %dx%d, rows of %d texels: %s\n", sizes[i][0], sizes[i][1], sizes[i][2],
+               bad ? "WRONG" : "right");
+    }
+    raster_stride(100, 60);
+    raster_stride(72, 60);
+    raster_stride(200, 40);
+    raster_stride(36, 20);
+}
+
+static void test_texture(const char *ref, const char *outdir)
+{
+    /* Raster textures read right when the width is a power of two (any
+     * height). Other widths are read with a row addressing no stride
+     * matches ("rastermap"): rows in groups of 4, spaced inside a group by
+     * the width rounded up to a power of two, the groups spaced by 4 times
+     * the width rounded up to a granule that depends on the height (4
+     * texels at height 16, 32 at heights 40 and 60). So they are only
+     * reported here. */
+    static const int good[][2] = {{64, 64}, {256, 16}, {16, 256}, {64, 37}, {32, 100}, {128, 7}};
+    static const int bad[][3] = {{72, 60, 72}, {72, 60, 128}, {100, 60, 100}, {200, 40, 200}};
+    unsigned i;
+
+    texture_case("lt", ref, outdir);
+    texture_case("raster", ref, outdir);
+    for (i = 0; i < sizeof good / sizeof good[0]; i++)
+        raster_size(good[i][0], good[i][1], good[i][0], 0);
+    for (i = 0; i < sizeof bad / sizeof bad[0]; i++) {
+        int n = raster_size(bad[i][0], bad[i][1], bad[i][2], 1);
+        printf("texture raster %dx%d, rows of %d texels: %d of 8464 pixels wrong (expected: the width is not a "
+               "power of two)\n",
+               bad[i][0], bad[i][1], bad[i][2], n);
     }
 }
 
@@ -641,30 +1116,44 @@ static void test_stride(void)
 int main(int argc, char **argv)
 {
     enum plat_power power = PLAT_POWER_QPU;
-    const char *ref = NULL, *outdir = ".";
-    int all = 1, k, want[5] = {0, 0, 0, 0, 0};
-    static const char *names[] = {"ident", "clear", "triangle", "stride", "clearseq"};
+    const char *ref = NULL, *texref = NULL, *outdir = ".";
+    int all = 1, k, want[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    static const char *names[] = {"ident", "clear", "triangle", "stride", "clearseq", "texture", "rastermap", "texrepeat", "power"};
 
     for (k = 1; k < argc; k++) {
         if (!strcmp(argv[k], "--power=qpu"))
             power = PLAT_POWER_QPU;
         else if (!strcmp(argv[k], "--variant=mesa"))
             mesa_order = 1;
+        else if (!strcmp(argv[k], "--no-render-flush"))
+            no_render_flush = 1;
+        else if (!strcmp(argv[k], "--concurrent"))
+            bin_mode = 1;
+        else if (!strncmp(argv[k], "--bin-delay=", 12))
+            bin_delay_us = atoi(argv[k] + 12);
+        else if (!strcmp(argv[k], "--no-reset"))
+            plat_no_reset = 1;
+        else if (!strcmp(argv[k], "--keep-power"))
+            plat_keep_power = 1;
+        else if (!strcmp(argv[k], "--errstat"))
+            show_err = 1;
         else if (!strcmp(argv[k], "--rotate"))
             rotate = 1;
         else if (!strcmp(argv[k], "--power=domain"))
             power = PLAT_POWER_DOMAIN;
         else if (!strncmp(argv[k], "--ref=", 6))
             ref = argv[k] + 6;
+        else if (!strncmp(argv[k], "--texref=", 9))
+            texref = argv[k] + 9;
         else if (!strncmp(argv[k], "--out=", 6))
             outdir = argv[k] + 6;
         else {
             int t;
-            for (t = 0; t < 5; t++)
+            for (t = 0; t < 9; t++)
                 if (!strcmp(argv[k], names[t]))
                     break;
-            if (t == 5) {
-                fprintf(stderr, "usage: %s [--power=domain|qpu] [--variant=mesa] [--rotate] [--ref=FILE.ppm] [--out=DIR] [ident|clear|triangle|stride|clearseq]...\n",
+            if (t == 9) {
+                fprintf(stderr, "usage: %s [--power=domain|qpu] [--variant=mesa] [--rotate] [--ref=FILE.ppm] [--out=DIR] [--texref=FILE.ppm] [ident|clear|triangle|stride|clearseq|texture|rastermap|texrepeat|power]...\n",
                         argv[0]);
                 return 2;
             }
@@ -689,6 +1178,7 @@ int main(int argc, char **argv)
     printf("memory: %u KB at bus %08x\n", mem.size >> 10, mem.bus);
     printf("state at start: CT0CS %08x CT1CS %08x PCS %08x VPMBASE %08x INTENA %08x\n", rd(V3D_CT0CS), rd(V3D_CT1CS),
            rd(V3D_PCS), rd(V3D_VPMBASE), rd(V3D_INTENA));
+    show_sched("state at start");
 
     /* As Linux's vc4_v3d_init_hw: no VPM kept for user programs; interrupts
      * off (completion is polled, as under Emu68) and cleared. */
@@ -696,6 +1186,8 @@ int main(int argc, char **argv)
     wr(V3D_INTDIS, 0xf);
     wr(V3D_INTCTL, 0xf);
 
+    if (want[8])
+        test_power();
     if (all || want[0])
         test_ident();
     if (all || want[1])
@@ -706,7 +1198,17 @@ int main(int argc, char **argv)
         test_stride();
     if (want[4])
         test_clearseq();
+    if (all || want[5])
+        test_texture(texref, outdir);
+    if (want[6])
+        test_rastermap();
+    if (want[7])
+        for (k = 0; k < 40; k++) {
+            texture_case("lt", texref, outdir);
+            test_triangle(ref, outdir);
+        }
 
+    show_sched("state at end");
     plat_free(&mem);
     plat_close();
     printf("%s (%d failed)\n", failures ? "FAILED" : "all passed", failures);

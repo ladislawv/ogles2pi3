@@ -28,6 +28,11 @@ struct plat_mem {
 
 /* Opens the platform and powers the 3D core on; 0 on success. */
 int plat_open(enum plat_power power);
+/* Leaves the 3D core powered when set (a test: the next run then finds the
+ * state this one left). */
+extern int plat_keep_power;
+/* Skips the power cycle at open that puts the core in its reset state. */
+extern int plat_no_reset;
 void plat_close(void);
 /* The 3D core's registers (V3D 2.1, 4 KB). */
 volatile uint32_t *plat_regs(void);

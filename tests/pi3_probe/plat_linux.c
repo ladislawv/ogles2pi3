@@ -37,6 +37,7 @@
 static int vcio = -1, devmem = -1;
 static volatile uint32_t *regs;
 static enum plat_power power_used;
+int plat_keep_power, plat_no_reset;
 
 int plat_mbox(uint32_t tag, uint32_t *val, int n)
 {
@@ -86,6 +87,34 @@ static int power(enum plat_power how, int on)
     return 0;
 }
 
+/* Powers the 3D core off and on, so that it starts from its reset state.
+ * The firmware counts SET_ENABLE_QPU: a user that did not switch it off (a
+ * crash, a second process) leaves the count above zero, and the next enable
+ * then finds the previous user's state (2026-11-04: such a core lost a tile's
+ * primitives now and then, with VPM errors in ERRSTAT). So: disable until
+ * the registers stop answering (0xdeadbeef), enable, and check VPMBASE's
+ * reset value (0x10). Unpowered registers read 0xdeadbeef without harm. */
+static int reset_core(void)
+{
+    uint32_t v[1];
+    int k;
+
+    for (k = 0; k < 32 && regs[0] != 0xdeadbeef; k++) {
+        v[0] = 0;
+        if (plat_mbox(TAG_SET_ENABLE_QPU, v, 1) < 0)
+            return -1;
+    }
+    printf("power: %d SET_ENABLE_QPU(0) to power the core off%s\n", k, k > 1 ? " (it was enabled more than once)" : "");
+    v[0] = 1;
+    if (plat_mbox(TAG_SET_ENABLE_QPU, v, 1) < 0)
+        return -1;
+    if (regs[0x504 / 4] != 0x10) {
+        printf("power: VPMBASE is %08x after power-on, not the reset value 0x10\n", regs[0x504 / 4]);
+        return -1;
+    }
+    return 0;
+}
+
 int plat_open(enum plat_power how)
 {
     uint32_t v[2];
@@ -100,23 +129,27 @@ int plat_open(enum plat_power how)
         perror("/dev/mem (run as root)");
         return -1;
     }
-    v[0] = DOMAIN_V3D;
-    v[1] = 0;
-    if (plat_mbox(TAG_GET_DOMAIN_STATE, v, 2) >= 0)
-        printf("power: GET_DOMAIN_STATE(V3D) before -> domain %u state %u\n", v[0], v[1]);
-    if (power(how, 1) < 0)
-        return -1;
-    power_used = how;
-    v[0] = DOMAIN_V3D;
-    v[1] = 0;
-    if (plat_mbox(TAG_GET_DOMAIN_STATE, v, 2) >= 0)
-        printf("power: GET_DOMAIN_STATE(V3D) after -> domain %u state %u\n", v[0], v[1]);
     regs = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, devmem, V3D_PHYS);
     if (regs == MAP_FAILED) {
         perror("mmap V3D registers");
         regs = NULL;
         return -1;
     }
+    v[0] = DOMAIN_V3D;
+    v[1] = 0;
+    if (plat_mbox(TAG_GET_DOMAIN_STATE, v, 2) >= 0)
+        printf("power: GET_DOMAIN_STATE(V3D) before -> domain %u state %u\n", v[0], v[1]);
+    if (how == PLAT_POWER_QPU && !plat_no_reset) {
+        if (reset_core() < 0) /* which leaves it enabled once */
+            return -1;
+    } else if (power(how, 1) < 0) {
+        return -1;
+    }
+    power_used = how;
+    v[0] = DOMAIN_V3D;
+    v[1] = 0;
+    if (plat_mbox(TAG_GET_DOMAIN_STATE, v, 2) >= 0)
+        printf("power: GET_DOMAIN_STATE(V3D) after -> domain %u state %u\n", v[0], v[1]);
     return 0;
 }
 
@@ -125,7 +158,7 @@ void plat_close(void)
     if (regs)
         munmap((void *)regs, 4096);
     regs = NULL;
-    if (vcio >= 0)
+    if (vcio >= 0 && !plat_keep_power)
         power(power_used, 0);
     if (devmem >= 0)
         close(devmem);
