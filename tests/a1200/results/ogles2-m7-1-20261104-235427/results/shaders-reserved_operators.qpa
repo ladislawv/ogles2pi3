@@ -1,0 +1,935 @@
+#sessionInfo releaseName unknown
+#sessionInfo releaseId 0xcafebabe
+#sessionInfo targetName "AmigaOS3"
+#sessionInfo logFormatVersion "0.3.4"
+#sessionInfo vendor "ogles2.library"
+#sessionInfo renderer "V3D 4.2.14 (PiStorm), 8 QPUs, 64 KB VPM"
+#sessionInfo commandLineParameters "--deqp-caselist-file M7R1:caselists/shaders-reserved_operators.txt --deqp-archive-dir=M7R1:bin --deqp-log-filename=M7R1:results/shaders-reserved_operators.qpa --deqp-log-images=disable --deqp-log-shader-sources=disable --deqp-surface-width=256 --deqp-surface-height=256 --deqp-gl-config-name=rgba8888d24s8ms0"
+
+#beginSession
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_modulo_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_modulo_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value % 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: operator &apos;%&apos; is reserved in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">2079.031982</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">391.988007</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">2486864</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_modulo_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_modulo_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value % 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: operator &apos;%&apos; is reserved in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">390.476990</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">839.068970</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1236747</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_left_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_left_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value &lt;&lt; 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: type mismatch
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1272.078979</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">388.954987</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1670405</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_left_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_left_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value &lt;&lt; 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: type mismatch
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">390.403015</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">831.570984</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1231317</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_right_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_right_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value &gt;&gt; 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: type mismatch
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">847.234009</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">463.518005</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1320500</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_right_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_shift_right_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value &gt;&gt; 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: type mismatch
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">391.213989</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">835.377991</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1234362</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_and_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_and_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value &amp; 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: type mismatch
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">862.453003</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">390.375000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1262383</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_and_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_and_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value &amp; 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: type mismatch
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">389.967987</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">829.461975</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1227483</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_xor_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_xor_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value ^ 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: type mismatch
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">850.981018</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">392.506989</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1253746</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_xor_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_xor_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value ^ 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: type mismatch
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">391.558014</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">841.536011</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1240790</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_or_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_or_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value | 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: type mismatch
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">870.830994</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">395.648010</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1277048</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_or_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_bitwise_or_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value | 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: type mismatch
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">390.881012</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">836.981995</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1238559</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_modulo_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_modulo_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value %= 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: operator &apos;%&apos; is reserved in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: could not implicitly convert error to int
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">844.677002</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">393.076996</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1247353</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_modulo_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_modulo_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value %= 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: operator &apos;%&apos; is reserved in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: could not implicitly convert error to int
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">391.212006</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">840.864014</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1239993</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_shift_left_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_shift_left_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value &lt;&lt;= 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">911.288025</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">393.665009</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1315686</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_shift_left_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_shift_left_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value &lt;&lt;= 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">390.832001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">847.822998</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1248500</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_shift_right_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_shift_right_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value &gt;&gt;= 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">841.221985</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">393.592010</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1259241</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_shift_right_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_shift_right_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value &gt;&gt;= 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">394.265015</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">826.231995</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1227494</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_and_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_and_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value &amp;= 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: could not implicitly convert error to int
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">849.947021</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">393.481995</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1252542</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_and_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_and_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value &amp;= 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: could not implicitly convert error to int
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">390.553986</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">843.830994</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1242325</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_xor_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_xor_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value ^= 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: could not implicitly convert error to int
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">865.004028</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">391.924988</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1267672</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_xor_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_xor_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value ^= 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: could not implicitly convert error to int
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">391.024994</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">829.940979</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1229761</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_or_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_or_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    int value = 100;
+    value |= 1;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:11(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:11(2): error: could not implicitly convert error to int
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1243.446045</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">393.204010</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1646455</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_or_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.reserved_operators.operator_assign_or_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+precision mediump int;
+
+
+
+void main()
+{
+    
+    int value = 100;
+    value |= 1;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:10(2): error: bit-wise operations are forbidden in GLSL ES 1.00 (GLSL 1.30 or GLSL ES 3.00 required)
+0:10(2): error: could not implicitly convert error to int
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">391.537994</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">835.137024</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1238613</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+Run took 32.32 seconds
+
+#endSession

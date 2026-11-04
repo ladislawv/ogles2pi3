@@ -1,7 +1,9 @@
 /*
  * Mesa's V3D driver on a fake DRM device, no window system.
  *   usage: v3dglslc [-d <V3D_DEBUG flags>] [-o <dir>] vs.vert fs.frag [vs2 fs2 ...]
- *          v3dglslc -g 21 [-d <VC4_DEBUG flags>] [-b attr0,attr1,...] vs.vert fs.frag ...
+ *          v3dglslc -g 21 [-d <VC4_DEBUG flags>] [-b attr0,attr1,...]
+ *                         [-s depth,blend,points,lines,stencil,ubyte1,tex565,texlum]
+ *                         vs.vert fs.frag ...
  *            (the Raspberry Pi 3's VC4: see run_pairs_vc4)
  *          v3dglslc SERVER   (AmigaOS: the on-target compiler, v3dp/v3dglsl_port.h)
  * Creates a V3D 4.2 screen (compat/fake_drm.c), a surfaceless GLES2 context
@@ -584,6 +586,24 @@ static const char *bindings_from_list(const char *list)
  * mesa_texture.c): a 128x128 RGBA8 target without depth, every attribute a
  * float array of its type's component count, every sampler on a 16x16 RGBA8
  * texture with NEAREST filtering and CLAMP_TO_EDGE, triangles. */
+#define VC4_STATE_DEPTH 1
+#define VC4_STATE_BLEND 2
+#define VC4_STATE_POINTS 4
+#define VC4_STATE_LINES 8
+#define VC4_STATE_STENCIL 16
+#define VC4_STATE_UBYTE1 32   /* attribute 1 as four normalized unsigned bytes */
+#define VC4_STATE_TEX565 64   /* the 2D samplers on an RGB565 texture */
+#define VC4_STATE_TEXLUM 128  /* and on a LUMINANCE one */
+#define VC4_STATE_TEX4444 256 /* RGBA 4444 */
+#define VC4_STATE_TEX5551 512 /* RGBA 5551 */
+#define VC4_STATE_TEXLA 1024  /* LUMINANCE_ALPHA */
+#define VC4_STATE_ETC1 2048   /* ETC1 */
+#define VC4_STATE_RT565 4096  /* into an RGB565 target: plain, and blending as -s blend */
+#define VC4_STATE_TEXTURES (VC4_STATE_TEX565 | VC4_STATE_TEXLUM | VC4_STATE_TEX4444 | VC4_STATE_TEX5551 | \
+                            VC4_STATE_TEXLA | VC4_STATE_ETC1)
+/* -s depth,blend,points,lines,stencil,ubyte1,tex565,texlum,tex4444,tex5551,texla,etc1,rt565 */
+static unsigned vc4_states;
+
 static int draw_vc4_reference(GLuint p)
 {
     static GLuint fbo, rb, tex2d, texcube;
@@ -673,6 +693,138 @@ static int draw_vc4_reference(GLuint p)
         }
         vc4_draw_buffer = 0;
     }
+    /* -s: the program drawn once more in each state named, for the Pi 3's
+     * tests (tests/pi3/vc4core, P3); which key states the library's files
+     * hold is settled with P5's key builder (PI3_PLAN 4.2). */
+    if (vc4_states & (VC4_STATE_DEPTH | VC4_STATE_STENCIL)) {
+        static GLuint zfbo, zcol, zrb;
+        if (!zfbo) {
+            _mesa_GenRenderbuffers(1, &zcol);
+            _mesa_BindRenderbuffer(GL_RENDERBUFFER, zcol);
+            _mesa_RenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 128, 128);
+            _mesa_GenRenderbuffers(1, &zrb);
+            _mesa_BindRenderbuffer(GL_RENDERBUFFER, zrb);
+            _mesa_RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 128, 128);
+            _mesa_GenFramebuffers(1, &zfbo);
+            _mesa_BindFramebuffer(GL_FRAMEBUFFER, zfbo);
+            _mesa_FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, zcol);
+            _mesa_FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, zrb);
+            _mesa_FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, zrb);
+        }
+        _mesa_BindFramebuffer(GL_FRAMEBUFFER, zfbo);
+        if (vc4_states & VC4_STATE_DEPTH) {
+            _mesa_Enable(GL_DEPTH_TEST);
+            _mesa_DepthFunc(GL_LESS);
+            _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+            _mesa_Flush();
+            _mesa_Disable(GL_DEPTH_TEST);
+        }
+        if (vc4_states & VC4_STATE_STENCIL) { /* one-sided, mask 0xff */
+            _mesa_Enable(GL_STENCIL_TEST);
+            _mesa_StencilFunc(GL_ALWAYS, 1, 0xff);
+            _mesa_StencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+            _mesa_Flush();
+            _mesa_Disable(GL_STENCIL_TEST);
+        }
+        _mesa_BindFramebuffer(GL_FRAMEBUFFER, fbo);
+    }
+    if (vc4_states & VC4_STATE_BLEND) {
+        _mesa_Enable(GL_BLEND);
+        _mesa_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+        _mesa_Flush();
+        _mesa_Disable(GL_BLEND);
+    }
+    if (vc4_states & VC4_STATE_POINTS) {
+        _mesa_DrawArrays(GL_POINTS, 0, 3);
+        _mesa_Flush();
+    }
+    if (vc4_states & VC4_STATE_LINES) {
+        _mesa_DrawArrays(GL_LINES, 0, 2);
+        _mesa_Flush();
+    }
+    if (vc4_states & VC4_STATE_UBYTE1) {
+        static const GLubyte bytes[64];
+        _mesa_EnableVertexAttribArray(1);
+        _mesa_VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, bytes);
+        _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+        _mesa_Flush();
+        _mesa_VertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, zeros);
+    }
+    if (vc4_states & VC4_STATE_RT565) {
+        static GLuint f565, c565;
+        if (!f565) {
+            _mesa_GenRenderbuffers(1, &c565);
+            _mesa_BindRenderbuffer(GL_RENDERBUFFER, c565);
+            _mesa_RenderbufferStorage(GL_RENDERBUFFER, GL_RGB565, 128, 128);
+            _mesa_GenFramebuffers(1, &f565);
+            _mesa_BindFramebuffer(GL_FRAMEBUFFER, f565);
+            _mesa_FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, c565);
+        }
+        _mesa_BindFramebuffer(GL_FRAMEBUFFER, f565);
+        _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+        _mesa_Flush();
+        if (vc4_states & VC4_STATE_BLEND) {
+            _mesa_Enable(GL_BLEND);
+            _mesa_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+            _mesa_Flush();
+            _mesa_Disable(GL_BLEND);
+        }
+        _mesa_BindFramebuffer(GL_FRAMEBUFFER, fbo);
+    }
+    if (vc4_states & VC4_STATE_TEXTURES) {
+        /* the formats tests/pi3/ref/mesa_cases.c uploads; RGBA4 makes no variant
+         * of its own (this Mesa stores it as RGBA8: the RGBA4444 texture type
+         * reads GL's packing with the RGBA8 swizzle) */
+        static const struct { unsigned state; GLenum internal, format, type; GLsizei bytes; } fmts[] = {
+            {VC4_STATE_TEX565, GL_RGB, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0},
+            {VC4_STATE_TEXLUM, GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0},
+            {VC4_STATE_TEX4444, GL_RGBA4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, 0},
+            {VC4_STATE_TEX5551, GL_RGB5_A1, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0},
+            {VC4_STATE_TEXLA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 0},
+            {VC4_STATE_ETC1, GL_ETC1_RGB8_OES, 0, 0, 16 * 16 / 2},
+        };
+        static GLuint t[6];
+        static GLubyte texels2[16 * 16 * 2];
+        int u, which;
+        for (which = 0; which < 6; which++) {
+            if (!(vc4_states & fmts[which].state))
+                continue;
+            if (!t[which]) {
+                _mesa_GenTextures(1, &t[which]);
+                _mesa_BindTexture(GL_TEXTURE_2D, t[which]);
+                if (fmts[which].bytes)
+                    _mesa_CompressedTexImage2D(GL_TEXTURE_2D, 0, fmts[which].internal, 16, 16, 0,
+                                               fmts[which].bytes, texels2);
+                else
+                    _mesa_TexImage2D(GL_TEXTURE_2D, 0, fmts[which].internal, 16, 16, 0, fmts[which].format,
+                                     fmts[which].type, texels2);
+                {
+                    GLenum e = _mesa_GetError();
+                    if (e != GL_NO_ERROR)
+                        fprintf(stderr, "v3dglslc: GL error 0x%04x uploading texture state %u\n", (unsigned)e,
+                                fmts[which].state);
+                }
+                _mesa_TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                _mesa_TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                _mesa_TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                _mesa_TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            }
+            for (u = 0; u < unit; u++) { /* every unit: the 2D samplers' see it */
+                _mesa_ActiveTexture(GL_TEXTURE0 + u);
+                _mesa_BindTexture(GL_TEXTURE_2D, t[which]);
+            }
+            _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
+            _mesa_Flush();
+        }
+        for (u = 0; u < unit; u++) {
+            _mesa_ActiveTexture(GL_TEXTURE0 + u);
+            _mesa_BindTexture(GL_TEXTURE_2D, tex2d);
+        }
+        _mesa_ActiveTexture(GL_TEXTURE0);
+    }
     _mesa_Flush(); /* submits the job to the fake device */
     for (i = 0; i < 8; i++)
         _mesa_DisableVertexAttribArray(i);
@@ -742,6 +894,35 @@ static int run_pairs_vc4(int argc, char **argv, int first)
 }
 #endif /* V3DGLSLC_VC4 */
 
+/* -L: the limits programs are compiled with (GLSL's gl_Max* constants and
+ * what links check), which ogles2.library must report on that GPU
+ * (docs/PI3_PLAN.md §4.1; dEQP-GLES2 builtin_variable compares them). */
+static int print_limits;
+
+static int limits(void)
+{
+    static const struct { GLenum e; const char *name; } q[] = {
+        {GL_MAX_VERTEX_ATTRIBS, "GL_MAX_VERTEX_ATTRIBS"},
+        {GL_MAX_VERTEX_UNIFORM_VECTORS, "GL_MAX_VERTEX_UNIFORM_VECTORS"},
+        {GL_MAX_FRAGMENT_UNIFORM_VECTORS, "GL_MAX_FRAGMENT_UNIFORM_VECTORS"},
+        {GL_MAX_VARYING_VECTORS, "GL_MAX_VARYING_VECTORS"},
+        {GL_MAX_TEXTURE_IMAGE_UNITS, "GL_MAX_TEXTURE_IMAGE_UNITS"},
+        {GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, "GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS"},
+        {GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, "GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS"},
+        {GL_MAX_DRAW_BUFFERS, "GL_MAX_DRAW_BUFFERS"},
+        {GL_MAX_TEXTURE_SIZE, "GL_MAX_TEXTURE_SIZE"},
+        {GL_MAX_CUBE_MAP_TEXTURE_SIZE, "GL_MAX_CUBE_MAP_TEXTURE_SIZE"},
+        {GL_MAX_RENDERBUFFER_SIZE, "GL_MAX_RENDERBUFFER_SIZE"},
+    };
+    unsigned i;
+    for (i = 0; i < sizeof(q) / sizeof(q[0]); i++) {
+        GLint v = -1;
+        _mesa_GetIntegerv(q[i].e, &v);
+        printf("%s %d\n", q[i].name, (int)v);
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int first = 1;
@@ -781,7 +962,23 @@ int main(int argc, char **argv)
             device = atoi(argv[first + 1]);
         else if (!strcmp(argv[first], "-b"))
             link_bindings = bindings_from_list(argv[first + 1]);
-        else
+#ifdef V3DGLSLC_VC4
+        else if (!strcmp(argv[first], "-s")) {
+            const char *a = argv[first + 1];
+            vc4_states |= (strstr(a, "depth") ? VC4_STATE_DEPTH : 0) | (strstr(a, "blend") ? VC4_STATE_BLEND : 0) |
+                          (strstr(a, "points") ? VC4_STATE_POINTS : 0) | (strstr(a, "lines") ? VC4_STATE_LINES : 0) |
+                          (strstr(a, "stencil") ? VC4_STATE_STENCIL : 0) | (strstr(a, "ubyte1") ? VC4_STATE_UBYTE1 : 0) |
+                          (strstr(a, "tex565") ? VC4_STATE_TEX565 : 0) | (strstr(a, "texlum") ? VC4_STATE_TEXLUM : 0) |
+                          (strstr(a, "tex4444") ? VC4_STATE_TEX4444 : 0) | (strstr(a, "tex5551") ? VC4_STATE_TEX5551 : 0) |
+                          (strstr(a, "texla") ? VC4_STATE_TEXLA : 0) | (strstr(a, "etc1") ? VC4_STATE_ETC1 : 0) |
+                          (strstr(a, "rt565") ? VC4_STATE_RT565 : 0);
+        }
+#endif
+        else if (!strcmp(argv[first], "-L")) {
+            print_limits = 1; /* takes no value */
+            first += 1;
+            continue;
+        } else
             break;
         first += 2;
     }
@@ -848,9 +1045,12 @@ int main(int argc, char **argv)
              * (patch 0016's draw_buffer in the fragment key). */
             ctx->Const.MaxDrawBuffers = 4;
         }
-        /* The driver's own limits for now (one draw buffer, 8 varyings);
-         * the library's for the Pi 3 are settled in P4. */
+        /* Otherwise the driver's own limits (8 varyings, 8 vertex
+         * attributes, textures 2048): the library reports the same on the
+         * Pi 3 (GLSL's gl_Max* equal them; -L prints them). */
         fprintf(stderr, "v3dglslc: renderer %s\n", (const char *)_mesa_GetString(GL_RENDERER));
+        if (print_limits)
+            return limits();
 #ifdef V3DGLSLC_VC4
         vc4_variants_install(stdout);
         return run_pairs_vc4(argc, argv, first);
@@ -870,6 +1070,8 @@ int main(int argc, char **argv)
         ctx->Const.MaxCombinedTextureImageUnits = 32;
     }
     fprintf(stderr, "v3dglslc: renderer %s\n", (const char *)_mesa_GetString(GL_RENDERER));
+    if (print_limits)
+        return limits();
 #ifdef __amigaos__
     if (server)
         return serve();

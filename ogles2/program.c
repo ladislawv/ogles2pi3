@@ -553,7 +553,7 @@ void ogles2_glBindAttribLocation(struct OGLES2Context *ctx, GLuint program, GLui
     int i;
     if (!ogles2_context_valid(ctx) || !name)
         return;
-    if (index >= OGLES2_MAX_VERTEX_ATTRIBS) {
+    if (index >= OGLES2_GL_VERTEX_ATTRIBS) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }
@@ -1016,12 +1016,12 @@ static BOOL bind_image(struct OGLES2Program *p, const struct OGLES2Image *im)
         if (p->attrib_index[a] != 0xff)
             continue;
         n = im->attribs[a].columns;
-        for (i = 0; i + n <= OGLES2_MAX_VERTEX_ATTRIBS; i++) {
+        for (i = 0; i + n <= (int)OGLES2_GL_VERTEX_ATTRIBS; i++) {
             ULONG run = ((1UL << n) - 1) << i;
             if (!(used & run))
                 break;
         }
-        if (i + n > OGLES2_MAX_VERTEX_ATTRIBS) {
+        if (i + n > (int)OGLES2_GL_VERTEX_ATTRIBS) {
             set_log(p, "too many vertex attributes", 0);
             return FALSE;
         }

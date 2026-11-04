@@ -7,6 +7,7 @@
 # B), so it shares nothing with the working tree's build:
 #   bash tests/a1200/p2_speed.sh [ref]      builds ~/p2head-build from HEAD
 #   bash tests/a1200/p2_speed.sh [RUNS]     runs (the reference must exist)
+#   REF_LIB=/path/ogles2.library bash ...   against another library (P2's acceptance: 1.3.3's)
 # Run from Git Bash in the repository, the working tree's library built
 # (~/ogles2-build-pi3/m68k/ogles2.library) and m6-1 packaged once
 # (tests/a1200/p2_checks.sh m6-1 does both).
@@ -26,7 +27,7 @@ if [ "${1:-}" = ref ]; then
     exit $?
 fi
 RUNS=${1:-3}
-REF=$(wsl wslpath -w /home/l/p2head-build/m68k/ogles2.library)
+REF=$(wsl wslpath -w "${REF_LIB:-/home/l/p2head-build/m68k/ogles2.library}") # REF_LIB: another (a WSL path)
 NEW=$(wsl wslpath -w /home/l/ogles2-build-pi3/m68k/ogles2.library)
 [ -f "$REF" ] || { echo "no reference library: bash $0 ref"; exit 1; }
 amictl() { python "$REPO/tools/amictl/amictl.py" "$@"; }

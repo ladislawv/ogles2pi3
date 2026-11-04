@@ -33,6 +33,7 @@ static const struct OGLES2Caps caps = {
     4096,  /* V3D_MAX_FRAMEBUFFER_SIZE on 4.2 */
     4,     /* draw buffers (EXT_draw_buffers, M7 step 5) */
     16,    /* varyings: V3D_MAX_FS_INPUTS / 4 */
+    16,    /* vertex attributes (V3D_MAX_VS_INPUTS / 4: 16) */
     4088, 4095, /* Mesa's v3d: 4096 vec4 less what it keeps for itself */
     4,     /* GLES2's minimum, as Mesa's v3d reports */
     32.0f, /* V3D_MAX_LINE_WIDTH */

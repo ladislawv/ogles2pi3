@@ -44,7 +44,7 @@ void ogles2_glVertexAttribPointer(struct OGLES2Context *ctx, GLuint index, GLint
     struct OGLES2Array *a;
     if (!ogles2_context_valid(ctx))
         return;
-    if (index >= OGLES2_MAX_VERTEX_ATTRIBS || size < 1 || size > 4 || stride < 0) {
+    if (index >= OGLES2_GL_VERTEX_ATTRIBS || size < 1 || size > 4 || stride < 0) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }
@@ -65,7 +65,7 @@ static void enable_array(struct OGLES2Context *ctx, GLuint index, GLboolean on)
 {
     if (!ogles2_context_valid(ctx))
         return;
-    if (index >= OGLES2_MAX_VERTEX_ATTRIBS) {
+    if (index >= OGLES2_GL_VERTEX_ATTRIBS) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }
@@ -89,7 +89,7 @@ void ogles2_glGetVertexAttribiv(struct OGLES2Context *ctx, GLuint index, GLenum 
     int k;
     if (!ogles2_context_valid(ctx) || !params)
         return;
-    if (index >= OGLES2_MAX_VERTEX_ATTRIBS) {
+    if (index >= OGLES2_GL_VERTEX_ATTRIBS) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }
@@ -116,7 +116,7 @@ void ogles2_glGetVertexAttribPointerv(struct OGLES2Context *ctx, GLuint index, G
 {
     if (!ogles2_context_valid(ctx) || !pointer)
         return;
-    if (index >= OGLES2_MAX_VERTEX_ATTRIBS) {
+    if (index >= OGLES2_GL_VERTEX_ATTRIBS) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }

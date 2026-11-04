@@ -1,0 +1,189 @@
+#sessionInfo releaseName unknown
+#sessionInfo releaseId 0xcafebabe
+#sessionInfo targetName "AmigaOS3"
+#sessionInfo logFormatVersion "0.3.4"
+#sessionInfo vendor "ogles2.library"
+#sessionInfo renderer "V3D 4.2.14 (PiStorm), 8 QPUs, 64 KB VPM"
+#sessionInfo commandLineParameters "--deqp-caselist-file M7R1:caselists/shaders-declarations.txt --deqp-archive-dir=M7R1:bin --deqp-log-filename=M7R1:results/shaders-declarations.qpa --deqp-log-images=disable --deqp-log-shader-sources=disable --deqp-surface-width=256 --deqp-surface-height=256 --deqp-gl-config-name=rgba8888d24s8ms0"
+
+#beginSession
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.declarations.invalid_declarations.attribute_in_vertex_main
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.declarations.invalid_declarations.attribute_in_vertex_main" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>void main()
+{
+    attribute mediump float val;
+    gl_Position = vec4(1.0);
+}
+</ShaderSource>
+   <InfoLog>0:3(2): error: attribute variable `val&apos; must be declared at global scope
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1218.647949</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">39.160000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">1266357</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.declarations.invalid_declarations.attribute_in_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.declarations.invalid_declarations.attribute_in_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>attribute mediump float val;
+void main()
+{
+    gl_FragColor = vec4(1.0);
+}
+</ShaderSource>
+   <InfoLog>0:1(1): error: `attribute&apos; variables may not be declared in the fragment shader
+0:1(1): error: illegal type for a varying variable
+0:1(1): error: precision qualifiers apply only to floating point, integer and opaque types
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.667000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">39.752998</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">75427</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.declarations.invalid_declarations.uniform_in_vertex_main
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.declarations.invalid_declarations.uniform_in_vertex_main" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>void main()
+{
+    uniform mediump float val;
+    gl_Position = vec4(1.0);
+}
+</ShaderSource>
+   <InfoLog>0:3(2): error: uniform variable `val&apos; must be declared at global scope
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">35.007999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.709000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">44036</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.declarations.invalid_declarations.uniform_in_fragment_main
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.declarations.invalid_declarations.uniform_in_fragment_main" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>void main()
+{
+    uniform mediump float val;
+    gl_FragColor = vec4(1.0);
+}
+</ShaderSource>
+   <InfoLog>0:3(2): error: uniform variable `val&apos; must be declared at global scope
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.695000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.753000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35361</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_vertex_main
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_vertex_main" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>void main()
+{
+    varying mediump float val;
+    gl_Position = vec4(1.0);
+}
+</ShaderSource>
+   <InfoLog>0:3(2): error: varying variable `val&apos; must be declared at global scope
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">34.603001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">37.515999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">76947</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_fragment_main
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.declarations.invalid_declarations.varying_in_fragment_main" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>void main()
+{
+    varying mediump float val;
+    gl_FragColor = vec4(1.0);
+}
+</ShaderSource>
+   <InfoLog>0:3(2): error: varying variable `val&apos; must be declared at global scope
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">33.776001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">40.530998</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">78673</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+Run took 1.68 seconds
+
+#endSession

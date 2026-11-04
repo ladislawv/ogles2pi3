@@ -3,7 +3,7 @@
 # against a baseline taken the same day. Builds the packages from this
 # repository (~/ogles2-build-pi3), runs them on the A1200 through amictl (the
 # Pi 4 card in, nothing in LIBS:) and prints what to compare:
-#   m5-1: 255 PASS and no FAIL; m7-6: 36 of 36; m2-5: its 14 pictures byte
+#   m5-1: 255 PASS and no FAIL (m1-5, m2-4, m6-6, m6-8, m6-10, m7-2 to m7-5 counted alike); m7-6: 36 of 36; m2-5: its 14 pictures byte
 #   for byte against REF (default: the run of 2026-10-14); m6-1 and Quake
 #   III's timedemo (package p2v-m6-5, from tests/a1200/p2_vc4keys.sh): fps.
 # Run from WSL or Git Bash in the repository:
@@ -42,10 +42,12 @@ for t in $WANT; do
         ;;
     *)
         build "$t" || { echo "$t: build failed"; continue; }
+        # LIB=<a library>: run the package with that one (P2's acceptance: 1.3.3's)
+        [ -n "${LIB:-}" ] && { cp "$LIB" "$HERE/out/ogles2-$t/libs/ogles2.library" || exit 1; }
         amictl runpkg "$HERE/out/ogles2-$t" -t 1200 > /dev/null
         R=$(newest "ogles2-$t")/results
         case $t in
-        m5-1 | m7-6 | m2-4 | m7-2 | m7-4 | m7-5 | m1-5) echo "$t: $(grep -h '^PASS' "$R"/*.txt | wc -l) PASS, $(grep -h '^FAIL' "$R"/*.txt | wc -l) FAIL" ;;
+        m5-1 | m7-6 | m2-4 | m7-2 | m7-4 | m7-5 | m1-5 | m6-6 | m6-8 | m6-10 | m7-3) echo "$t: $(grep -h '^PASS' "$R"/*.txt | wc -l) PASS, $(grep -h '^FAIL' "$R"/*.txt | wc -l) FAIL" ;;
         m2-5)
             same=0 diff=0
             for f in "$R"/*.ppm; do
@@ -53,6 +55,9 @@ for t in $WANT; do
             done
             echo "m2-5: $same pictures identical, $diff different (against $(basename "$REF"))" ;;
         m6-1) echo "m6-1:"; grep -h "^RESULT" "$R"/*.txt | sed 's/^/  /' ;;
+        m6-4) echo "m6-4 (SDL): $(for f in "$R"/[1-8]-*.txt; do echo "$(basename "$f" .txt) $(grep -ho '[0-9.]* frames per second' "$f" | tail -1 | cut -d' ' -f1)"; done | tr '
+' ' ')" ;;
+        m6-7) echo "m6-7 (glmark2): $(grep -h 'glmark2 Score' "$R"/*.txt | sed 's/ *glmark2 //')" ;;
         esac
         ;;
     esac

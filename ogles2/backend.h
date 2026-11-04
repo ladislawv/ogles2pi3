@@ -90,6 +90,7 @@ struct OGLES2Caps
     UWORD max_viewport;          /* GL_MAX_VIEWPORT_DIMS, GL_MAX_RENDERBUFFER_SIZE */
     UBYTE max_draw_buffers;      /* GL_MAX_DRAW_BUFFERS_EXT, colour attachments (at most OGLES2_MAX_DRAW_BUFFERS) */
     UBYTE max_varyings;          /* GL_MAX_VARYING_VECTORS */
+    UBYTE max_vertex_attribs;    /* GL_MAX_VERTEX_ATTRIBS (at most OGLES2_MAX_VERTEX_ATTRIBS) */
     UWORD max_vs_uniform_vectors, max_fs_uniform_vectors; /* the compiler's gl_Max*UniformVectors */
     UBYTE subpixel_bits;         /* GL_SUBPIXEL_BITS */
     float line_width_max;        /* GL_ALIASED_LINE_WIDTH_RANGE, from 1 */
@@ -196,6 +197,11 @@ struct OGLES2Backend
     const struct OGLES2Image *(*builtin_image)(void);
     const UBYTE *(*internal_program)(int which, ULONG *len);
 };
+
+/* The generic vertex attributes GL offers on this GPU: indices from it on
+ * are GL_INVALID_VALUE (the context's arrays are OGLES2_MAX_VERTEX_ATTRIBS
+ * long, the most any backend has: the internal programs use the last two). */
+#define OGLES2_GL_VERTEX_ATTRIBS ((GLuint)ogles2_backend->caps->max_vertex_attribs)
 
 #define ogles2_mem_alloc(m, size) (ogles2_backend->mem_alloc((m), (size)))
 #define ogles2_mem_free(m) (ogles2_backend->mem_free(m))

@@ -202,6 +202,163 @@ textures, the texture-parameter ones, then multiple render targets, then half-fl
   of the same GLSL programs from `v3dglslc` (the built-in program, the copy, and the clear of
   several targets, one pass per target).
 
+### 3.1 `vc4core`: the design (P3, drafted 2026-11-04, for review)
+What the VC4 backend (`ogles2/vc4/`, P5) calls, and the tests of P3 (`tests/pi3/`) before it.
+From the probe (`tests/pi3_probe`, P1), which has every hardware sequence this needs, but in one
+fixed 4 MB block with one-off lists; `vc4core` makes them general. MIT; follows Mesa's vc4 and
+Linux's vc4 driver where named; nothing from `v3dcore` or PiStorm3D (PD9).
+- **Files** (`vc4core/`):
+  - `include/vc4core.h`: the API below; `include/vc4_os.h`: the OS layer;
+  - `os_linux.c` (P3: `/dev/mem`, `/dev/vcio`, the firmware's allocator, as the probe's
+    `plat_linux.c`) and `os_amiga.c` (P5: Emu68's peripheral window, AllocVec'd fast RAM, exec's
+    cache calls, the GPU lock's semaphore);
+  - `device.c`: take-over (disable `SET_ENABLE_QPU` until `IDENT0` reads `0xdeadbeef`, enable
+    once, `VPMBASE` = `0x10`, §2 "Power"; then `VPMBASE` 0, as Linux), identity, registers,
+    `ERRSTAT` (reported and cleared after each job), the reset after a job
+    that does not finish (both control threads stopped, the core power-cycled as at take-over);
+  - `mem.c`: blocks with a CPU pointer and a bus address (Pi 3: `0xC0000000 |` the physical
+    address), alignment, and the binner's rule that tile allocation, tile state and overflow lie
+    in one 256 MB segment;
+  - `cl.c` and `vc4_pack.h`: control-list buffers that grow (a full block ends with `BRANCH` to
+    the next, as v3dcore's binning list does on the Pi 4) and the packet packers, generated from
+    `vc4_packet.xml` by Mesa's `gen_pack_header.py` (MIT; they write bytes, so they are right on
+    the big-endian 68k too);
+  - `job.c`: a job = binning list + render list for one target: begin (`TILE_BINNING_MODE_CONFIG`
+    with the context's tile pools, `START_TILE_BINNING`; the backend then appends its state and
+    draws), end (`INCREMENT_SEMAPHORE`, `FLUSH`), the render list per tile in Linux's order
+    (clear colours and a None-mode store first, then `TILE_RENDERING_MODE_CONFIG`; per tile its
+    coordinates, loads, `WAIT_ON_SEMAPHORE` before the first branch, `BRANCH_TO_SUB_LIST` to the
+    tile's bin list, stores, the last with end of frame; MSAA and the raster/T/LT surfaces of
+    Linux's `vc4_render_cl.c`), submit (L2 and TMU caches flushed before the render, as Linux;
+    `BFC`/`RFC` counts; `BPOA`/`BPOS` overflow memory), waits with a timeout, the binner's
+    out-of-memory interrupt served with more overflow memory, `ERRSTAT` checked after each job;
+  - `tiling.c`: texture layouts (T, LT, raster) and mip levels, after Mesa's `vc4_tiling.c` and
+    `vc4_resource.c` (raster textures only at power-of-two widths, §2 "Textures"); the raster store
+    into a padded image (§2 "Raster stores");
+  - `lock.c`: the GPU lock (one submitter at a time; on AmigaOS the semaphore other GPU clients
+    share).
+- **API** (`vc4core.h`, C, no OS types): `vc4_open`/`vc4_close` (take-over, identity);
+  `vc4_mem_alloc`/`_free` (`struct vc4_mem`: `cpu`, `bus`, `size`); `struct vc4_cl` with
+  `vc4_cl_room` and the packers; `struct vc4_surface` (bus address, format, tiling, stride,
+  padded height, MSAA) and `struct vc4_target` (colour and depth/stencil surfaces, size, what to
+  load, store and clear, the clear values); `struct vc4_pools` (tile allocation, tile state,
+  overflow for a size in tiles); `vc4_job_begin(job, target, pools)`, the backend's packets into
+  `job->bcl` and its shader records and uniforms into `job->state` (a growing buffer),
+  `vc4_job_submit` (returns a frame number), `vc4_job_wait(frame, timeout)`; `vc4_tile_layout` and
+  `vc4_tile_store`/`_load` for textures.
+- **Writing GPU memory:** Linux maps the firmware's memory as device memory (the probe's
+  `plat.h`): every write is a naturally aligned 1-, 2- or 4-byte store, never `memcpy`; the
+  packers and the helpers keep to that. Words for the GPU are stored little-endian by helpers
+  (`vc4_put32le`), never by a plain store, so the m68k build needs no other change (§6.3: the
+  Amiga runs have the last word on byte order).
+- **Tests first** (`tests/pi3/`, Linux, S1's shaders): the probe's triangle and textured quad
+  rebuilt on `vc4core`, their pictures equal to the probe's and Mesa's; then §6.3's list, a
+  feature at a time, each picture against Mesa's; the soak (hours of mixed jobs, `ERRSTAT`
+  clean) early.
+- **Changed while writing it (2026-11-04):** the packers come from a generator of our own,
+  `tools/vc4pack/gen_vc4_pack.py`, reading the same `vc4_packet.xml` (Mesa's
+  `gen_pack_header.py` shifts 64-bit values for every byte and copies 32-bit fields with
+  `memcpy` in the host's byte order: slow on the 68k and wrong there). Same field names as
+  Mesa's; `--test` packs every packet with 200 random field sets through both and compares:
+  5,200 packets, none differ. The XML's two structs (shader and attribute records) have
+  overlapping fields and `GL_SHADER_STATE`'s address is a 28-bit number at bit 0 (it would
+  lose a bus address's top bits): written by hand (`vc4_gl_shader_state`), as Mesa's vc4 does.
+  On Linux the tests are built with `-fno-store-merging -fno-tree-vectorize
+  -fno-tree-slp-vectorize`: gcc otherwise turns the packers' byte stores into wider, unaligned
+  stores (a NEON store of a byte run), and those fault on the device-mapped GPU memory (a bus
+  error).
+- **Done (2026-11-04):** `vc4core/` (`device.c`, `mem.c`, `cl.c`, `job.c`, `os_linux.c`, the
+  headers; MIT) and its first test, `tests/pi3/vc4core/triangle.c` (`build.sh`: aarch64, and
+  the core for the 68k as a compile check): the probe's triangle through the API, **Mesa's
+  picture pixel for pixel**, then 200 repeats all the same with `ERRSTAT` clean; the take-over
+  reads V3D 2.1, 3 slices of 4 QPUs, 12 KB VPM. Then `tiling.c` (Mesa's layouts: LT and T,
+  the miptree from the smallest level up, level 0 page aligned, cube faces a page-aligned
+  miptree each) and `tests/pi3/vc4core/texture.c`: the probe's 16x16 texture, LT by the TMU's
+  rule, **Mesa's picture pixel for pixel**; a 64x64 one, T by the rule, its texels holding
+  their coordinates: all 8,464 pixels inside the quad the texel NEAREST puts there; mipmaps:
+  a 64x64 miptree of 7 levels (0 and 1 T, 2 to 6 LT, each one colour), quads of 64, 32, 16
+  and 8 pixels show levels 0 to 3 with NEAREST_MIPMAP_NEAREST (`vc4_tex_p0`/`_p1` build the
+  TMU's words, Linux's `VC4_TEX_P0_*`/`P1_*`). A miptree is larger than its texels (T levels
+  pad to 8 utiles, level 0 is page aligned): the caller allocates `layout.size`. Then the
+  tests' program loader and draw builder, `tests/pi3/vc4core/vc4p.c` (a rehearsal of the VC4
+  backend's program handling, P5): a `.vc4p` read (header, CRC, the constant buffers'
+  templates, uniforms, attributes, every `VC4_VARIANT`), each stage's uniform stream built
+  from its recipe as Mesa's `vc4_uniforms.c` (constants, constant-buffer words, viewport,
+  texture P0-P2, blend colour; the others refused by name until a test needs them), the
+  shader record from the prog data as `vc4_emit_gl_shader_state` (selects, VPM offsets,
+  varyings, threading), the state and draw packets (arrays or 16-bit indices).
+  `PRIMITIVE_LIST_FORMAT` is now `vc4_job_begin`'s (once a job, as Mesa's `vc4_start_draw`).
+  `tests/pi3/vc4core/draw.c`: the triangle and the textured quad compiled on the PC by
+  `v3dglslc -g 21` (`build.sh` compiles them) and drawn through it: **Mesa's pictures pixel for
+  pixel**. Next: §6.3's list with new programs and Mesa's pictures of them (depth, stencil,
+  blending, indices, the attribute and texture formats, cube maps, MSAA: reference programs
+  beside `tests/pi3/ref/`, their pictures made in one reference boot), the binner's overflow on
+  demand, and the soak.
+- **Then (2026-11-04): most of §6.3's list.** The reference programs and data are
+  `tests/pi3/ref/cases.h` and `shaders/` (`flat`, `point`, `color`, `cube`, `texture`), drawn by
+  Mesa in the reference boot by `tests/pi3/ref/mesa_cases.c` (`mesa_<case>.ppm`) and by `vc4core`
+  in the bare boot by `tests/pi3/vc4core/draw.c` from `.vc4p` files compiled on the PC;
+  `v3dglslc -s` draws the states the cases need after the reference draw (depth, blending,
+  points, lines, stencil, an unsigned-byte attribute, the texture formats, an RGB565 target:
+  §4.1), so the files hold those variants, and the tests' loader picks a variant by its key
+  (primitive class, depth, blending, stencil, render target format, attribute and sampler
+  formats). **Mesa's pictures pixel for pixel:** depth (three triangles, `LESS`), blending
+  (`SRC_ALPHA`, `ONE_MINUS_SRC_ALPHA`), 8- and 16-bit indices, the scissor box (the clip
+  window), lines, points (8 pixels), stencil (`ALWAYS`/`REPLACE`, then `EQUAL`), colours as
+  normalized unsigned bytes (converted in the vertex shader: their own variant), textures
+  RGB565, LUMINANCE (the ALPHA type, swizzled in the shader), RGBA4444 (the hardware reads GL's
+  packing; this Mesa keeps `GL_RGBA4` as RGBA8, so the RGBA8 variant samples it), RGBA5551,
+  LUMINANCE_ALPHA, ETC1 (blocks stored unchanged, P1's ETC flip set as Mesa does) and NPOT
+  (13x7), a cube map (six faces, each a page-aligned miptree, P2's stride), an RGB565 frame
+  (blending into it, not dithered as Mesa's), and two cases checked against Mesa's depth
+  picture: the scene in two jobs (colour stored raster and depth/stencil stored T, both loaded
+  by the second) and through a T-format image drawn back as a texture texel for pixel (render
+  to texture). **4x MSAA** (32x32 tiles, the binner's and the renderer's 4x modes, the
+  rasteriser oversampling, early Z off, the colour stored resolved) against Mesa's 4x pbuffer:
+  equal once ours is drawn upside down as Mesa draws a window system's buffer (the samples'
+  positions are mirrored with it), each channel within 1 (Mesa's resolve rounds, 63.75 to 64;
+  the hardware's truncates, to 63). The binner's overflow on demand: 6 draws of 163,840 tiny
+  triangles, each in all four tiles of the frame, ask for 12 chunks of overflow memory
+  (binning 74 ms, rendering 258 ms) and give the picture of one draw. Served by polling
+  `INTCTL`'s `OUTOMEM` bit while waiting for the binner (the bit is set with the interrupt
+  disabled; **enabling it, as Linux does, hung the firmware's mailbox in the bare boot**: its
+  line reaches the VideoCore); the new memory is written before the request is cleared, as
+  Linux does. The pools have 16 chunks of 512 KB in their one block; a job that needs more is
+  stopped and the core reset rather than left waiting. A frame 130 pixels wide (rows 132
+  apart) with the depth scene in its left 128 columns: those are Mesa's picture, columns 128
+  and 129 the clear colour, and the store writes the rows' padding too (all 256 pixels), as
+  the probe found (§2 "Raster stores").
+- **`ERRSTAT` (2026-11-04):** its error bits stay set until written back (1 clears), so one
+  error showed in every later job: `vc4core` now reports them after a job and clears them.
+  The 15,000-round soak (108,000 jobs) found the one error there is: **`VCMBE` (bit 14, the
+  binner's vertex cache manager) in about 1 of 200 jobs whose binner ran out of memory**
+  (15 in 3,000 such jobs; with chunks large enough that it never runs out, none in 3,000;
+  never in jobs without overflow), with the picture right every time. Linux and Mesa never
+  read `ERRSTAT`. The tests count it and do not fail on it; the backend (P5) should make the
+  first chunk large enough that ordinary frames never run out. **Overflow chunks may lie in
+  separate blocks:** the earlier finding that they give `VCMBE` was made before the bits were
+  known to stick; retested (a test build, `-DVC4_SEPARATE_OVERFLOW`, chunks 1 and up each
+  allocated on its own): 15 `VCMBE` in 3,000 jobs, the same rate as in one block, every picture
+  right. So the backend can grow overflow memory on demand, as Linux does (the 256 MB segment
+  rule still holds).
+- **The soak (2026-11-04):** every case in a round, the overflow one every tenth; 5,000
+  rounds, **126,000 jobs in about 30 minutes, no failure**, one `VCMBE` in the 500 overflow
+  jobs, the Pi not throttled (53 °C). (The 15,000-round soak before it, 108,000 jobs, was
+  clean but for the overflow jobs after the first `VCMBE`: the sticky bit.)
+- **`VPMBASE` 0 (2026-11-04):** Linux's `vc4_v3d_init_hw` sets it to 0 ("take all the memory
+  that would have been reserved for user QPU programs"), so Mesa's shaders always run with the
+  whole 12 KB VPM for the vertex pipeline; `vc4core` now does the same after the take-over
+  (which still checks the reset value 0x10 first). Every case passes as before; `VCMBE`'s rate
+  is unchanged (16 in 3,000 overflow jobs); a mixed soak with it, 2,000 rounds (52,400 jobs), no
+  failure.
+- **First GPU-only numbers (2026-11-05, `vc4_draw speed`, a 1024x768 RGBA8 raster frame, the
+  times the job measures; short runs, no heatsink yet, so a first look):** clear and store
+  alone 0.96 ms (823 Mpixel/s stored); full-frame quads flat 1,032 Mpixel/s, blended 770,
+  textured (256x256 RGBA8 T, NEAREST) 714; 200,000 small triangles (about 10x8 pixels, 16-bit
+  indices) binned at 34 Mtri/s and rendered at 13.5 Mtri/s; the CPU's tiling of a texture
+  into GPU memory (Linux, the A53) 79 MB/s. The Amiga's numbers (P5) are the ones that count:
+  its CPU writes and tiles everything.
+
 ## 4. The compiler
 
 ### 4.1 Host compiler (S1): `v3dglslc` with both drivers
@@ -265,6 +422,27 @@ textures, the texture-parameter ones, then multiple render targets, then half-fl
   - the VC4 path is compiled into the host build only (`-DV3DGLSLC_VC4`, `build_host.sh`); the
     m68k build still compiles and links as it was (checked in a separate output directory:
     0 undefined symbols; the release's `v3dglslc.stripped` was not rebuilt).
+- **Done (2026-11-04): the limits programs are compiled with.** `v3dglslc -L -g 21|42` prints
+  them (GLSL's `gl_Max*` constants and what a link checks; dEQP's `builtin_variable` compares
+  them with the library's queries). `-g 21`: vertex attributes 8, uniform vectors 4088 and
+  4095, varyings 8, texture units 16, 16 and 32, draw buffers 4 (the emulation, §2.1),
+  textures, cube maps and renderbuffers 2048: Mesa vc4's on the Pi 3 (§2 "Limits") but for the
+  draw buffers. `-g 42`: 16, 4088, 4095, 16, 16, 16, 32, 4, 4096, 1.3.3's. So the VC4 backend's
+  caps (P5) take these values. `struct OGLES2Caps` has the vertex attribute count since
+  (`max_vertex_attribs`, V3D's 16; `OGLES2_GL_VERTEX_ATTRIBS`): `GL_MAX_VERTEX_ATTRIBS`, the
+  index checks of the vertex array and attribute calls and of `glBindAttribLocation`, and the
+  link's own attribute locations use it; the context's arrays stay 16 long (the internal
+  programs use the last two, as front-end slots). The Pi 4's compiler output unchanged
+  (`v42_unchanged.sh`: 54 of 54).
+- **Done (2026-11-04): the states P3's tests need (`-s`).** `v3dglslc -g 21 -s a,b,...` draws
+  the program again after the reference draw in each state named, so the `.vc4p` holds those
+  variants too: `depth` (`LESS`, a D24S8 target), `stencil` (one-sided `ALWAYS`/`REPLACE`; vc4's
+  key then has the depth flag too), `blend` (`SRC_ALPHA`, `ONE_MINUS_SRC_ALPHA`), `points`,
+  `lines`, `ubyte1` (attribute 1 as four normalized unsigned bytes), the 2D samplers on a texture
+  of another format (`tex565`, `texlum`, `tex4444`, `tex5551`, `texla`, `etc1`) and `rt565`
+  (an RGB565 target, plain and with `blend`). A stop-gap for the tests until P5's key builder
+  and PD7's canonical keys decide what a program file holds. The Pi 4's output unchanged
+  (54 of 54).
 
 ### 4.2 Keys and variants (the main risk)
 - **Mesa vc4's keys** (`vc4_qir.h`, filled in `vc4_update_compiled_fs`/`_vs` and
@@ -624,6 +802,28 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   dEQP-GLES2's must-pass list and the benchmarks (gears, Quake III) give the same results and the
   same speed (the 1.3.3 checks of DEVELOPMENT_PLAN §13 are the list). The function table costs
   one indirect call per backend call on the 68k; the benchmarks show whether that matters.
+  **Run 2026-11-04** (library of bc44871, against 1.3.3's from `release/dist/ogles2-1.3.3.lha`,
+  the same evening): speed, five runs each alternating (`REF_LIB=… p2_speed.sh 5`): Quake III
+  89.1, 89.0, 88.5, 88.9, 88.4 fps against 89.2, 88.6, 89.0, 88.1, 88.5 (equal: step 5's 2 %
+  was against a fast stretch of step 4's); gears within 1 % (bitmap immediate 432-434 against
+  428-430, arrays 811-814 against 813-818, window 461-465 against 463-466, screen 1081-1095
+  against 1089-1104); SDL (m6-4) 549-557 and 327 fps against 573 and 333 (testgles2,
+  sprites), the others within 2 %, vsync 50 fps with either (the station's screen runs at
+  50 Hz now: 60 in October); glmark2 (m6-7) 260 and 260 against 253. The packages, every one
+  without a FAIL: m1-5 59, m2-4 146, m5-1 255, m6-6 389 (all its parts; October's run had
+  only the last, 93, the same today), m6-8 121, m6-10 210, m7-2 66, m7-3 105, m7-4 129, m7-5
+  162 PASS, m7-6 36 of 36, m2-5 14 of 14 pictures identical. dEQP-GLES2's must-pass list
+  (`tests/a1200/p2_deqp.sh`: every group, and multisample in a 4x MSAA context), run
+  2026-11-04 from 20:58, shaders compiled on the Amiga: **51 of the 59 groups done, each the
+  same as October's** (passes, fails, not supported and warnings;
+  `tests/a1200/results/p2-deqp-20261104-2058.txt`), through `shaders-return`. Paused at the
+  developer's request on 2026-11-05 shortly after midnight; the A1200 had stopped answering
+  (no ping, no `amictl` port) during the next group, `shaders-scoping`, so whether that group
+  hung it is not known. To resume: `bash tests/a1200/p2_deqp.sh shaders-scoping shaders-struct
+  shaders-swizzles shaders-texture_functions state_query texture uniform_api vertex_arrays`,
+  then the 4x MSAA multisample run (the script does it only without arguments: `run
+  multisample "MSAA=1" multisample-msaa`); if `shaders-scoping` stops the Amiga again, it is a
+  finding of its own (October's run passed it).
 - **Program binaries:** `OES_get_program_binary`'s binary is the `.v3dp` file
   (`GL_PROGRAM_BINARY_V3DP_PISTORM`, `program.c`). The token stays one for both GPUs: a binary for
   the other GPU fails to load (device field), which GLES2 allows, and the program then compiles
@@ -936,13 +1136,17 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0). A heatsink before long speed
    runs on it.
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
-   the Pi 4 card (PD7 decided: option 1): steps 1 to 8 done (§5.1, §5.3), the acceptance
-   next (the whole of P2 against 1.3.3; Quake III's 2 % from step 5 looked at there); each
-   step's speed compared with the last commit's library, alternating runs (§5.1).
-3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
-   canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the
-   compiler (8 varyings, draw buffers per the emulation); the corpus compiled for VC4 as a
-   whole is done (36 of 36, §4.3, with the draw-buffers variants of patch 0016).
-4. P3: `vc4core` on Linux, starting from the probe's lists (Linux's render-list order, the reset
-   at take-over, `ERRSTAT` checks), with its tests in `tests/pi3/` against Mesa's pictures; early
-   in it a long soak (hours of mixed draws) and the cause of the not-reset core's lost tiles.
+   the Pi 4 card (PD7 decided: option 1): steps 1 to 8 done (§5.1, §5.3); the acceptance done
+   but for dEQP's result (§5.1). Before the next dEQP run: the PC compile bridge ported here
+   (the A1200's dEQP shaders compiled on the PC, as in `ogles3`).
+3. P4's S1: the limits are settled (§4.1: `-L`, the VC4 backend's caps take them); the corpus
+   compiled for VC4 as a whole is done (36 of 36, §4.3, with the draw-buffers variants of patch
+   0016); the states P3's tests need are compiled with `-s` (§4.1), a stop-gap until the
+   canonical keys of §4.2 and PD7, with P5's key builder, decide what a program file holds.
+4. P3: `vc4core` on Linux (§3.1): the core, its texture layouts and the tests' program loader
+   done; §6.3's list against Mesa's pictures done but for the items below; the long soak (§3.1)
+   and `ERRSTAT`'s one error (`VCMBE` when the binner runs out of memory) done; first GPU-only
+   numbers (§3.1). Left: the speed runs again with the heatsink, clears of part of a frame (a
+   draw), the emulations'
+   GPU side (§2.1: RGBA64 half floats, the shader's texture tricks), the GPU lock (`lock.c`),
+   and the cause of the not-reset core's lost tiles. Then P5 (the VC4 backend, `os_amiga.c`).

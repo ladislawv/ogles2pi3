@@ -231,7 +231,7 @@ static void set_attrib(struct OGLES2Context *ctx, GLuint index, GLfloat x, GLflo
     GLfloat *a;
     if (!ogles2_context_valid(ctx))
         return;
-    if (index >= OGLES2_MAX_VERTEX_ATTRIBS) {
+    if (index >= OGLES2_GL_VERTEX_ATTRIBS) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }
@@ -599,7 +599,7 @@ static int lookup(struct OGLES2Context *ctx, GLenum pname, struct value *v)
         v->kind = K_FLOAT; v->n = 1; v->f[0] = s->sample_coverage_value;
         return 1;
     case GL_MAX_VERTEX_ATTRIBS:
-        v->kind = K_INT; v->n = 1; v->i[0] = OGLES2_MAX_VERTEX_ATTRIBS;
+        v->kind = K_INT; v->n = 1; v->i[0] = (GLint)OGLES2_GL_VERTEX_ATTRIBS;
         return 1;
     /* GLES2's minimum, as Mesa's v3d driver reports on the same GPU (its
      * clipper works in 1/256 pixel, V3D_COORD_SHIFT is 6). dEQP's reference
@@ -853,7 +853,7 @@ void ogles2_glGetVertexAttribfv(struct OGLES2Context *ctx, GLuint index, GLenum 
     int k;
     if (!ogles2_context_valid(ctx) || !params)
         return;
-    if (index >= OGLES2_MAX_VERTEX_ATTRIBS) {
+    if (index >= OGLES2_GL_VERTEX_ATTRIBS) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }
