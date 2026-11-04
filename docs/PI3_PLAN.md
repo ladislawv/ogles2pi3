@@ -502,7 +502,7 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   `ctx->be_draw`. `draw.c` keeps the GL entry points and their checks, the index range scan,
   the variant choice (with `wants_wide`), the program's state variables, the vertex input
   slots, probe V, the clears drawn as rectangles and the copies on the GPU (their internal
-  programs move with step 7). Helpers both use are inline in `ogles2/draw_private.h`.
+  programs move with step 7). Helpers both use are in `ogles2/draw_private.h`.
   Probe P's stage 1 now holds the slot mapping, and probe V counts a draw after it is made
   (it reads the same textures' storage). Pi 4 checks the same day: m5-1 255 PASS, no FAIL;
   m7-6 36 of 36; m2-5 14 of 14 identical; speed against step 3 (`tests/a1200/p2_speed.sh`):
@@ -510,6 +510,34 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   807 against 826, 807, 808, screen 1083, 1084, 1078 against 1106, 1084, 1098 (the same
   step 3 library ran bitmap arrays at 772 to 779 in the afternoon and 807 to 826 in the
   evening: the station's drift is larger than any step's cost so far).
+- **Step 5 done (2026-11-04):** texture storage. `ogles2/v3d/texture_v3d.c` (Hyperion) has
+  the stored formats and their packing, the GPU copy's allocation and tiling, its loads and
+  stores (the TFU's uploads), renaming, glGenerateMipmap's and glCopyTex*'s TFU work, the
+  draw's texture and sampler records (`ogles2_texture_state`, called by `draw_v3d.c`), a
+  level as a render target (`ogles2_texture_surface`, `_zs_surface`: fbo.c still calls them
+  directly, until step 6) and probe V's stored format; ten table entries (`tex_upload` …
+  `tex_from_raster`). `texture.c` keeps the objects, names and parameters, the RAM copies
+  and their conversions, completeness (`ogles2_texture_complete`), the fallback texture,
+  when a GPU copy is made again or renamed, and the CPU's mipmaps. What both read is in
+  `ogles2/texture_private.h`. Still to do for VC4: the texture object holds the V3D
+  backend's storage fields (`gpu`, `hw_type`, `cpp`, `swizzle`, `face_stride`, the records'
+  cache); VC4's storage replaces them with its own when it is written (P5). The shared
+  helpers of `draw_private.h` and `texture_private.h` are `static inline` (the faster
+  choice, whatever the size: plain static functions there ran Quake III at 87.4 fps against
+  88.3 to 88.8 inline, 4 KB less), a draw's samplers reach the context's texture state
+  without a call (`texture_ts_fast`), and the Makefile's library objects depend on every
+  `ogles2/*.h`. Pi 4 checks the same day:
+  m5-1 255 PASS, no FAIL; m7-6 36 of 36; m2-5 14 of 14 identical; and the texture packages
+  as at their last runs: m2-4 146, m7-2 (S3TC) 66, m7-4 (draw buffers) 129, m7-5 (half-float
+  targets) 162 PASS, none FAIL (`p2_checks.sh` counts them too now). Speed against step 4,
+  alternating: gears as step 4 (bitmap arrays 816, 812, 811 against 815, 817, 813; screen
+  1092, 1084, 1092 against 1104, 1098, 1097), Quake III about 2 % slower (88.2, 87.5, 87.6
+  against 90.1, 89.6, 89.4 fps). Probe P puts the loss in stages this step did not change
+  (per frame: glBufferData, in the untouched buffer.c, 443 against 410 us; vertex copies 812
+  against 762; indices 220 against 193; the texture stage equal), the pattern of a placement
+  effect on unchanged code (as gears at step 3), not of the moved code's cost. Open: P2's
+  acceptance compares the whole against 1.3.3 and looks for the cause if Quake III stays
+  below it (where the hot copies land, Emu68's translation of them).
 - **Measuring speed between steps (learnt at step 3):** runs of one library minutes apart are
   not enough. Quake III's timedemo drifts by about 1.5 % within an hour (step 1's library:
   87.9 to 89.3 fps the same afternoon), and where the code lies moves gears: step 3 with 64
@@ -837,7 +865,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0). A heatsink before long speed
    runs on it.
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
-   the Pi 4 card (PD7 decided: option 1): steps 1 to 4 done (§5.1), step 5 (textures) next; each
+   the Pi 4 card (PD7 decided: option 1): steps 1 to 5 done (§5.1), step 6 (framebuffer
+   targets, TFU/blit) next; each
    step's speed compared with the last commit's library, alternating runs (§5.1).
 3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
    canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the

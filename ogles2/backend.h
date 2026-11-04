@@ -7,7 +7,9 @@
  * which the front end used to hard-code. Step 2: GPU memory. Step 3: jobs
  * (job.c keeps the serials, the clear snapshot, the locks, the overlap and
  * the statistics; the backend builds, submits and waits). Step 4: draw
- * (draw.c keeps the entry points, their checks, the variant choice).
+ * (draw.c keeps the entry points, their checks, the variant choice). Step 5:
+ * texture storage (texture.c keeps the objects, the RAM copies, completeness
+ * and the fallback texture).
  *
  * Addresses. GPU memory is a struct v3d_mem: `hostptr` is where the CPU
  * reads and writes it, `busaddr` where the GPU does. The front end keeps
@@ -35,6 +37,7 @@ struct OGLES2Context;
 struct OGLES2Target;
 
 struct OGLES2Program;
+struct OGLES2Texture;
 struct OGLES2Variant;
 
 /* An indexed draw's indices: the application's, rebased to the copied
@@ -118,6 +121,23 @@ struct OGLES2Backend
      * context's draw state freed (aglDestroyContext, after the last job). */
     BOOL (*draw)(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc);
     void (*draw_free)(struct OGLES2Context *ctx);
+    /* Texture storage: the GPU copy made (again) from the RAM copies; a box
+     * of face k, level l stored from a RAM copy, or loaded into one (FALSE:
+     * no copy); the copy freed; given to the job `user` has open (FALSE: not
+     * done, the job is rendered instead); its levels (0: none); whether it
+     * takes level l of face k in place; glGenerateMipmap on the GPU (can,
+     * do: 0 or an error, -3 busy); level 0 filled from a raster image
+     * (glCopyTex*: 0, an error, -3 busy). */
+    BOOL (*tex_upload)(struct OGLES2Texture *t);
+    void (*tex_store)(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w, int h);
+    BOOL (*tex_load)(struct OGLES2Texture *t, int k, int l, int x, int y, int w, int h, UBYTE *dst, ULONG stride);
+    void (*tex_free)(struct OGLES2Texture *t);
+    BOOL (*tex_rename)(struct OGLES2Context *user, struct OGLES2Texture *t);
+    int (*tex_levels)(const struct OGLES2Texture *t);
+    BOOL (*tex_holds)(const struct OGLES2Texture *t, int k, int l);
+    BOOL (*tex_can_generate)(const struct OGLES2Texture *t, int n);
+    int (*tex_generate)(struct OGLES2Texture *t, int n);
+    int (*tex_from_raster)(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra);
 };
 
 #define ogles2_mem_alloc(m, size) (ogles2_backend->mem_alloc((m), (size)))

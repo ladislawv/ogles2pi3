@@ -45,7 +45,7 @@ for t in $WANT; do
         amictl runpkg "$HERE/out/ogles2-$t" -t 1200 > /dev/null
         R=$(newest "ogles2-$t")/results
         case $t in
-        m5-1 | m7-6) echo "$t: $(grep -h '^PASS' "$R"/*.txt | wc -l) PASS, $(grep -h '^FAIL' "$R"/*.txt | wc -l) FAIL" ;;
+        m5-1 | m7-6 | m2-4 | m7-2 | m7-4 | m7-5) echo "$t: $(grep -h '^PASS' "$R"/*.txt | wc -l) PASS, $(grep -h '^FAIL' "$R"/*.txt | wc -l) FAIL" ;;
         m2-5)
             same=0 diff=0
             for f in "$R"/*.ppm; do

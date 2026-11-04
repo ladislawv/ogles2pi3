@@ -11,6 +11,7 @@
 struct OGLES2Context;
 struct OGLES2Target;
 struct OGLES2DrawCall;
+struct OGLES2Texture;
 
 /* job_v3d.c */
 void ogles2_v3d_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *tg, BOOL bad);
@@ -29,5 +30,17 @@ void ogles2_v3d_job_free(struct OGLES2Context *ctx);
 /* draw_v3d.c */
 BOOL ogles2_v3d_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc);
 void ogles2_v3d_draw_free(struct OGLES2Context *ctx);
+
+/* texture_v3d.c */
+BOOL ogles2_v3d_tex_upload(struct OGLES2Texture *t);
+void ogles2_v3d_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w, int h);
+BOOL ogles2_v3d_tex_load(struct OGLES2Texture *t, int k, int l, int x, int y, int w, int h, UBYTE *rgba, ULONG stride);
+void ogles2_v3d_tex_free(struct OGLES2Texture *t);
+BOOL ogles2_v3d_tex_rename(struct OGLES2Context *user, struct OGLES2Texture *t);
+int ogles2_v3d_tex_levels(const struct OGLES2Texture *t);
+BOOL ogles2_v3d_tex_holds(const struct OGLES2Texture *t, int k, int l);
+BOOL ogles2_v3d_tex_can_generate(const struct OGLES2Texture *t, int n);
+int ogles2_v3d_tex_generate(struct OGLES2Texture *t, int n);
+int ogles2_v3d_tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra);
 
 #endif
