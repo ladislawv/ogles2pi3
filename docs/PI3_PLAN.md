@@ -538,6 +538,21 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   effect on unchanged code (as gears at step 3), not of the moved code's cost. Open: P2's
   acceptance compares the whole against 1.3.3 and looks for the cause if Quake III stays
   below it (where the hot copies land, Emu68's translation of them).
+- **Step 6 done (2026-11-04):** framebuffer targets. `ogles2/v3d/fbo_v3d.c` (Hyperion) has a
+  depth or stencil renderbuffer's storage (UIF without XOR, Mesa's padding) and its surface,
+  a framebuffer object's tile size, bpp and depth type (Mesa's v3d_choose_tile_size) and its
+  tile pools; with the texture levels' surfaces (`texture_v3d.c`), eight table entries
+  (`rb_zs_storage` … `tex_zs_surface`); fbo.c and copy.c call nothing of V3D's any more.
+  Also the memory freed after a job (`mem_free_after`: share.c's and v3dp.c's deferred
+  frees, step 2's "free after the job"). The TFU paths went behind the table with step 5
+  (uploads, glGenerateMipmap, glCopyTex*'s raster copy); nothing else blits. Left for before
+  the acceptance, with step 7: the device group of step 1 (open, reset, a context's pools
+  and their resize, bytes in use, GPU reach, the GPU lock: `device.c`, called by name from
+  context.c, frame.c, job.c, texture_v3d.c), so that a device open can choose VC4. Pi 4
+  checks the same day: m5-1 255 PASS, no FAIL; m7-6 36 of 36; m2-5 14 of 14 identical;
+  m2-4 146, m7-2 66, m7-4 129, m7-5 162 PASS, none FAIL; speed against step 5, alternating: Quake III
+  88.3, 88.1, 88.9 fps against 89.2, 88.0, 88.0; gears bitmap arrays 812, 810, 809 against
+  818, 816, 813, screen 1091, 1082, 1076 against 1094, 1098, 1090 (within 1 %).
 - **Measuring speed between steps (learnt at step 3):** runs of one library minutes apart are
   not enough. Quake III's timedemo drifts by about 1.5 % within an hour (step 1's library:
   87.9 to 89.3 fps the same afternoon), and where the code lies moves gears: step 3 with 64
@@ -865,8 +880,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0). A heatsink before long speed
    runs on it.
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
-   the Pi 4 card (PD7 decided: option 1): steps 1 to 5 done (§5.1), step 6 (framebuffer
-   targets, TFU/blit) next; each
+   the Pi 4 card (PD7 decided: option 1): steps 1 to 6 done (§5.1), step 7 (programs, and
+   the device group left from step 1) next; each
    step's speed compared with the last commit's library, alternating runs (§5.1).
 3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
    canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the

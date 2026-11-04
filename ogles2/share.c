@@ -106,7 +106,7 @@ void ogles2_share_defer_free(struct OGLES2Context *ctx, ULONG serial, struct v3d
     if (!m->hostptr)
         return;
     if ((user = ogles2_job_user(ctx, serial)) && user->v3d)
-        v3d_frame_defer_free(&user->v3d->frame, m);
+        ogles2_backend->mem_free_after(user, m);
     else
         ogles2_mem_free(m);
     memset(m, 0, sizeof(*m));

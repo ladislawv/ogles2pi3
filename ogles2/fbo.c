@@ -30,9 +30,7 @@
 #include <string.h>
 #include "ogles2_internal.h"
 #include "backend.h"
-#include "v3d_context.h"
-#include "v3d_frame.h"
-#include "v3d_hw.h"
+#include "v3d_types.h"
 
 #ifndef GL_RGB8_OES
 #define GL_RGB8_OES  0x8051 /* OES_rgb8_rgba8 */
@@ -190,21 +188,6 @@ static BOOL is_color(GLenum f)
            f == GL_BGRA_EXT || f == GL_BGRA8_EXT || is_half(f);
 }
 
-/* Depth and stencil: UIF without XOR, Mesa's padding for a UIF level. */
-static BOOL rb_zs_storage(struct OGLES2Renderbuffer *rb)
-{
-    ULONG cpp = rb->format == GL_DEPTH_COMPONENT16 ? 2 : rb->format == GL_STENCIL_INDEX8 ? 1 : 4;
-    ULONG ub_w = 2 * v3d_utile_width((int)cpp), ub_h = 2 * v3d_utile_height((int)cpp);
-    ULONG pw = (rb->w + 4 * ub_w - 1) / (4 * ub_w) * (4 * ub_w);
-    ULONG ph = (rb->h + ub_h - 1) / ub_h * ub_h;
-    if (ogles2_mem_alloc(&rb->mem, pw * ph * cpp + 4096) < 0)
-        return FALSE;
-    rb->base = ((ULONG)rb->mem.hostptr + 4095) & ~4095UL;
-    rb->ub = ph / ub_h;
-    rb->bytes = pw * ph * cpp;
-    rb->cpp = (UBYTE)cpp;
-    return TRUE;
-}
 
 /* ---- the job of the framebuffer an attachment change touches ---- */
 
@@ -635,7 +618,7 @@ void ogles2_glRenderbufferStorage(struct OGLES2Context *ctx, GLenum target, GLen
                                                       : GL_UNSIGNED_BYTE;
             ok = (rb->color = ogles2_texture_hidden(ctx, (UWORD)width, (UWORD)height, f, ty)) != 0;
         } else {
-            ok = rb_zs_storage(rb);
+            ok = ogles2_backend->rb_zs_storage(rb->format, rb->w, rb->h, &rb->mem, &rb->base, &rb->ub, &rb->bytes, &rb->cpp);
         }
     }
     if (!ok) {
@@ -1021,102 +1004,39 @@ BOOL ogles2_fb_ready(struct OGLES2Context *ctx)
 
 /* ---- the job's target (job.c) ---- */
 
-static void rb_surface(const struct OGLES2Renderbuffer *rb, BOOL stencil_only, struct OGLES2Surface *s)
-{
-    s->addr = rb->base;
-    s->ub = rb->ub;
-    s->bytes = rb->bytes;
-    s->mem_format = V3D_MEMORY_FORMAT_UIF_NO_XOR;
-    s->format = stencil_only                         ? V3D_OUTPUT_IMAGE_FORMAT_S8
-              : rb->format == GL_DEPTH_COMPONENT16 ? V3D_OUTPUT_IMAGE_FORMAT_D16
-                                                   : V3D_OUTPUT_IMAGE_FORMAT_D24S8;
-    s->force_alpha1 = FALSE;
-}
 
-/* Tile pools for w x h: the context's, if it has as many tiles; else fb's. */
-static BOOL pools(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb, struct OGLES2Target *t)
-{
-    V3DContext *v = ctx->v3d;
-    v3d_u32 zs, ts, ta, tx, ty;
-    /* The job's tiles (smaller with several render targets), and as many
-     * as the context's pools were made for (32x32 with 4x MSAA). */
-    ULONG tiles = (ULONG)((t->w + t->tile_w - 1) / t->tile_w) * ((t->h + t->tile_h - 1) / t->tile_h);
-    ULONG ct = ctx->msaa ? 32 : 64, mine = (ULONG)((v->width + ct - 1) / ct) * ((v->height + ct - 1) / ct);
-    t->ta_addr = t->ta_size = t->ts_addr = 0;
-    if (tiles <= mine)
-        return TRUE;
-    if (fb->pool_tiles < tiles) {
-        ogles2_job_finish(ctx); /* a running render may use the old pools */
-        if (fb->pool_alloc.hostptr)
-            ogles2_mem_free(&fb->pool_alloc);
-        if (fb->pool_state.hostptr)
-            ogles2_mem_free(&fb->pool_state);
-        fb->pool_tiles = 0;
-        /* sized for 32x32 tiles when the job's are smaller than 64x64; for
-         * 32x16 ones (four 64-bit targets) as 32x32 over twice the height */
-        v3d_frame_compute_pool_sizes(t->w, t->tile_h < 32 ? 2 * t->h : t->h, 16, t->tile_w < 64 || t->tile_h < 64,
-                                     &zs, &ts, &ta, &tx, &ty);
-        if (ogles2_mem_alloc(&fb->pool_alloc, ta + 4096) < 0)
-            return FALSE;
-        if (ogles2_mem_alloc(&fb->pool_state, ts + 4096) < 0) {
-            ogles2_mem_free(&fb->pool_alloc);
-            return FALSE;
-        }
-        {
-            ULONG len = (ULONG)fb->pool_alloc.size;
-            CachePreDMA(fb->pool_alloc.hostptr, &len, 0);
-            len = (ULONG)fb->pool_state.size;
-            CachePreDMA(fb->pool_state.hostptr, &len, 0);
-        }
-        fb->pool_tiles = tiles;
-        ogles2_log("framebuffer %ld: tile pools of its own for %ldx%ld", (ULONG)fb->name, (ULONG)t->w,
-                   (ULONG)t->h);
-    }
-    t->ta_addr = ((ULONG)fb->pool_alloc.hostptr + 4095) & ~4095UL;
-    t->ta_size = (ULONG)fb->pool_alloc.size - (t->ta_addr - (ULONG)fb->pool_alloc.hostptr);
-    t->ts_addr = ((ULONG)fb->pool_state.hostptr + 4095) & ~4095UL;
-    return TRUE;
-}
 
 BOOL ogles2_fbo_target(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb, BOOL surfaces,
                        struct OGLES2Target *t)
 {
     const struct OGLES2Attachment *d = &fb->att[ATT_DEPTH], *s = &fb->att[ATT_STENCIL];
     struct OGLES2Framebuffer *saved = ctx->draw_fb;
-    UBYTE drawn;
+    UBYTE drawn, dfmt;
+    BOOL wide = FALSE;
     int i;
     memset(t, 0, sizeof(*t));
     ctx->draw_fb = fb; /* the sizes and formats of fb, whatever is bound now */
     ogles2_fb_update(ctx);
     t->w = ctx->fb_w;
     t->h = ctx->fb_h;
-    t->depth_type = ctx->fb_depth_format == OGLES2_DEPTH_24 ? V3D_INTERNAL_TYPE_DEPTH24
-                                                             : V3D_INTERNAL_TYPE_DEPTH16;
+    dfmt = ctx->fb_depth_format;
     drawn = ctx->fb_draw_mask;
     t->nrt = ctx->fb_nrt;
     ctx->draw_fb = saved;
     ogles2_fb_update(ctx);
-    /* The widest drawn target: 64 bits with a half-float one. */
-    t->bpp = V3D_INTERNAL_BPP_32;
+    /* A half-float target drawn: the widest is 64 bits. */
     for (i = 0; i < OGLES2_MAX_DRAW_BUFFERS; i++) {
         const struct OGLES2Attachment *c = &fb->att[ATT_COLOR + i];
         if ((drawn & (1 << i)) &&
             (c->type == GL_TEXTURE ? ogles2_texture_half(c->tex, c->face, c->level)
                                    : c->type == GL_RENDERBUFFER && c->rb->color &&
                                          ogles2_texture_half(c->rb->color, 0, 0)))
-            t->bpp = V3D_INTERNAL_BPP_64;
+            wide = TRUE;
     }
-    /* Mesa's v3d_choose_tile_size for V3D 4.x: 64x64 for one 32-bit
-     * target, a step smaller for two, two steps for three or four, and one
-     * more for 64-bit ones (64x32, 32x32, 32x16); the hardware derives the
-     * same from the configuration packets. */
-    {
-        static const UBYTE sizes[] = {64, 64, 64, 32, 32, 32, 32, 16};
-        int k = (t->nrt > 2 ? 2 : t->nrt > 1 ? 1 : 0) + (t->bpp == V3D_INTERNAL_BPP_64);
-        t->tile_w = sizes[2 * k];
-        t->tile_h = sizes[2 * k + 1];
-    }
-    if (!t->w || !t->h || !pools(ctx, fb, t))
+    /* The tile size, depth type and tile pools: the backend's. */
+    ogles2_backend->target_layout(t, dfmt, wide);
+    if (!t->w || !t->h ||
+        !ogles2_backend->target_pools(ctx, &fb->pool_alloc, &fb->pool_state, &fb->pool_tiles, fb->name, t))
         return FALSE;
     if (!surfaces)
         return TRUE;
@@ -1125,39 +1045,39 @@ BOOL ogles2_fbo_target(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb, 
         if (!(drawn & (1 << i)))
             continue;
         if (c->type == GL_TEXTURE) {
-            if (!ogles2_texture_surface(ctx, c->tex, c->face, c->level, &t->color[i]))
+            if (!ogles2_backend->tex_surface(ctx, c->tex, c->face, c->level, &t->color[i]))
                 return FALSE;
         } else if (c->type == GL_RENDERBUFFER) {
-            if (!c->rb->color || !ogles2_texture_surface(ctx, c->rb->color, 0, 0, &t->color[i]))
+            if (!c->rb->color || !ogles2_backend->tex_surface(ctx, c->rb->color, 0, 0, &t->color[i]))
                 return FALSE;
         }
         t->colors |= (UBYTE)(1 << i);
     }
     if (d->type == GL_RENDERBUFFER && d->rb->base) {
         t->has_z = TRUE;
-        rb_surface(d->rb, FALSE, &t->z);
+        ogles2_backend->rb_surface(d->rb->format, d->rb->base, d->rb->ub, d->rb->bytes, FALSE, &t->z);
         t->packed_zs = d->rb->format == GL_DEPTH24_STENCIL8_OES;
     }
     if (s->type == GL_RENDERBUFFER && s->rb->base && !(t->packed_zs && s->rb == d->rb)) {
         if (s->rb->format == GL_DEPTH24_STENCIL8_OES) { /* packed, as stencil only */
             t->has_z = TRUE;
             t->packed_zs = TRUE;
-            rb_surface(s->rb, FALSE, &t->z);
+            ogles2_backend->rb_surface(s->rb->format, s->rb->base, s->rb->ub, s->rb->bytes, FALSE, &t->z);
         } else {
             t->has_s = TRUE;
-            rb_surface(s->rb, TRUE, &t->s);
+            ogles2_backend->rb_surface(s->rb->format, s->rb->base, s->rb->ub, s->rb->bytes, TRUE, &t->s);
         }
     }
     /* OES_depth_texture: the depth texture's level itself; a depth-stencil
      * texture for both is one packed image, as a D24S8 renderbuffer. */
     if (d->type == GL_TEXTURE) {
-        if (!ogles2_texture_zs_surface(ctx, d->tex, d->level, &t->z))
+        if (!ogles2_backend->tex_zs_surface(ctx, d->tex, d->level, &t->z))
             return FALSE;
         t->has_z = TRUE;
         t->packed_zs = same_image(d, s);
     }
     if (s->type == GL_TEXTURE && !t->packed_zs) { /* a depth-stencil texture as the stencil only */
-        if (!ogles2_texture_zs_surface(ctx, s->tex, s->level, &t->z))
+        if (!ogles2_backend->tex_zs_surface(ctx, s->tex, s->level, &t->z))
             return FALSE;
         t->has_z = TRUE;
         t->packed_zs = TRUE;

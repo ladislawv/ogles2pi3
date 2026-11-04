@@ -584,7 +584,7 @@ int ogles2_v3d_tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride,
     return 0;
 }
 
-BOOL ogles2_texture_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l,
+BOOL ogles2_v3d_tex_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l,
                             struct OGLES2Surface *s)
 {
     const V3DTexture *g;
@@ -617,7 +617,7 @@ BOOL ogles2_texture_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, 
  * storage made first: the tile buffer stores into the level's own layout
  * as D16 or D24S8, which the TMU then samples as DEPTH_COMP16 or
  * DEPTH24_X8 (Mesa's depth textures). FALSE: none. */
-BOOL ogles2_texture_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l,
+BOOL ogles2_v3d_tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l,
                                struct OGLES2Surface *s)
 {
     const V3DTexture *g;

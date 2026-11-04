@@ -12,6 +12,8 @@ struct OGLES2Context;
 struct OGLES2Target;
 struct OGLES2DrawCall;
 struct OGLES2Texture;
+struct OGLES2Surface;
+struct v3d_mem;
 
 /* job_v3d.c */
 void ogles2_v3d_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *tg, BOOL bad);
@@ -42,5 +44,17 @@ BOOL ogles2_v3d_tex_holds(const struct OGLES2Texture *t, int k, int l);
 BOOL ogles2_v3d_tex_can_generate(const struct OGLES2Texture *t, int n);
 int ogles2_v3d_tex_generate(struct OGLES2Texture *t, int n);
 int ogles2_v3d_tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra);
+BOOL ogles2_v3d_tex_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l, struct OGLES2Surface *s);
+BOOL ogles2_v3d_tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l, struct OGLES2Surface *s);
+
+/* fbo_v3d.c */
+BOOL ogles2_v3d_rb_zs_storage(GLenum format, UWORD w, UWORD h, struct v3d_mem *mem, ULONG *base, ULONG *ub,
+                              ULONG *bytes, UBYTE *cpp_out);
+void ogles2_v3d_rb_surface(GLenum format, ULONG base, ULONG ub, ULONG bytes, BOOL stencil_only,
+                           struct OGLES2Surface *s);
+void ogles2_v3d_target_layout(struct OGLES2Target *t, UBYTE depth_format, BOOL wide);
+BOOL ogles2_v3d_target_pools(struct OGLES2Context *ctx, struct v3d_mem *pool_alloc, struct v3d_mem *pool_state,
+                             ULONG *pool_tiles, ULONG name, struct OGLES2Target *t);
+void ogles2_v3d_mem_free_after(struct OGLES2Context *user, struct v3d_mem *m);
 
 #endif

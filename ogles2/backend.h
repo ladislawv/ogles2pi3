@@ -9,7 +9,8 @@
  * the statistics; the backend builds, submits and waits). Step 4: draw
  * (draw.c keeps the entry points, their checks, the variant choice). Step 5:
  * texture storage (texture.c keeps the objects, the RAM copies, completeness
- * and the fallback texture).
+ * and the fallback texture). Step 6: framebuffer targets (fbo.c keeps the
+ * objects, attachments and completeness) and memory freed after a job.
  *
  * Addresses. GPU memory is a struct v3d_mem: `hostptr` is where the CPU
  * reads and writes it, `busaddr` where the GPU does. The front end keeps
@@ -38,6 +39,7 @@ struct OGLES2Target;
 
 struct OGLES2Program;
 struct OGLES2Texture;
+struct OGLES2Surface;
 struct OGLES2Variant;
 
 /* An indexed draw's indices: the application's, rebased to the copied
@@ -96,6 +98,7 @@ struct OGLES2Backend
      * (ogles2_share_defer_free, the frame's own list); this frees now. */
     int (*mem_alloc)(struct v3d_mem *m, ULONG size);
     void (*mem_free)(struct v3d_mem *m);
+    void (*mem_free_after)(struct OGLES2Context *user, struct v3d_mem *m); /* after user's job renders */
     /* Jobs (job.c's order): begin the lists (tg: a framebuffer object's
      * target, or NULL for the default framebuffer and for an object
      * without tile pools, bad); has a draw; memory for depth and stencil
@@ -138,6 +141,21 @@ struct OGLES2Backend
     BOOL (*tex_can_generate)(const struct OGLES2Texture *t, int n);
     int (*tex_generate)(struct OGLES2Texture *t, int n);
     int (*tex_from_raster)(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra);
+    /* Framebuffer targets: a depth or stencil renderbuffer's storage (mem,
+     * and its image's base, padded height, bytes and bytes a pixel) and that
+     * image as a surface; a target's tile size, bpp and depth type (wide: a
+     * half-float target drawn); its tile pools when it has more tiles than
+     * the context's (kept in the framebuffer's *alloc, *state, *tiles; t's
+     * ta_addr 0 when the context's do); a texture level as a colour or a
+     * depth (and stencil) surface, its GPU copy made first. */
+    BOOL (*rb_zs_storage)(GLenum format, UWORD w, UWORD h, struct v3d_mem *mem, ULONG *base, ULONG *ub,
+                          ULONG *bytes, UBYTE *cpp);
+    void (*rb_surface)(GLenum format, ULONG base, ULONG ub, ULONG bytes, BOOL stencil_only, struct OGLES2Surface *s);
+    void (*target_layout)(struct OGLES2Target *t, UBYTE depth_format, BOOL wide);
+    BOOL (*target_pools)(struct OGLES2Context *ctx, struct v3d_mem *alloc, struct v3d_mem *state, ULONG *tiles,
+                         ULONG name, struct OGLES2Target *t);
+    BOOL (*tex_surface)(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l, struct OGLES2Surface *s);
+    BOOL (*tex_zs_surface)(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l, struct OGLES2Surface *s);
 };
 
 #define ogles2_mem_alloc(m, size) (ogles2_backend->mem_alloc((m), (size)))

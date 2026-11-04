@@ -647,15 +647,11 @@ struct OGLES2Framebuffer;
 struct OGLES2Framebuffer *ogles2_fbo_copy_target(struct OGLES2Context *ctx, struct OGLES2Texture *t, int face,
                                                  int level);
 BOOL ogles2_fbo_color_image(struct OGLES2Context *ctx, struct OGLES2Texture **t, int *face, int *level);
-/* The image as a render target, its GPU storage made first; FALSE: none. */
-BOOL ogles2_texture_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l,
-                            struct OGLES2Surface *s);
+/* The image as a render target: the backend's tex_surface (backend.h). */
 void ogles2_texture_rendered(struct OGLES2Texture *t, int k, int l); /* the GPU's copy is newer */
 /* OES_depth_texture: level l is a depth image (bits 16 or 24; stencil: DEPTH_STENCIL_OES). */
 BOOL ogles2_texture_depth(const struct OGLES2Texture *t, int l, UBYTE *bits, BOOL *stencil);
-/* That image as a job's depth/stencil surface, its GPU storage made first; FALSE: none. */
-BOOL ogles2_texture_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l,
-                               struct OGLES2Surface *s);
+/* That image as a job's depth/stencil surface: the backend's tex_zs_surface (backend.h). */
 /* The texture kinds a sampler reads (its uniform's type). */
 #define OGLES2_TEX_2D   0
 #define OGLES2_TEX_CUBE 1

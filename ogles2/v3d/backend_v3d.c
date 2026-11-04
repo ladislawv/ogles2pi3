@@ -5,7 +5,7 @@
  * frame.c; release 1.3.3). Step 2: GPU memory, AllocVec'd fast RAM
  * (v3dcore/hw/v3d_mem_allocvec.c), whose bus address is its CPU address.
  * Step 3: jobs (job_v3d.c). Step 4: draw (draw_v3d.c). Step 5: texture
- * storage (texture_v3d.c).
+ * storage (texture_v3d.c). Step 6: framebuffer targets (fbo_v3d.c).
  *
  * MIT licence (LICENSE).
  */
@@ -57,6 +57,7 @@ const struct OGLES2Backend ogles2_backend_v3d = {
     ogles2_device_renderer,
     mem_alloc,
     mem_free,
+    ogles2_v3d_mem_free_after,
     ogles2_v3d_job_begin,
     ogles2_v3d_job_has_draws,
     ogles2_v3d_job_keep_zs,
@@ -81,6 +82,12 @@ const struct OGLES2Backend ogles2_backend_v3d = {
     ogles2_v3d_tex_can_generate,
     ogles2_v3d_tex_generate,
     ogles2_v3d_tex_from_raster,
+    ogles2_v3d_rb_zs_storage,
+    ogles2_v3d_rb_surface,
+    ogles2_v3d_target_layout,
+    ogles2_v3d_target_pools,
+    ogles2_v3d_tex_surface,
+    ogles2_v3d_tex_zs_surface,
 };
 
 const struct OGLES2Backend *ogles2_backend = &ogles2_backend_v3d;

@@ -40,9 +40,9 @@ LIB_SRC   := ogles2/library.c ogles2/log.c ogles2/context.c ogles2/device.c ogle
              ogles2/state.c ogles2/display.c ogles2/job.c ogles2/frame.c ogles2/program.c \
              ogles2/draw.c ogles2/v3dp.c ogles2/blake3.c ogles2/texture.c \
              ogles2/buffer.c ogles2/compiler.c ogles2/etc1.c ogles2/fbo.c ogles2/copy.c ogles2/share.c \
-             ogles2/debug.c ogles2/vc4keys.c ogles2/v3d/backend_v3d.c ogles2/v3d/job_v3d.c ogles2/v3d/draw_v3d.c ogles2/v3d/texture_v3d.c
+             ogles2/debug.c ogles2/vc4keys.c ogles2/v3d/backend_v3d.c ogles2/v3d/job_v3d.c ogles2/v3d/draw_v3d.c ogles2/v3d/texture_v3d.c ogles2/v3d/fbo_v3d.c
 # Library files that use v3dcore directly
-V3D_USERS := device job draw v3dp texture buffer fbo share v3d/backend_v3d v3d/job_v3d v3d/draw_v3d v3d/texture_v3d
+V3D_USERS := device job draw v3dp texture buffer fbo share v3d/backend_v3d v3d/job_v3d v3d/draw_v3d v3d/texture_v3d v3d/fbo_v3d
 GEN_LIB   := $(B)/gen/ogles2/dispatch_table.c $(B)/gen/ogles2/stubs.c
 CLIENT_SRC := client/ogles2_open.c client/agl.c
 GEN_CLIENT := $(B)/gen/client/agl_gen.c $(B)/gen/client/procaddr.c

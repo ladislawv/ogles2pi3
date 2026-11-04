@@ -538,9 +538,9 @@ void ogles2_image_free(struct OGLES2Image *im, struct OGLES2Context *ctx)
         return;
     if (im->code_mem && im->code_mem->hostptr) {
         /* The GPU may still run this code in the open job: free it after
-         * that job (v3d_frame_defer_free), or now. */
+         * that job (the backend's mem_free_after), or now. */
         if (ctx && ctx->job_open)
-            v3d_frame_defer_free(&ctx->v3d->frame, im->code_mem);
+            ogles2_backend->mem_free_after(ctx, im->code_mem);
         else
             ogles2_mem_free(im->code_mem);
     }

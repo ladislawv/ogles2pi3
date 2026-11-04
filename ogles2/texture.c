@@ -1417,7 +1417,7 @@ static void set_level(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k,
         return; /* a state-only context keeps the images only */
     /* No GPU texture yet, a new level 0, or a level the chain has no room
      * for: rebuilt at its first use (a draw, ogles2_texture_state; a
-     * framebuffer, ogles2_texture_surface). A program sends level 0 and
+     * framebuffer, the backend's tex_surface). A program sends level 0 and
      * then each mip level: rebuilding at each stored every level before it
      * again (Quake III's load, M6). No job uses the old copy (before_change). */
     if (!t->gpu || (level == 0 && faces(t) == 1) || !ogles2_backend->tex_holds(t, k, level)) {
