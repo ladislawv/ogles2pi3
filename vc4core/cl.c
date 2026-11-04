@@ -81,6 +81,14 @@ uint32_t vc4_cl_end(const struct vc4_cl *cl)
     return cl->block[cl->cur].bus + (uint32_t)(cl->next - cl->block[cl->cur].cpu);
 }
 
+void vc4_cl_flush(const struct vc4_cl *cl)
+{
+    int k;
+    for (k = 0; k < cl->cur; k++)
+        vc4_os_flush(cl->block[k].cpu, cl->block[k].size);
+    vc4_os_flush(cl->block[cl->cur].cpu, (uint32_t)(cl->next - cl->block[cl->cur].cpu));
+}
+
 int vc4_buf_init(struct vc4_buf *b, uint32_t block_size)
 {
     memset(b, 0, sizeof(*b));
@@ -127,4 +135,12 @@ uint8_t *vc4_buf_alloc(struct vc4_buf *b, uint32_t size, uint32_t align, uint32_
     b->used = at + size;
     *bus = b->block[b->cur].bus + at;
     return b->block[b->cur].cpu + at;
+}
+
+void vc4_buf_flush(const struct vc4_buf *b)
+{
+    int k;
+    for (k = 0; k < b->cur; k++)
+        vc4_os_flush(b->block[k].cpu, b->block[k].size);
+    vc4_os_flush(b->block[b->cur].cpu, b->used);
 }

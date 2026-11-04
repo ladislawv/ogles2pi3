@@ -29,5 +29,8 @@ void vc4_os_flush(const void *p, uint32_t n);
 void vc4_os_invalidate(const void *p, uint32_t n);
 uint64_t vc4_os_time_us(void);
 void vc4_os_log(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+/* os_amiga.c: each log line goes to the program (ogles2.library, a test):
+ * it defines this. */
+void vc4_os_log_line(const char *line);
 
 #endif

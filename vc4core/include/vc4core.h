@@ -114,6 +114,9 @@ void vc4_cl_reset(struct vc4_cl *cl);
 uint8_t *vc4_cl_room(struct vc4_cl *cl, uint32_t n);
 uint32_t vc4_cl_start(const struct vc4_cl *cl); /* bus address of the first byte */
 uint32_t vc4_cl_end(const struct vc4_cl *cl);   /* and after the last */
+/* What the CPU wrote made visible to the GPU (vc4_os_flush: under Emu68 GPU
+ * memory is cached fast RAM); vc4_job_run does it for its lists and state. */
+void vc4_cl_flush(const struct vc4_cl *cl);
 
 /* VC4_EMIT(cl, CLEAR_COLORS, .clear_color = c, .clear_zs = z): one packet. */
 #define VC4_EMIT(cl, NAME, ...)                                      \
@@ -148,6 +151,7 @@ void vc4_buf_reset(struct vc4_buf *b);
 /* size bytes at a multiple of align (a power of two up to 4096); NULL when
  * out of memory; *bus their bus address. */
 uint8_t *vc4_buf_alloc(struct vc4_buf *b, uint32_t size, uint32_t align, uint32_t *bus);
+void vc4_buf_flush(const struct vc4_buf *b);
 
 /* ---- jobs (job.c) ---- */
 

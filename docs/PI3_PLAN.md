@@ -516,6 +516,20 @@ Linux's vc4 driver where named; nothing from `v3dcore` or PiStorm3D (PD9).
   give the same variants byte for byte (5 of 5 programs). This is what both the offline
   compiler's key manifests and the run time's variant requests (§4.5) use; the canonical key
   builder (P5) writes these records. The Pi 4's output unchanged (54 of 54).
+- **Done (2026-11-05): the key builder** (`ogles2/vc4/key_vc4.c`, the VC4 backend's, plain C):
+  a draw's GL state (target format, primitive, depth and stencil enables, MSAA flags, blending
+  in GL's terms, colour mask, draw buffer; per sampler the texture's storage and wraps; per
+  vertex input GL's type, size and normalisation, gl_PointSize) turned into `-k`'s records,
+  and the texture storage table the sampler entries describe (`vc4_tex_format`: the TMU's type,
+  bytes a texel, the key's format and view swizzle: RGBA8, RGB8 as RGBX8888, RGB565, RGBA4444,
+  RGBA5551, LUMINANCE and ALPHA in the ALPHA type, LUMINANCE_ALPHA, BGRA8, ETC1). Checked on
+  the PC against the keys Mesa's state tracker and driver build for the same states
+  (`tests/pi3/keys/`, against the `-s` files): **all 28 keys equal Mesa's byte for byte**, and
+  every key in the files is one of them. Two of Mesa's habits found on the way: the sampler's
+  comparison function is filled in (GL's `LEQUAL`) with comparison off, and blending's factors
+  are zero when it is off. **Canonical keys** (wraps as `REPEAT`, the comparison function 0)
+  compile to the same code: the texture program's six formats with three wrap modes each give
+  20 exact variants and 9 canonical ones, every exact variant's code among them.
 
 ### 4.3 The format
 - `v3dp/FORMAT.md` 1.0 is frozen for V3D 4.2, and its reader rejects a device version other than
@@ -1170,8 +1184,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 3. P4: the limits are settled (§4.1: `-L`, the VC4 backend's caps take them); the corpus
    compiled for VC4 as a whole is done (36 of 36, §4.3, with the draw-buffers variants of patch
    0016); variants compile from given keys (`-k`, patch 0017, §4.2); the request's device field
-   and S2 with both drivers are done, S1 and S2 identical (§4.5). Left: the canonical key builder
-   (P5, in the library: it writes `-k`'s records), the key manifests of the offline corpus, the
+   and S2 with both drivers are done, S1 and S2 identical (§4.5); the key builder of the VC4
+   backend is done and equal to Mesa's (§4.2). Left: the key manifests of the offline corpus, the
    version-2 server path and S2's time and memory on the A1200 with the Pi 3 (P5), and patch
    0017 and the others checked for big-endian differences there (the comparisons so far ran
    on vamos, which is big-endian: they cover it).
@@ -1181,4 +1195,9 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    numbers (§3.1). Left: the speed runs again with the heatsink, clears of part of a frame (a
    draw), the emulations'
    GPU side (§2.1: RGBA64 half floats, the shader's texture tricks), the GPU lock (`lock.c`),
-   and the cause of the not-reset core's lost tiles. Then P5 (the VC4 backend, `os_amiga.c`).
+   and the cause of the not-reset core's lost tiles. Then P5 (the VC4 backend); begun
+   2026-11-05 with what the PC and the Pi 3 can test: `vc4core/os_amiga.c` (written, compiles
+   for the 68k, waits for the A1200 with the Pi 3: the device tree's `/soc` ranges and
+   dma-ranges, `/aliases`' mailbox, fast RAM as GPU memory cleaned by `CachePreDMA`, the system
+   timer; vc4core now flushes its lists and state before a job, a no-op on Linux) and the key
+   builder (§4.2).

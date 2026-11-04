@@ -217,6 +217,9 @@ int vc4_job_run(struct vc4_job *job, uint32_t timeout_us)
         vc4_os_log("job: out of GPU memory for its lists");
         return -1;
     }
+    vc4_cl_flush(&job->bcl);
+    vc4_cl_flush(&job->rcl);
+    vc4_buf_flush(&job->state);
     job->overflows = 0;
     {
         uint32_t size, at = vc4_pools_overflow(job->pools, 0, &size);

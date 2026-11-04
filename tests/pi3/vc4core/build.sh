@@ -36,8 +36,9 @@ echo "compiled: $(ls "$OUT/vc4p" | tr '
 ' ' ')"
 if [ "${1:-}" = m68k ]; then
     PATH=$HOME/amiga-gcc-install/bin:$PATH
-    for f in "${CORE[@]}"; do
-        m68k-amigaos-gcc "${FLAGS[@]}" -mcpu=68020 -c "$f" -o "$OUT/$(basename "$f" .c).m68k.o"
+    # the library's flags (Makefile CFLAGS), os_amiga.c too
+    for f in "${CORE[@]}" "$REPO/vc4core/os_amiga.c"; do
+        m68k-amigaos-gcc "${FLAGS[@]}" -mcpu=68020 -m68881 -fbbb=abcfhilmnprsz0 -fno-strict-aliasing -mcrt=clib2             -c "$f" -o "$OUT/$(basename "$f" .c).m68k.o"
     done
     echo "vc4core compiles for the 68k"
 fi
