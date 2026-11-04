@@ -2,8 +2,9 @@
  * Mesa's V3D driver on a fake DRM device, no window system.
  *   usage: v3dglslc [-d <V3D_DEBUG flags>] [-o <dir>] vs.vert fs.frag [vs2 fs2 ...]
  *          v3dglslc -g 21 [-d <VC4_DEBUG flags>] [-b attr0,attr1,...]
- *                         [-s depth,blend,points,lines,stencil,ubyte1,tex565,texlum]
- *                         vs.vert fs.frag ...
+ *                         [-s depth,blend,points,lines,stencil,ubyte1,tex565,texlum,tex4444,
+ *                             tex5551,texla,etc1,rt565] [-k KEYFILE] [-o <dir>] vs.vert fs.frag ...
+ *            (-k: variants for the vc4 keys in KEYFILE too: vc4_variants.c)
  *            (the Raspberry Pi 3's VC4: see run_pairs_vc4)
  *          v3dglslc SERVER   (AmigaOS: the on-target compiler, v3dp/v3dglsl_port.h)
  * Creates a V3D 4.2 screen (compat/fake_drm.c), a surfaceless GLES2 context
@@ -48,6 +49,7 @@
 #define V3DC_WRITER
 static void program_path(char *out, size_t size, const char *vs_path, const char *fs_path);
 static int write_program(GLuint p, const char *path, const char *vs_src, const char *fs_src);
+static int use_device(int dev);
 #include "compile_common.c"
 #ifdef __amigaos__
 #include <proto/exec.h>
@@ -63,11 +65,18 @@ int fake_drm_vc4_open(void);
  * variants are listed on stdout (vc4_variants.c) and with -o written as
  * <dir>/<vs>-<fs>.vc4p (v3dp/FORMAT.md 1.1). */
 static int device = 42;
+static int vc4_listing = 1; /* the command line lists VC4's variants; the server does not */
 #ifdef V3DGLSLC_VC4 /* build_host.sh; the m68k build (S2) links vc4 in P4 */
 struct renderonly;
 struct pipe_screen *vc4_screen_create(int fd, const struct pipe_screen_config *config, struct renderonly *ro);
 void vc4_variants_install(FILE *f); /* vc4_variants.c */
 void vc4_variants_capture(int on);
+int vc4_variants_compile_keys(const char *path);
+int vc4_variants_compile_key_buffer(const void *keys, size_t size);
+static const char *vc4_key_file; /* -k: variants for these keys too (vc4_variants.c) */
+static const void *vc4_req_keys; /* a request's (V3DGLSL_VERSION_DEVICE) */
+static size_t vc4_req_keys_size;
+static int draw_vc4_reference(GLuint p);
 extern uint8_t vc4_draw_buffer; /* Mesa patch 0016 */
 static int run_pairs_vc4(int argc, char **argv, int first);
 #endif
@@ -424,6 +433,24 @@ static int write_program(GLuint p, const char *path, const char *vs_src, const c
     sources[0] = vs_src;
     sources[1] = fs_src;
     sources[2] = link_bindings;
+#ifdef V3DGLSLC_VC4
+    /* VC4 (docs/PI3_PLAN.md §4.5): one .vc4p, the reference draw's variants
+     * and those of the keys given (-k, or a request's). */
+    if (device == 21) {
+        if (write_mode != WRITE_PLAIN && write_mode != WRITE_BOTH)
+            return 0;
+        v3dp_capture_begin();
+        vc4_variants_capture(1);
+        drawn = draw_vc4_reference(p);
+        if (drawn && vc4_req_keys && vc4_variants_compile_key_buffer(vc4_req_keys, vc4_req_keys_size) < 0)
+            drawn = 0;
+        if (drawn && vc4_key_file && vc4_variants_compile_keys(vc4_key_file) < 0)
+            drawn = 0;
+        vc4_variants_capture(0);
+        v3dp_capture_end();
+        return drawn && v3dp_write(path, prog, nsrc, stages, sources) == 0;
+    }
+#endif
     /* The alpha-to-coverage variants: the same draws with the fragment key's
      * msaa and sample_alpha_to_coverage set (patch 0014). Only the fragment
      * shaders compile again, so the file holds fragment variants only; the
@@ -507,18 +534,31 @@ static int serve(void)
     while (!quit) {
         WaitPort(port);
         while ((r = (struct V3DGLSLRequest *)GetMsg(port))) {
+            /* Version 1: the Pi 4 (device 42), as since 1.0; version 2 names
+             * the GPU (docs/PI3_PLAN.md §4.5). */
+            ULONG dev = r->version == V3DGLSL_VERSION_DEVICE ? r->device : V3DGLSL_DEVICE_V3D42;
             if (r->log && r->log_size)
                 r->log[0] = 0;
-            if (r->version != V3DGLSL_VERSION ||
+            if ((r->version != V3DGLSL_VERSION && r->version != V3DGLSL_VERSION_DEVICE) ||
                 (r->op != V3DGLSL_LINK && r->op != V3DGLSL_QUIT && r->op != V3DGLSL_COMPILE &&
                  r->op != V3DGLSL_LINK32 && r->op != V3DGLSL_LINK_BOUND && r->op != V3DGLSL_LINK_A2C) ||
                 ((r->op == V3DGLSL_LINK || r->op == V3DGLSL_LINK32 || r->op == V3DGLSL_LINK_BOUND ||
                   r->op == V3DGLSL_LINK_A2C) &&
                  (!r->vs || !r->fs || !r->out_path)) ||
                 (r->op == V3DGLSL_LINK_BOUND && !r->bindings) ||
-                (r->op == V3DGLSL_COMPILE && !r->vs == !r->fs)) {
+                (r->op == V3DGLSL_COMPILE && !r->vs == !r->fs) ||
+#ifdef V3DGLSLC_VC4
+                (dev != V3DGLSL_DEVICE_V3D42 && dev != V3DGLSL_DEVICE_VC4) ||
+                (dev == V3DGLSL_DEVICE_VC4 && (r->op == V3DGLSL_LINK32 || r->op == V3DGLSL_LINK_A2C))
+#else
+                dev != V3DGLSL_DEVICE_V3D42
+#endif
+            ) {
                 log_add(r->log, r->log_size, "the compiler does not understand this request", NULL);
                 r->result = 3;
+            } else if (r->op != V3DGLSL_QUIT && use_device((int)dev) < 0) {
+                log_add(r->log, r->log_size, "the compiler could not make a context for this GPU", NULL);
+                r->result = 2;
             } else if (r->op == V3DGLSL_QUIT) {
                 r->result = 0;
                 quit = 1;
@@ -538,9 +578,16 @@ static int serve(void)
                 write_mode = r->op == V3DGLSL_LINK32 ? WRITE_WIDE : r->op == V3DGLSL_LINK_A2C ? WRITE_A2C
                                                                                   : WRITE_PLAIN;
                 link_bindings = r->op == V3DGLSL_LINK_BOUND ? r->bindings : NULL;
+#ifdef V3DGLSLC_VC4
+                vc4_req_keys = dev == V3DGLSL_DEVICE_VC4 ? r->vc4_keys : NULL;
+                vc4_req_keys_size = vc4_req_keys ? r->vc4_keys_size : 0;
+#endif
                 r->result = link_pair("vertex shader", "fragment shader", r->vs, r->fs, r->out_path,
                                       r->log, r->log_size) ? 0 : 1;
                 link_bindings = NULL;
+#ifdef V3DGLSLC_VC4
+                vc4_req_keys = NULL;
+#endif
                 served++;
             }
             done(r);
@@ -865,19 +912,9 @@ static int run_pairs_vc4(int argc, char **argv, int first)
         }
         fprintf(stderr, "v3dglslc: link: %s\n", ok ? "ok" : "FAILED");
         if (ok && out_dir) {
-            GET_CURRENT_CONTEXT(ctx);
-            static const unsigned stages[3] = { MESA_SHADER_VERTEX, MESA_SHADER_FRAGMENT, V3DP_HASH_BINDINGS };
-            const char *sources[3] = { vs_src, fs_src, link_bindings };
             char path[512];
             program_path(path, sizeof(path), argv[i], argv[i + 1]);
-            v3dp_capture_begin();
-            vc4_variants_capture(1);
-            ok = draw_vc4_reference(p);
-            vc4_variants_capture(0);
-            v3dp_capture_end();
-            if (ok && v3dp_write(path, _mesa_lookup_shader_program(ctx, p), link_bindings ? 3 : 2, stages,
-                                 sources) != 0)
-                ok = 0;
+            ok = write_program(p, path, vs_src, fs_src);
             if (!ok)
                 failed++;
         } else if (!ok || !draw_vc4_reference(p)) {
@@ -923,18 +960,102 @@ static int limits(void)
     return 0;
 }
 
+/* One screen and context per GPU, made when first used (docs/PI3_PLAN.md
+ * §4.1: the server serves both; a machine only asks for its own). Makes
+ * dev's current: 0, or -1. */
+static int use_device(int dev)
+{
+    static struct st_context *st_of[2];
+    static driOptionCache info, cache;
+    static struct pipe_screen_config config;
+    int i = dev == 21;
+    struct st_context *st = st_of[i];
+
+    if (!st) {
+        struct pipe_screen *screen;
+        struct pipe_frontend_screen *fscreen = calloc(1, sizeof(*fscreen));
+        struct st_context_attribs attribs;
+        enum st_context_error err = ST_CONTEXT_SUCCESS;
+        if (!fscreen)
+            return -1;
+        if (!config.options) {
+            driParseOptionInfo(&info, v3d_driconf, ARRAY_SIZE(v3d_driconf));
+            config.options = &cache;
+            config.options_info = &info;
+        }
+#ifdef V3DGLSLC_VC4
+        if (dev == 21)
+            screen = vc4_screen_create(fake_drm_vc4_open(), &config, NULL);
+        else
+#endif
+            screen = dev == 42 ? v3d_screen_create(fake_drm_open(), &config, NULL) : NULL;
+        if (!screen) {
+            fprintf(stderr, "v3dglslc: no screen for device %d\n", dev);
+            free(fscreen);
+            return -1;
+        }
+        fscreen->screen = screen;
+        memset(&attribs, 0, sizeof(attribs));
+        attribs.profile = API_OPENGLES2;
+        attribs.major = 2;
+        attribs.minor = 0;
+        st = st_api_create_context(fscreen, &attribs, &err, NULL);
+        if (!st) {
+            fprintf(stderr, "v3dglslc: st_api_create_context failed (%d)\n", (int)err);
+            return -1;
+        }
+        st_of[i] = st;
+        if (!st_api_make_current(st, NULL, NULL)) {
+            fprintf(stderr, "v3dglslc: st_api_make_current failed\n");
+            return -1;
+        }
+        {
+            GET_CURRENT_CONTEXT(ctx);
+            if (dev == 21) {
+                /* OES_standard_derivatives: vc4 compiles derivatives (ntq_fddx,
+                 * ntq_fddy, per 2x2 quad) but never reports the capability, so
+                 * Mesa leaves the extension off (docs/PI3_PLAN.md §2.1); the
+                 * Pi 3's library offers it as the Pi 4's does. EXT_draw_buffers,
+                 * emulated (§2.1): four draw buffers on the Pi 3 too, drawn one
+                 * per pass (patch 0016's draw_buffer in the fragment key).
+                 * Otherwise the driver's own limits (8 varyings, 8 vertex
+                 * attributes, textures 2048): the library reports the same on
+                 * the Pi 3 (GLSL's gl_Max* equal them; -L prints them). */
+                ctx->Extensions.OES_standard_derivatives = GL_TRUE;
+                ctx->Const.MaxDrawBuffers = 4;
+            } else {
+                /* ogles2.library's limits, which its GL queries report too
+                 * (GLSL's gl_Max* constants must equal them: dEQP-GLES2
+                 * builtin_variable): four draw buffers (EXT_draw_buffers, M7
+                 * step 5; OGLES2_MAX_DRAW_BUFFERS), 16 texture units in each
+                 * stage (OGLES2_MAX_STAGE_SAMPLERS; the driver offers 24) and
+                 * 32 in all (OGLES2_MAX_TEXTURE_UNITS, M7 step 2; the driver
+                 * offers 96). */
+                ctx->Const.MaxDrawBuffers = 4;
+                ctx->Const.Program[MESA_SHADER_VERTEX].MaxTextureImageUnits = 16;
+                ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxTextureImageUnits = 16;
+                ctx->Const.MaxCombinedTextureImageUnits = 32;
+            }
+        }
+#ifdef V3DGLSLC_VC4
+        if (dev == 21)
+            vc4_variants_install(vc4_listing ? stdout : NULL);
+#endif
+    } else if (!st_api_make_current(st, NULL, NULL)) {
+        fprintf(stderr, "v3dglslc: st_api_make_current failed\n");
+        return -1;
+    }
+    the_pipe = st->pipe;
+    device = dev;
+    v3dp_set_device(dev);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int first = 1;
     const char *debug = NULL;
-    char debug_flags[256];
-    driOptionCache info, cache;
-    struct pipe_screen_config config;
-    struct pipe_screen *screen;
-    struct pipe_frontend_screen fscreen;
-    struct st_context_attribs attribs;
-    enum st_context_error err = ST_CONTEXT_SUCCESS;
-    struct st_context *st;
+    static char debug_flags[256];
 
 #ifdef __amigaos__
     /* libnix sends stderr to the console, not into the shell's ">file"
@@ -963,6 +1084,8 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[first], "-b"))
             link_bindings = bindings_from_list(argv[first + 1]);
 #ifdef V3DGLSLC_VC4
+        else if (!strcmp(argv[first], "-k"))
+            vc4_key_file = argv[first + 1];
         else if (!strcmp(argv[first], "-s")) {
             const char *a = argv[first + 1];
             vc4_states |= (strstr(a, "depth") ? VC4_STATE_DEPTH : 0) | (strstr(a, "blend") ? VC4_STATE_BLEND : 0) |
@@ -997,84 +1120,21 @@ int main(int argc, char **argv)
         set_option(device == 21 ? "VC4_DEBUG" : "V3D_DEBUG", debug_flags);
     }
 
-    memset(&info, 0, sizeof(info));
-    memset(&cache, 0, sizeof(cache));
-    driParseOptionInfo(&info, v3d_driconf, ARRAY_SIZE(v3d_driconf));
-    memset(&config, 0, sizeof(config));
-    config.options = &cache;
-    config.options_info = &info;
-
-#ifdef V3DGLSLC_VC4
-    if (device == 21)
-        screen = vc4_screen_create(fake_drm_vc4_open(), &config, NULL);
-    else
+#ifdef __amigaos__
+    /* The server makes each GPU's context when a request first names it. */
+    if (server) {
+        vc4_listing = 0;
+        return serve();
+    }
 #endif
-        screen = v3d_screen_create(fake_drm_open(), &config, NULL);
-    if (!screen) {
-        fprintf(stderr, "v3dglslc: %s_screen_create failed\n", device == 21 ? "vc4" : "v3d");
+    if (use_device(device) < 0)
         return 20;
-    }
-
-    memset(&fscreen, 0, sizeof(fscreen));
-    fscreen.screen = screen;
-    memset(&attribs, 0, sizeof(attribs));
-    attribs.profile = API_OPENGLES2;
-    attribs.major = 2;
-    attribs.minor = 0;
-    st = st_api_create_context(&fscreen, &attribs, &err, NULL);
-    if (!st) {
-        fprintf(stderr, "v3dglslc: st_api_create_context failed (%d)\n", (int)err);
-        return 20;
-    }
-    if (!st_api_make_current(st, NULL, NULL)) {
-        fprintf(stderr, "v3dglslc: st_api_make_current failed\n");
-        return 20;
-    }
-    the_pipe = st->pipe;
-    if (device == 21) {
-        v3dp_set_device(21);
-        /* OES_standard_derivatives: vc4 compiles derivatives (ntq_fddx,
-         * ntq_fddy, per 2x2 quad) but never reports the capability, so
-         * Mesa leaves the extension off (docs/PI3_PLAN.md §2.1); the Pi 3's
-         * library offers it as the Pi 4's does. */
-        {
-            GET_CURRENT_CONTEXT(ctx);
-            ctx->Extensions.OES_standard_derivatives = GL_TRUE;
-            /* EXT_draw_buffers, emulated (§2.1): the library reports four
-             * draw buffers on the Pi 3 too, and draws them one per pass
-             * (patch 0016's draw_buffer in the fragment key). */
-            ctx->Const.MaxDrawBuffers = 4;
-        }
-        /* Otherwise the driver's own limits (8 varyings, 8 vertex
-         * attributes, textures 2048): the library reports the same on the
-         * Pi 3 (GLSL's gl_Max* equal them; -L prints them). */
-        fprintf(stderr, "v3dglslc: renderer %s\n", (const char *)_mesa_GetString(GL_RENDERER));
-        if (print_limits)
-            return limits();
-#ifdef V3DGLSLC_VC4
-        vc4_variants_install(stdout);
-        return run_pairs_vc4(argc, argv, first);
-#endif
-    }
-    /* ogles2.library's limits, which its GL queries report too (GLSL's
-     * gl_Max* constants must equal them: dEQP-GLES2 builtin_variable): four
-     * draw buffers (EXT_draw_buffers, M7 step 5; OGLES2_MAX_DRAW_BUFFERS), 16
-     * texture units in each stage (OGLES2_MAX_STAGE_SAMPLERS; the driver
-     * offers 24) and 32 in all (OGLES2_MAX_TEXTURE_UNITS, M7 step 2; the
-     * driver offers 96). */
-    {
-        GET_CURRENT_CONTEXT(ctx);
-        ctx->Const.MaxDrawBuffers = 4;
-        ctx->Const.Program[MESA_SHADER_VERTEX].MaxTextureImageUnits = 16;
-        ctx->Const.Program[MESA_SHADER_FRAGMENT].MaxTextureImageUnits = 16;
-        ctx->Const.MaxCombinedTextureImageUnits = 32;
-    }
     fprintf(stderr, "v3dglslc: renderer %s\n", (const char *)_mesa_GetString(GL_RENDERER));
     if (print_limits)
         return limits();
-#ifdef __amigaos__
-    if (server)
-        return serve();
+#ifdef V3DGLSLC_VC4
+    if (device == 21)
+        return run_pairs_vc4(argc, argv, first);
 #endif
     return run_pairs(argc, argv, first);
 }

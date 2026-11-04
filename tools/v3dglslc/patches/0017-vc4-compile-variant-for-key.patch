@@ -1,0 +1,51 @@
+ogles2: compile a vc4 variant for a key the caller built (docs/PI3_PLAN.md
+§4.2, PD7). vc4_compile_variant() runs vc4_get_compiled_shader for it, and
+vc4_compiled_variant_context gives the context the hook's variants came from:
+v3dglslc -k compiles the variants a key file lists (the offline compiler's
+key manifests, the run time's variant requests) for the program the
+reference draw compiled. A key's shader_state and a vertex key's fs_inputs
+come from those variants; a coordinate key's fs_inputs are NULL, as
+vc4_update_compiled_vs makes them.
+
+--- a/src/gallium/drivers/vc4/vc4_program.c
++++ b/src/gallium/drivers/vc4/vc4_program.c
+@@ -2647,6 +2647,9 @@
+  * request compiles and is reported, also when another program already
+  * compiled the same shader with the same key.
+  */
++extern struct vc4_context *vc4_compiled_variant_context;
++struct vc4_compiled_shader *vc4_compile_variant(struct vc4_context *vc4, enum qstage stage,
++                                                struct vc4_key *key);
+ void (*vc4_compiled_variant_hook)(enum qstage stage,
+                                   const struct vc4_key *key, uint32_t key_size,
+                                   const struct vc4_compiled_shader *shader,
+@@ -2717,6 +2720,7 @@
+         shader->fs_threaded = c->fs_threaded;
+ 
+         if (vc4_compiled_variant_hook && !shader->failed) {
++                vc4_compiled_variant_context = vc4;
+                 vc4_compiled_variant_hook(stage, key, key_size, shader,
+                                           c->qpu_insts, c->qpu_inst_count);
+         }
+@@ -2731,6 +2735,21 @@
+         return shader;
+ }
+ 
++/* ogles2 offline compiler (docs/PI3_PLAN.md §4.2, P4): the variant for a
++ * key the caller built, not one a draw made: its shader_state (and a vertex
++ * key's fs_inputs) taken from variants this context compiled before, which
++ * vc4_compiled_variant_context and the hook's keys give. Reported through
++ * vc4_compiled_variant_hook like the others.
++ */
++struct vc4_context *vc4_compiled_variant_context;
++
++struct vc4_compiled_shader *
++vc4_compile_variant(struct vc4_context *vc4, enum qstage stage,
++                    struct vc4_key *key)
++{
++        return vc4_get_compiled_shader(vc4, stage, key);
++}
++
+ static void
+ vc4_setup_shared_key(struct vc4_context *vc4, struct vc4_key *key,
+                      struct vc4_texture_stateobj *texstate)

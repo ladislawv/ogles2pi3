@@ -1,7 +1,9 @@
 #!/bin/bash
 # Build v3dglslc for m68k-amigaos (GCC 16.2, libnix, software floating point).
 #   usage: build_m68k.sh        -> $OUT/v3dglslc (and v3dglslc.stripped)
-# Needs the Mesa objects first: replay.py (default --libs tool).
+# Needs the Mesa objects first: replay.py --libs tool plus the VC4 driver
+# (docs/PI3_PLAN.md §4.5: one compiler for the Pi 4 and the Pi 3):
+#   python3 replay.py --libs $(python3 -c 'import replay; print(",".join(replay.TOOL + replay.VC4))')
 set -u
 OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
 TC=${M68K_TC:-$HOME/amiga-gcc162-install}
@@ -11,7 +13,8 @@ V="$(dirname "$(dirname "$H")")/v3dp"
 A=$OUT/lib
 mkdir -p $A $OUT/main
 
-# ---- compile v3dglslc.c and the .v3dp writer with the flags Mesa uses for st_manager.c
+# ---- compile v3dglslc.c, the .v3dp writer and the VC4 variants' serializer with
+# the flags Mesa uses for st_manager.c
 python3 -I - "$H" "$OUT" "$V" <<'PY'
 import json, os, subprocess, sys
 h, out, v = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -30,7 +33,7 @@ dirty = subprocess.run(["git", "diff", "--quiet", "HEAD"], cwd=h).returncode != 
 stamp = "%s %s%s mesa %s" % (time.strftime("%Y%m%d-%H%M%S", time.gmtime()), ours,
                              "+" if dirty else "", commit)
 rc = 0
-for src in (os.path.join(h, "v3dglslc.c"), os.path.join(v, "v3dp_writer.c")):
+for src in (os.path.join(h, "v3dglslc.c"), os.path.join(v, "v3dp_writer.c"), os.path.join(h, "vc4_variants.c")):
     cmd, obj, rel = replay.rewrite(ref, out, [])
     o = os.path.join(out, "main", os.path.basename(src)[:-2] + ".o")
     cmd = [src if c == ref["file"] else (o if c == obj else c) for c in cmd]
@@ -39,8 +42,11 @@ for src in (os.path.join(h, "v3dglslc.c"), os.path.join(v, "v3dp_writer.c")):
                 "-I" + os.path.join(replay.MESA_SRC, "src/gallium/auxiliary/pipe-loader"),
                 "-I" + os.path.join(replay.MESA_SRC, "src/broadcom"),
                 "-I" + os.path.join(replay.MESA_BUILD, "src/broadcom"),
+                "-I" + os.path.join(replay.MESA_SRC, "src/gallium/drivers/vc4"),
+                "-I" + os.path.join(replay.MESA_BUILD, "src/gallium/drivers/vc4"),
+                "-I" + os.path.join(replay.MESA_SRC, "include"),
                 "-I" + h, "-I" + v, '-DV3DP_MESA_COMMIT="%s"' % commit,
-                '-DV3DGLSLC_STAMP="%s"' % stamp]
+                '-DV3DGLSLC_STAMP="%s"' % stamp, "-DV3DGLSLC_VC4"]
     p = subprocess.run(cmd, cwd=replay.MESA_BUILD, capture_output=True, text=True)
     print("%s compile rc=%d%s" % (os.path.basename(src), p.returncode,
                                   " (stamp %s)" % stamp if src.endswith("v3dglslc.c") else ""))
@@ -60,7 +66,7 @@ for d in $(find $O -type d -name '*.a.p') $O/compat; do
 done
 LIBS=$(ls $A/*.a | sed -E 's|.*/lib(.*)\.a|-l\1|' | tr '\n' ' ')
 ${P}g++ -mcpu=68020 -msoft-float -mcrt=nix20 -fno-exceptions -fno-rtti -o $OUT/v3dglslc \
-    $OUT/main/v3dglslc.o $OUT/main/v3dp_writer.o \
+    $OUT/main/v3dglslc.o $OUT/main/v3dp_writer.o $OUT/main/vc4_variants.o \
     -L$A -Wl,--start-group $LIBS -Wl,--end-group -lstdc++ -lpthread -latomic -lm \
     -Wl,--allow-multiple-definition -Wl,-Map,$OUT/v3dglslc.map > $OUT/link.log 2>&1
 echo "m68k v3dglslc link rc=$?"

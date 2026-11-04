@@ -26,11 +26,22 @@ extern void (*vc4_compiled_variant_hook)(enum qstage stage, const struct vc4_key
                                          const struct vc4_compiled_shader *shader,
                                          const uint64_t *qpu_insts, uint32_t qpu_inst_count);
 
+/* patch 0017: a variant for a key the caller built */
+extern struct vc4_context *vc4_compiled_variant_context;
+struct vc4_compiled_shader *vc4_compile_variant(struct vc4_context *vc4, enum qstage stage, struct vc4_key *key);
+
 void vc4_variants_install(FILE *f);
 void vc4_variants_capture(int on);
+int vc4_variants_compile_keys(const char *path);
+int vc4_variants_compile_key_buffer(const void *keys, size_t size);
 
 static FILE *out;  /* the listing, or NULL */
 static int capture; /* serialize for the writer */
+/* From the variants the reference draw compiled: the program's shaders (a
+ * key's shader_state) and the last fragment variant's inputs (a vertex
+ * key's fs_inputs), for vc4_variants_compile_keys. */
+static struct vc4_uncompiled_shader *last_fs_state, *last_vs_state;
+static const struct vc4_fs_inputs *last_fs_inputs;
 
 /* ---- a growing little-endian byte buffer ---- */
 
@@ -220,6 +231,11 @@ static void variant(enum qstage stage, const struct vc4_key *key, uint32_t key_s
                     const struct vc4_compiled_shader *sh, const uint64_t *qpu, uint32_t n)
 {
     uint32_t i;
+    if (stage == QSTAGE_FRAG) {
+        last_fs_state = key->shader_state;
+        last_fs_inputs = sh->fs_inputs;
+    } else
+        last_vs_state = key->shader_state;
     if (capture)
         serialize(stage, key, key_size, sh, qpu, n);
     if (!out)
@@ -259,4 +275,195 @@ void vc4_variants_install(FILE *f)
 void vc4_variants_capture(int on)
 {
     capture = on;
+}
+
+/* ---- keys from a file (docs/PI3_PLAN.md §4.2, PD7) ----
+ *
+ * A key file is a sequence of records, each a u32 stage (4 fragment, 0
+ * vertex) and that stage's key as a VC4_VARIANT section holds it
+ * (v3dp/FORMAT.md 1.1: the samplers, then the stage's fields; a vertex key's
+ * fs_inputs are read and replaced by those of the fragment variant compiled
+ * last). A fragment record compiles that fragment variant; a vertex record
+ * the vertex and coordinate variants for it. All little-endian. They go
+ * through the hook like the reference draw's, after it, for its program. */
+
+struct rd {
+    const unsigned char *p;
+    size_t len, at;
+    int bad;
+};
+
+static unsigned r_u8(struct rd *r)
+{
+    if (r->at + 1 > r->len) {
+        r->bad = 1;
+        return 0;
+    }
+    return r->p[r->at++];
+}
+
+static uint32_t r_u32(struct rd *r)
+{
+    uint32_t v = r_u8(r);
+    v |= r_u8(r) << 8;
+    v |= r_u8(r) << 16;
+    v |= (uint32_t)r_u8(r) << 24;
+    return v;
+}
+
+static void r_key_common(struct rd *r, struct vc4_key *k)
+{
+    int i;
+    for (i = 0; i < VC4_MAX_TEXTURE_SAMPLERS; i++) {
+        k->tex[i].format = r_u32(r);
+        k->tex[i].swizzle[0] = r_u8(r);
+        k->tex[i].swizzle[1] = r_u8(r);
+        k->tex[i].swizzle[2] = r_u8(r);
+        k->tex[i].swizzle[3] = r_u8(r);
+        k->tex[i].compare_mode = r_u8(r);
+        k->tex[i].compare_func = r_u8(r);
+        k->tex[i].wrap_s = r_u8(r);
+        k->tex[i].wrap_t = r_u8(r);
+        k->tex[i].force_first_level = r_u8(r);
+        r_u8(r);
+        r_u8(r);
+        r_u8(r);
+    }
+}
+
+static void r_fs_key(struct rd *r, struct vc4_fs_key *k)
+{
+    r_key_common(r, &k->base);
+    k->color_format = r_u32(r);
+    k->depth_enabled = r_u8(r);
+    k->stencil_enabled = r_u8(r);
+    k->stencil_twoside = r_u8(r);
+    k->stencil_full_writemasks = r_u8(r);
+    k->is_points = r_u8(r);
+    k->is_lines = r_u8(r);
+    k->point_coord_upper_left = r_u8(r);
+    k->msaa = r_u8(r);
+    k->sample_coverage = r_u8(r);
+    k->sample_alpha_to_coverage = r_u8(r);
+    k->sample_alpha_to_one = r_u8(r);
+    k->logicop_func = r_u8(r);
+    k->point_sprite_mask = r_u32(r);
+    k->ubo_1_size = r_u32(r);
+    k->ucp_enables = r_u8(r);
+    k->blend.blend_enable = r_u8(r);
+    k->blend.rgb_func = r_u8(r);
+    k->blend.rgb_src_factor = r_u8(r);
+    k->blend.rgb_dst_factor = r_u8(r);
+    k->blend.alpha_func = r_u8(r);
+    k->blend.alpha_src_factor = r_u8(r);
+    k->blend.alpha_dst_factor = r_u8(r);
+    k->blend.colormask = r_u8(r);
+    k->draw_buffer = r_u8(r); /* patch 0016 */
+    r_u8(r);
+    r_u8(r);
+}
+
+static void r_vs_key(struct rd *r, struct vc4_vs_key *k)
+{
+    uint32_t i, n;
+    r_key_common(r, &k->base);
+    for (i = 0; i < 8; i++)
+        k->attr_formats[i] = r_u32(r);
+    k->is_coord = r_u8(r);
+    k->per_vertex_point_size = r_u8(r);
+    r_u8(r);
+    r_u8(r);
+    n = r_u32(r); /* fs_inputs: replaced */
+    for (i = 0; i < n * 2 && !r->bad; i++)
+        r_u8(r);
+    while (r->at % 4 && !r->bad)
+        r_u8(r);
+}
+
+/* The records of keys[0, size): the number compiled, or -1 (the reason
+ * printed). */
+int vc4_variants_compile_key_buffer(const void *keys, size_t size)
+{
+    struct rd r = { 0 };
+    int records = 0;
+    if (!vc4_compiled_variant_context || !last_fs_state || !last_vs_state) {
+        fprintf(stderr, "v3dglslc: vc4 keys: the reference draw compiled no variants to build on\n");
+        return -1;
+    }
+    r.p = keys;
+    r.len = size;
+    while (r.at < r.len) {
+        uint32_t stage = r_u32(&r);
+        if (stage == 4) {
+            struct vc4_fs_key k;
+            struct vc4_compiled_shader *sh;
+            memset(&k, 0, sizeof(k));
+            r_fs_key(&r, &k);
+            if (r.bad)
+                break;
+            k.base.shader_state = last_fs_state;
+            sh = vc4_compile_variant(vc4_compiled_variant_context, QSTAGE_FRAG, &k.base);
+            if (!sh || sh->failed) {
+                fprintf(stderr, "v3dglslc: vc4 keys: record %d (fragment) did not compile\n", records + 1);
+                return -1;
+            }
+            last_fs_inputs = sh->fs_inputs;
+        } else if (stage == 0) {
+            struct vc4_vs_key k;
+            int coord;
+            memset(&k, 0, sizeof(k));
+            r_vs_key(&r, &k);
+            if (r.bad)
+                break;
+            for (coord = 0; coord < 2; coord++) {
+                struct vc4_compiled_shader *sh;
+                k.base.shader_state = last_vs_state;
+                k.fs_inputs = coord ? NULL : last_fs_inputs; /* as vc4_update_compiled_vs */
+                k.is_coord = coord;
+                sh = vc4_compile_variant(vc4_compiled_variant_context, coord ? QSTAGE_COORD : QSTAGE_VERT, &k.base);
+                if (!sh || sh->failed) {
+                    fprintf(stderr, "v3dglslc: vc4 keys: record %d (%s) did not compile\n", records + 1,
+                            coord ? "coordinate" : "vertex");
+                    return -1;
+                }
+            }
+        } else {
+            fprintf(stderr, "v3dglslc: vc4 keys: record %d: stage %u is neither 4 nor 0\n", records + 1,
+                    (unsigned)stage);
+            return -1;
+        }
+        records++;
+    }
+    if (r.bad) {
+        fprintf(stderr, "v3dglslc: vc4 keys: record %d is cut short\n", records + 1);
+        return -1;
+    }
+    return records;
+}
+
+/* The same from a file (-k). */
+int vc4_variants_compile_keys(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    unsigned char *buf;
+    long size;
+    int records;
+    if (!f) {
+        fprintf(stderr, "v3dglslc: %s: cannot open\n", path);
+        return -1;
+    }
+    fseek(f, 0, SEEK_END);
+    size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    buf = malloc(size > 0 ? (size_t)size : 1);
+    if (!buf || fread(buf, 1, (size_t)size, f) != (size_t)size) {
+        fclose(f);
+        free(buf);
+        fprintf(stderr, "v3dglslc: %s: cannot read\n", path);
+        return -1;
+    }
+    fclose(f);
+    records = vc4_variants_compile_key_buffer(buf, (size_t)size);
+    free(buf);
+    return records;
 }

@@ -22,7 +22,13 @@
 #include <exec/ports.h>
 
 #define V3DGLSL_PORT_NAME "v3dglsl compiler"
-#define V3DGLSL_VERSION   1
+#define V3DGLSL_VERSION   1 /* the Raspberry Pi 4's requests, as since 1.0: device 42 */
+#define V3DGLSL_VERSION_DEVICE 2 /* the fields after `bindings` too: the GPU, a VC4 program's keys
+                                  * (docs/PI3_PLAN.md §4.5). A compiler older than this answers 3
+                                  * (bad request). */
+
+#define V3DGLSL_DEVICE_V3D42 42 /* Raspberry Pi 4: .v3dp */
+#define V3DGLSL_DEVICE_VC4 21   /* Raspberry Pi 3: .vc4p (v3dp/FORMAT.md 1.1) */
 
 #define V3DGLSL_LINK    1 /* compile vs and fs, link, write the .v3dp to out_path */
 #define V3DGLSL_QUIT    2 /* remove the port and exit (queued requests fail) */
@@ -52,6 +58,12 @@ struct V3DGLSLRequest
     LONG result;          /* reply: 0 done (written); 1 compile or link failed; 2 not written; 3 bad request */
     const char *bindings; /* V3DGLSL_LINK_BOUND only (read for no other op: an older sender's
                            * request ends before it): "<index> <name>\n" lines, sorted by name */
+    /* version V3DGLSL_VERSION_DEVICE (read for no older version) */
+    ULONG device;         /* V3DGLSL_DEVICE_*; VC4 takes LINK, LINK_BOUND, COMPILE and QUIT */
+    const void *vc4_keys; /* VC4's LINK and LINK_BOUND: NULL, or the keys whose variants the file
+                           * holds besides the reference draw's, as `v3dglslc -k` reads them
+                           * (tools/v3dglslc/vc4_variants.c); the file is written anew with all */
+    ULONG vc4_keys_size;  /* bytes */
 };
 
 #endif

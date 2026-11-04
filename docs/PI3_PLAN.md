@@ -504,6 +504,18 @@ Linux's vc4 driver where named; nothing from `v3dcore` or PiStorm3D (PD9).
      instructions per fragment or vertex;
   3. splice: compile the fragment shader once up to its colour output and append a blending tail
      per blend state at run time (QPU code patching; hardest, last resort).
+- **Done (2026-11-05): variants from keys.** The compiler compiles a variant for a key it is
+  given, not only for the states a draw reaches: patch 0017 exports vc4's own
+  `vc4_get_compiled_shader` as `vc4_compile_variant` (and the context the hook's variants came
+  from); `v3dglslc -g 21 -k FILE` reads keys in the layout a `VC4_VARIANT` section stores them
+  (a u32 stage, 4 fragment or 0 vertex, then the key; a vertex record takes the fragment
+  inputs of the fragment record before it, its coordinate twin gets none, as
+  `vc4_update_compiled_vs`) and adds their variants to the program's file, after the reference
+  draw's (which gives the shaders the keys point to). `tools/v3dglslc/test/vc4_keys.py`: for
+  each of the five reference programs, the keys of its `-s` variants compiled with `-k` alone
+  give the same variants byte for byte (5 of 5 programs). This is what both the offline
+  compiler's key manifests and the run time's variant requests (§4.5) use; the canonical key
+  builder (P5) writes these records. The Pi 4's output unchanged (54 of 54).
 
 ### 4.3 The format
 - `v3dp/FORMAT.md` 1.0 is frozen for V3D 4.2, and its reader rejects a device version other than
@@ -552,6 +564,22 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   version 1 as device 42, so an older `ogles2.library` (one a program ships in `PROGDIR:libs/`)
   still works with it. A 1.3.x compiler answers 3 ("bad request") to version 2: the library then
   sends version 1 on the Pi 4, and on the Pi 3 goes on as without a compiler.
+- **Done (2026-11-05): the request's device field and S2 with both drivers.**
+  `v3dp/v3dglsl_port.h`: `V3DGLSL_VERSION` stays 1 (the Pi 4's requests, exactly as 1.3.3's
+  library sends them, so its behaviour and an old compiler's answers stay as they were);
+  `V3DGLSL_VERSION_DEVICE` (2) adds, after `bindings`, `device` (42 or 21) and the program's
+  VC4 keys (`vc4_keys`, `vc4_keys_size`: `-k`'s records; the library sends every key it knows
+  for the program and the compiler writes the `.vc4p` anew with all of them). VC4 takes
+  `LINK`, `LINK_BOUND`, `COMPILE` and `QUIT`; `LINK32` and `LINK_A2C` answer 3. The compiler
+  makes a GPU's screen and context when a request first names it (`use_device`), so the
+  server on the Pi 4 never creates the VC4 one and its port appears before the first context
+  is made (the first request takes that time instead of the start). The command line goes
+  through the same `write_program` for both GPUs (the VC4 corpus's 36 files unchanged).
+  `build_m68k.sh` links the vc4 driver (`replay.py --libs` TOOL + VC4): the m68k compiler is
+  19,294,288 bytes stripped, 286 KB more than with v3d alone; S1 and S2 write the same files
+  byte for byte, `tools/v3dglslc/test/compare_vc4p.sh` (6 of 6: the reference programs, `-s`
+  states and a `-k` key file) and `compare_v3dp.sh` for the Pi 4 (8 of 8). The server's
+  version-2 path waits for the A1200 (P5).
 - **The cache is shared by both cards.** The Amiga's disk stays when the Pi 3 card replaces the
   Pi 4 card, and so do `OGLES2Cache:` and an application's `PROGDIR:shaders/`. Today's file name is
   the source hash, `<24 hex digits>.v3dp` (29 characters; FFS allows 30). VC4 files are named
@@ -1139,10 +1167,14 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    the Pi 4 card (PD7 decided: option 1): steps 1 to 8 done (§5.1, §5.3); the acceptance done
    but for dEQP's result (§5.1). Before the next dEQP run: the PC compile bridge ported here
    (the A1200's dEQP shaders compiled on the PC, as in `ogles3`).
-3. P4's S1: the limits are settled (§4.1: `-L`, the VC4 backend's caps take them); the corpus
+3. P4: the limits are settled (§4.1: `-L`, the VC4 backend's caps take them); the corpus
    compiled for VC4 as a whole is done (36 of 36, §4.3, with the draw-buffers variants of patch
-   0016); the states P3's tests need are compiled with `-s` (§4.1), a stop-gap until the
-   canonical keys of §4.2 and PD7, with P5's key builder, decide what a program file holds.
+   0016); variants compile from given keys (`-k`, patch 0017, §4.2); the request's device field
+   and S2 with both drivers are done, S1 and S2 identical (§4.5). Left: the canonical key builder
+   (P5, in the library: it writes `-k`'s records), the key manifests of the offline corpus, the
+   version-2 server path and S2's time and memory on the A1200 with the Pi 3 (P5), and patch
+   0017 and the others checked for big-endian differences there (the comparisons so far ran
+   on vamos, which is big-endian: they cover it).
 4. P3: `vc4core` on Linux (§3.1): the core, its texture layouts and the tests' program loader
    done; §6.3's list against Mesa's pictures done but for the items below; the long soak (§3.1)
    and `ERRSTAT`'s one error (`VCMBE` when the binner runs out of memory) done; first GPU-only
