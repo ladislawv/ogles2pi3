@@ -49,14 +49,14 @@ static const ULONG smooth_rdata[20] = {0, 0, 0, 4, 8, 12, 1, 5, 9, 13, 2, 6, 10,
 static const struct OGLES2Variant smooth_variants[3] = {
     {OGLES2_VARIANT_CS, 4, 1, 0, 0, 4, 0, 0, 0, {3}, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      {0}, {0}, {0}, 0, builtin_coordinate, sizeof(builtin_coordinate), 0, 20, smooth_rtype,
-     smooth_rdata, 0, 0, 0, 0, 0, 0},
+     smooth_rdata, 0, 0, 0, 0, 0, 0, 0, 0, {0}},
     {OGLES2_VARIANT_VS, 4, 1, 0, 0, 4, 0, 0, 0, {3, 4}, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      {0}, {0}, {0}, 0, builtin_vertex_smooth, sizeof(builtin_vertex_smooth),
-     sizeof(builtin_coordinate), 20, smooth_rtype, smooth_rdata, 0, 0, 0, 0, 0, 0},
+     sizeof(builtin_coordinate), 20, smooth_rtype, smooth_rdata, 0, 0, 0, 0, 0, 0, 0, 0, {0}},
     {OGLES2_VARIANT_FS, 4, 0, 0, 0, 0, 0, 0, 0, {0}, 0, 0, 0, 0, 4, 0, 0, 0, 1, 0, 0, 0,
      {0}, {0}, {0}, 0, builtin_fragment_smooth, sizeof(builtin_fragment_smooth),
      sizeof(builtin_coordinate) + sizeof(builtin_vertex_smooth), 0, 0, 0, 0, 0, 0, 0, 0,
-     1 /* render target 0 */},
+     1 /* render target 0 */, 0, 0, {0}},
 };
 
 static const struct OGLES2Image builtin_smooth = {

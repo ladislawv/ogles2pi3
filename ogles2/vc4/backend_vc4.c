@@ -19,6 +19,7 @@
 #include "vc4core.h"
 #include "vc4_os.h"
 #include "v3d_types.h" /* struct v3d_mem: the front end's GPU block */
+#include "backend_vc4.h"
 
 /* ---- capabilities: §2's limits, §2.1's extensions as far as done ---- */
 
@@ -258,9 +259,6 @@ static void target_layout(struct OGLES2Target *t, UBYTE depth_format, BOOL wide)
 static BOOL target_pools(struct OGLES2Context *ctx, struct v3d_mem *alloc, struct v3d_mem *st, ULONG *tiles, ULONG name, struct OGLES2Target *t) { (void)ctx; (void)alloc; (void)st; (void)tiles; (void)name; (void)t; return FALSE; }
 static BOOL tex_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l, struct OGLES2Surface *s) { (void)ctx; (void)t; (void)k; (void)l; (void)s; return FALSE; }
 static BOOL tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l, struct OGLES2Surface *s) { (void)ctx; (void)t; (void)l; (void)s; return FALSE; }
-static const char *variant_read(struct ogles2_rd *s, struct OGLES2Variant *v) { (void)s; (void)v; return not_yet; }
-static const char *variant_recipe(struct OGLES2Variant *v, BOOL *clip_z, ULONG *bad) { (void)v; (void)clip_z; (void)bad; return not_yet; }
-static const struct OGLES2Variant *variant_choose(const struct OGLES2Image *im, UBYTE stage, UBYTE cbufs, GLenum mode) { (void)im; (void)stage; (void)cbufs; (void)mode; return 0; }
 static const struct OGLES2Image *builtin_image(void) { return 0; }
 static const UBYTE *internal_program(int which, ULONG *len) { (void)which; *len = 0; return 0; }
 
@@ -313,9 +311,9 @@ const struct OGLES2Backend ogles2_backend_vc4 = {
     target_pools,
     tex_surface,
     tex_zs_surface,
-    variant_read,
-    variant_recipe,
-    variant_choose,
+    ogles2_vc4_variant_read,
+    ogles2_vc4_variant_recipe,
+    ogles2_vc4_variant_choose,
     builtin_image,
     internal_program,
 };

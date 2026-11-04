@@ -1205,7 +1205,10 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    first context, its own public lock `"VC4 submit"`, the RAM it reaches from the device tree's
    memory nodes), GPU memory through vc4core as the front end's `struct v3d_mem`, a context's
    pools and job (kept in `ctx->v3d`, an opaque handle to the front end); the other groups
-   refuse until written. Built into the library (`libvc4core.a`, 265,936 bytes, 15 KB more;
+   refuse until written; then programs' first part (`program_vc4.c`: a `VC4_VARIANT`'s key,
+   kept as a pointer into the file for the choice by key, and prog data, in a 48-byte area
+   `struct OGLES2Variant` now has for a backend's own; the recipe's types checked; a first
+   choice by stage and primitive). Built into the library (`libvc4core.a`, 267,352 bytes;
    the float-conversion check covers the new files) but **not chosen at device open yet**: the
    Pi 4 runs the V3D backend as before (its checks on the A1200 are owed with the next run).
    Next in P5: jobs (vc4core's job with the front end's targets), draw (the key builder, the

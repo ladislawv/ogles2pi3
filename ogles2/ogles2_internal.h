@@ -208,6 +208,11 @@ struct OGLES2Variant
     UBYTE no_textures;            /* no TMU or UBO entries: its stream depends on no texture */
     UBYTE cbufs;                  /* fragment key: the render targets it writes (bit i: target i;
                                    * 0 in the built-in image: target 0) */
+    /* A backend's own (the VC4 one's, ogles2/vc4/backend_vc4.h: the key as
+     * the file holds it, for its variant choice by key; its prog data). */
+    const UBYTE *key;
+    UWORD key_len;
+    ULONG be[12];
 };
 
 struct OGLES2ImageAttrib
