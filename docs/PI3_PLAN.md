@@ -493,13 +493,31 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   binning time now). The frame.c test "can the tile buffer clear this" stays in the front
   end: VC4's tile buffer also clears depth and stencil together. Pi 4 checks the same day:
   m5-1 255 PASS, no FAIL; m7-6 36 of 36; m2-5 14 of 14 identical; speed below.
+- **Step 4 done (2026-11-04):** draw. `ogles2/v3d/draw_v3d.c` (Hyperion) has what a draw puts
+  into the job: the uniform streams, texture and sampler records, UBO copies, the spill area,
+  vertex copies and attribute records, the shader record, the state packets with their dedup,
+  the draw packets; one table entry `draw` takes a `struct OGLES2DrawCall` (the program, its
+  three variants and their code addresses, mode, the vertex range, the indices as
+  `struct OGLES2Elements`), and `draw_free`. The backend's per-context draw state is
+  `ctx->be_draw`. `draw.c` keeps the GL entry points and their checks, the index range scan,
+  the variant choice (with `wants_wide`), the program's state variables, the vertex input
+  slots, probe V, the clears drawn as rectangles and the copies on the GPU (their internal
+  programs move with step 7). Helpers both use are inline in `ogles2/draw_private.h`.
+  Probe P's stage 1 now holds the slot mapping, and probe V counts a draw after it is made
+  (it reads the same textures' storage). Pi 4 checks the same day: m5-1 255 PASS, no FAIL;
+  m7-6 36 of 36; m2-5 14 of 14 identical; speed against step 3 (`tests/a1200/p2_speed.sh`):
+  Quake III 89.4, 89.7, 88.7 fps against 89.4, 89.5, 88.4; gears bitmap arrays 823, 778,
+  807 against 826, 807, 808, screen 1083, 1084, 1078 against 1106, 1084, 1098 (the same
+  step 3 library ran bitmap arrays at 772 to 779 in the afternoon and 807 to 826 in the
+  evening: the station's drift is larger than any step's cost so far).
 - **Measuring speed between steps (learnt at step 3):** runs of one library minutes apart are
   not enough. Quake III's timedemo drifts by about 1.5 % within an hour (step 1's library:
   87.9 to 89.3 fps the same afternoon), and where the code lies moves gears: step 3 with 64
   or 160 bytes of unused code added early in the library ran the screen mode between 1077
   and 1097 fps, bitmap arrays between 769 and 779. So each step is compared with the last
   commit's library built in a tree of its own (`git archive HEAD`, its own `B`), the two
-  alternating on the station, three runs each. Step 3 against step 1 that way: Quake III
+  alternating on the station, three runs each (`tests/a1200/p2_speed.sh ref`, then
+  `tests/a1200/p2_speed.sh`). Step 3 against step 1 that way: Quake III
   89.7, 89.1, 89.1 against 88.8, 88.2, 88.2 fps; gears bitmap arrays 772 to 780 against 781
   to 789, screen 1070 to 1103 against 1089 to 1118. Gears, at about 1.3 ms a frame and one
   job each, is about 1 % (some 20 us a frame) slower in every pair, the padded builds too;
@@ -819,7 +837,7 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0). A heatsink before long speed
    runs on it.
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
-   the Pi 4 card (PD7 decided: option 1): steps 1 to 3 done (§5.1), step 4 (draw) next; each
+   the Pi 4 card (PD7 decided: option 1): steps 1 to 4 done (§5.1), step 5 (textures) next; each
    step's speed compared with the last commit's library, alternating runs (§5.1).
 3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
    canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the

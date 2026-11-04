@@ -6,7 +6,8 @@
  * Pi 4 against 1.3.3. Step 1: the device's identity and its capabilities,
  * which the front end used to hard-code. Step 2: GPU memory. Step 3: jobs
  * (job.c keeps the serials, the clear snapshot, the locks, the overlap and
- * the statistics; the backend builds, submits and waits).
+ * the statistics; the backend builds, submits and waits). Step 4: draw
+ * (draw.c keeps the entry points, their checks, the variant choice).
  *
  * Addresses. GPU memory is a struct v3d_mem: `hostptr` is where the CPU
  * reads and writes it, `busaddr` where the GPU does. The front end keeps
@@ -27,10 +28,39 @@
 #define OGLES2_BACKEND_H
 
 #include <exec/types.h>
+#include <GLES2/gl2.h>
 
 struct v3d_mem;
 struct OGLES2Context;
 struct OGLES2Target;
+
+struct OGLES2Program;
+struct OGLES2Variant;
+
+/* An indexed draw's indices: the application's, rebased to the copied
+ * vertex range by subtracting min. */
+struct OGLES2Elements
+{
+    const void *indices;
+    GLenum type;          /* GL_UNSIGNED_BYTE, _SHORT or _INT (OES_element_index_uint) */
+    GLsizei count;
+    ULONG min;            /* the smallest index: subtracted from each */
+};
+
+/* One draw, its arguments checked: program p with its variants (binning,
+ * vertex, fragment) and their code's addresses, the vertices
+ * [first, first+count) of the arrays read through p's vertex input slots,
+ * in order or (el) through indices. */
+struct OGLES2DrawCall
+{
+    struct OGLES2Program *p;
+    const struct OGLES2Variant *var[3];
+    const ULONG *code;
+    GLenum mode;
+    GLint first;
+    GLsizei count;
+    const struct OGLES2Elements *el;
+};
 
 /* A wait's result (the V3D 4.2 backend's v3d_wait_result has these values). */
 enum { OGLES2_WAIT_OK, OGLES2_WAIT_ERROR, OGLES2_WAIT_TIMED_OUT };
@@ -84,6 +114,10 @@ struct OGLES2Backend
     void (*job_end)(struct OGLES2Context *ctx, BOOL submitted);
     void (*job_report_stop)(struct OGLES2Context *ctx);
     void (*job_free)(struct OGLES2Context *ctx);
+    /* Draw (FALSE: out of memory; the job is dropped at its flush); the
+     * context's draw state freed (aglDestroyContext, after the last job). */
+    BOOL (*draw)(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc);
+    void (*draw_free)(struct OGLES2Context *ctx);
 };
 
 #define ogles2_mem_alloc(m, size) (ogles2_backend->mem_alloc((m), (size)))

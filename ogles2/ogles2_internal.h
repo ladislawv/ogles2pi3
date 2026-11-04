@@ -500,6 +500,7 @@ struct OGLES2Context
     struct OGLES2Context *share_next; /* the group's next member */
     struct OGLES2Program *program;  /* glUseProgram */
     struct OGLES2Draw *draw;        /* draw.c's per-context state, NULL until the first draw */
+    void *be_draw;                  /* and the backend's (backend.h), NULL until its first draw */
     struct OGLES2TexState *tex;     /* texture.c's, NULL until first used */
     UBYTE unpack_alignment, pack_alignment; /* glPixelStorei */
     ULONG job_serial;               /* the open job's, unique across contexts (job.c); objects note the

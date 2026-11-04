@@ -10,6 +10,7 @@
 
 struct OGLES2Context;
 struct OGLES2Target;
+struct OGLES2DrawCall;
 
 /* job_v3d.c */
 void ogles2_v3d_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *tg, BOOL bad);
@@ -24,5 +25,9 @@ void ogles2_v3d_job_retire(struct OGLES2Context *ctx);
 void ogles2_v3d_job_end(struct OGLES2Context *ctx, BOOL submitted);
 void ogles2_v3d_job_report_stop(struct OGLES2Context *ctx);
 void ogles2_v3d_job_free(struct OGLES2Context *ctx);
+
+/* draw_v3d.c */
+BOOL ogles2_v3d_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc);
+void ogles2_v3d_draw_free(struct OGLES2Context *ctx);
 
 #endif

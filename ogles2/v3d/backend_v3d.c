@@ -4,7 +4,7 @@
  * front end hard-coded until then (state.c, texture.c, context.c, fbo.c,
  * frame.c; release 1.3.3). Step 2: GPU memory, AllocVec'd fast RAM
  * (v3dcore/hw/v3d_mem_allocvec.c), whose bus address is its CPU address.
- * Step 3: jobs (job_v3d.c).
+ * Step 3: jobs (job_v3d.c). Step 4: draw (draw_v3d.c).
  *
  * MIT licence (LICENSE).
  */
@@ -68,6 +68,8 @@ const struct OGLES2Backend ogles2_backend_v3d = {
     ogles2_v3d_job_end,
     ogles2_v3d_job_report_stop,
     ogles2_v3d_job_free,
+    ogles2_v3d_draw,
+    ogles2_v3d_draw_free,
 };
 
 const struct OGLES2Backend *ogles2_backend = &ogles2_backend_v3d;
