@@ -56,6 +56,7 @@ static APTR dtbase;
 
 #define DT_OpenKey(name) DT_CALL1(6, name)
 #define DT_CloseKey(key) ((void)DT_CALL1(12, key))
+#define DT_GetChild(key, prev) DT_CALL2(18, key, prev)
 #define DT_FindProperty(key, name) DT_CALL2(24, key, name)
 #define DT_GetPropLen(prop) ((ULONG)DT_CALL1(36, prop))
 #define DT_GetPropValue(prop) ((const ULONG *)DT_CALL1(48, prop))
@@ -88,6 +89,9 @@ static volatile ULONG *systimer;      /* the free-running 1 MHz counter */
 static uint8_t *mbreq;                /* the request buffer: 16-byte aligned, fast RAM */
 #define MBW(k) (mbreq + 4 * (k))
 static APTR mbreq_block;
+#define MAX_RAM 8
+static ULONG ram_lo[MAX_RAM], ram_hi[MAX_RAM]; /* the device tree's memory: ARM physical = 68k */
+static int ram_ranges;
 
 #define V3D_BUS 0x7ec00000u
 #define SYSTIMER_BUS 0x7e003000u
@@ -175,6 +179,44 @@ static int read_tree(void)
     DT_CloseKey(key);
     regs = periph(V3D_BUS);
     systimer = periph(SYSTIMER_BUS);
+
+    /* RAM: the root's children of device_type "memory", their reg pairs
+     * (<address> <size> in the root's cells) */
+    if ((key = DT_OpenKey("/"))) {
+        const ULONG *sz = prop_up(key, "#size-cells", 0);
+        ULONG ac = pc, szc = sz ? sz[0] : 1;
+        APTR child = 0;
+        ram_ranges = 0;
+        while ((child = DT_GetChild(key, child)) && ram_ranges < MAX_RAM) {
+            APTR p = DT_FindProperty(child, "device_type");
+            const char *type = p ? (const char *)DT_GetPropValue(p) : 0;
+            ULONG n, k;
+            if (!type || type[0] != 'm' || type[1] != 'e' || type[2] != 'm' || type[3] != 'o' || type[4] != 'r' ||
+                type[5] != 'y' || type[6]) /* "memory" (the library has no strcmp) */
+                continue;
+            if (!(p = DT_FindProperty(child, "reg")))
+                continue;
+            v = DT_GetPropValue(p);
+            n = DT_GetPropLen(p) / 4;
+            for (k = 0; k + ac + szc <= n && ram_ranges < MAX_RAM; k += ac + szc) {
+                ram_lo[ram_ranges] = v[k + ac - 1];
+                ram_hi[ram_ranges] = v[k + ac - 1] + v[k + ac + szc - 1];
+                ram_ranges++;
+            }
+        }
+        DT_CloseKey(key);
+    }
+    return 0;
+}
+
+int vc4_os_gpu_reachable(uint32_t addr, uint32_t size)
+{
+    int i;
+    if (!ram_ranges)
+        return 1; /* no memory node: as the Pi 4's backend, trust the allocator */
+    for (i = 0; i < ram_ranges; i++)
+        if (addr >= ram_lo[i] && addr + size <= ram_hi[i] && addr + size >= addr)
+            return 1;
     return 0;
 }
 
@@ -255,6 +297,11 @@ int vc4_os_alloc(uint32_t size, struct vc4_mem *m)
     if (!(block = AllocVec(size + 4096, MEMF_FAST | MEMF_PUBLIC | MEMF_CLEAR)))
         return -1;
     at = ((ULONG)block + 4095) & ~4095u;
+    if (!vc4_os_gpu_reachable(at, size)) {
+        FreeVec(block);
+        vc4_os_log("refused a %u-byte block at 0x%08x: outside the RAM the GPU reaches", size, (unsigned)at);
+        return -1;
+    }
     m->cpu = (uint8_t *)at;
     m->bus = bus_of((void *)at);
     m->size = size;

@@ -214,5 +214,6 @@ extern ULONG ogles2_job_gen;
 extern const struct OGLES2Backend *ogles2_backend;
 
 extern const struct OGLES2Backend ogles2_backend_v3d; /* ogles2/v3d/backend_v3d.c */
+extern const struct OGLES2Backend ogles2_backend_vc4; /* ogles2/vc4/backend_vc4.c (P5: not chosen yet) */
 
 #endif

@@ -22,6 +22,9 @@ volatile uint32_t *vc4_os_regs(void);
 int vc4_os_mbox(uint32_t tag, uint32_t *val, int n);
 /* GPU memory, 4 KB aligned; 0 or -1. */
 int vc4_os_alloc(uint32_t size, struct vc4_mem *m);
+/* 1 if the GPU reaches the CPU's [addr, addr+size) (RAM the device tree
+ * lists: not the Amiga's own chip RAM, for one), else 0. */
+int vc4_os_gpu_reachable(uint32_t addr, uint32_t size);
 void vc4_os_free(struct vc4_mem *m);
 /* The CPU's writes to [p, p+n) made visible to the GPU, and the GPU's to the
  * CPU (nothing to do where the memory is mapped uncached). */

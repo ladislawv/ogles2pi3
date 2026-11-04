@@ -148,6 +148,14 @@ void vc4_os_free(struct vc4_mem *m)
     memset(m, 0, sizeof(*m));
 }
 
+/* Every block is the firmware's: the GPU reaches it. */
+int vc4_os_gpu_reachable(uint32_t addr, uint32_t size)
+{
+    (void)addr;
+    (void)size;
+    return 1;
+}
+
 /* /dev/mem maps the firmware's memory uncached (O_SYNC): nothing to do. */
 void vc4_os_flush(const void *p, uint32_t n)
 {

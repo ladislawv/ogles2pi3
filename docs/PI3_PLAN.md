@@ -1200,4 +1200,15 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    for the 68k, waits for the A1200 with the Pi 3: the device tree's `/soc` ranges and
    dma-ranges, `/aliases`' mailbox, fast RAM as GPU memory cleaned by `CachePreDMA`, the system
    timer; vc4core now flushes its lists and state before a job, a no-op on Linux) and the key
-   builder (§4.2).
+   builder (§4.2). Then `ogles2/vc4/backend_vc4.c`, the VC4 backend's table: the capabilities
+   (§2's Pi 3 limits, the extensions done natively), the device on vc4core (take-over at the
+   first context, its own public lock `"VC4 submit"`, the RAM it reaches from the device tree's
+   memory nodes), GPU memory through vc4core as the front end's `struct v3d_mem`, a context's
+   pools and job (kept in `ctx->v3d`, an opaque handle to the front end); the other groups
+   refuse until written. Built into the library (`libvc4core.a`, 265,936 bytes, 15 KB more;
+   the float-conversion check covers the new files) but **not chosen at device open yet**: the
+   Pi 4 runs the V3D backend as before (its checks on the A1200 are owed with the next run).
+   Next in P5: jobs (vc4core's job with the front end's targets), draw (the key builder, the
+   program's variants, the uniform streams of `tests/pi3/vc4core/vc4p.c`), textures (the storage
+   table, tiling.c), framebuffer targets, programs (`variant_read` for `VC4_VARIANT`, variants
+   requested from the compiler by key: version-2 requests), then the choice at device open.

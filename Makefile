@@ -35,12 +35,20 @@ V3D_SRC   := v3d_assembler v3d_clbuf v3d_commands v3d_context v3d_device v3d_fra
 V3D_OBJ   := $(V3D_SRC:%=$(B)/obj/v3dcore/%.o)
 V3D_HDR   := $(wildcard v3dcore/include/*.h v3dcore/hw/*.h)
 
+# vc4core: the Raspberry Pi 3's core (MIT, docs/PI3_PLAN.md §3.1), built with
+# the library's flags; os_amiga.c is its AmigaOS layer.
+VC4_SRC   := device mem cl job tiling os_amiga
+VC4_OBJ   := $(VC4_SRC:%=$(B)/obj/vc4core/%.o)
+VC4_HDR   := $(wildcard vc4core/include/*.h vc4core/*.h)
+VC4_INC   := -Ivc4core/include -Ivc4core
+
 GEN_STAMP := $(B)/gen/.stamp
 LIB_SRC   := ogles2/library.c ogles2/log.c ogles2/context.c ogles2/device.c ogles2/runtime.c \
              ogles2/state.c ogles2/display.c ogles2/job.c ogles2/frame.c ogles2/program.c \
              ogles2/draw.c ogles2/v3dp.c ogles2/blake3.c ogles2/texture.c \
              ogles2/buffer.c ogles2/compiler.c ogles2/etc1.c ogles2/fbo.c ogles2/copy.c ogles2/share.c \
-             ogles2/debug.c ogles2/vc4keys.c ogles2/v3d/backend_v3d.c ogles2/v3d/job_v3d.c ogles2/v3d/draw_v3d.c ogles2/v3d/texture_v3d.c ogles2/v3d/fbo_v3d.c ogles2/v3d/device_v3d.c ogles2/v3d/v3dp_v3d.c ogles2/v3d/program_v3d.c
+             ogles2/debug.c ogles2/vc4keys.c ogles2/v3d/backend_v3d.c ogles2/v3d/job_v3d.c ogles2/v3d/draw_v3d.c ogles2/v3d/texture_v3d.c ogles2/v3d/fbo_v3d.c ogles2/v3d/device_v3d.c ogles2/v3d/v3dp_v3d.c ogles2/v3d/program_v3d.c \
+             ogles2/vc4/backend_vc4.c ogles2/vc4/key_vc4.c
 # Library files that use v3dcore directly
 V3D_USERS := device job draw v3dp texture buffer fbo share v3d/backend_v3d v3d/job_v3d v3d/draw_v3d v3d/texture_v3d v3d/fbo_v3d v3d/device_v3d
 GEN_LIB   := $(B)/gen/ogles2/dispatch_table.c $(B)/gen/ogles2/stubs.c
@@ -53,7 +61,7 @@ CLIENT_OBJ := $(patsubst %.c,$(B)/obj/%.o,$(CLIENT_SRC)) $(B)/obj/client/lvo.o \
               $(B)/obj/gen/agl_gen.o $(B)/obj/gen/procaddr.o
 
 .PHONY: all gen clean vbcc
-all: $(B)/fpcheck.ok $(B)/libv3dcore.a $(B)/ogles2.library $(B)/libogles2.a $(B)/tests/abi_layout $(B)/tests/smoke \
+all: $(B)/fpcheck.ok $(B)/libv3dcore.a $(B)/libvc4core.a $(B)/ogles2.library $(B)/libogles2.a $(B)/tests/abi_layout $(B)/tests/smoke \
      $(B)/tests/abi_probe $(B)/tests/m1_clear $(B)/tests/m1_probe $(B)/tests/m1_draw $(B)/tests/m1_hwprobe $(B)/tests/m1_soak $(B)/tests/m2_link $(B)/tests/m2_texture $(B)/tests/m2_elements $(B)/tests/m2_buffers $(B)/tests/m4_stress $(B)/tests/m4_depth $(B)/tests/m4_setbitmap $(B)/tests/gears_gles2 $(B)/tests/cachetime $(B)/tests/emuspeed $(B)/tests/m5_fbo \
      $(B)/tests/rtt_churn $(B)/tests/m6_share $(B)/tests/m6_tasks $(B)/tests/m6_ext $(B)/tests/m6_tfu $(B)/tests/m6_flip $(B)/tests/m6_vsync $(B)/tests/m6_msaa $(B)/tests/m7_points $(B)/tests/m7_s3tc $(B)/tests/m7_clip $(B)/tests/m7_mrt $(B)/tests/m7_half $(B)/tests/m7_copy $(B)/cmd/OGLES2Log $(B)/amictl/amictld
 
@@ -67,13 +75,16 @@ gen: $(GEN_STAMP)
 
 # ---- float->integer check: everything in the library compiled to assembly,
 # no conversion without fintrz (see CPU above; tools/check_fpconv.py).
-$(B)/fpcheck.ok: $(LIB_SRC) $(V3D_SRC:%=v3dcore/hw/%.c) $(V3D_HDR) tools/check_fpconv.py $(GEN_STAMP) Makefile
+$(B)/fpcheck.ok: $(LIB_SRC) $(V3D_SRC:%=v3dcore/hw/%.c) $(V3D_HDR) $(VC4_SRC:%=vc4core/%.c) $(VC4_HDR) tools/check_fpconv.py $(GEN_STAMP) Makefile
 	@mkdir -p $(B)/asm
 	@for f in $(LIB_SRC); do \
-	  $(CC) $(CFLAGS) $(INC) -Iv3dcore/include -Iv3dcore/hw -S $$f -o $(B)/asm/$$(basename $$f .c).s || exit 1; \
+	  $(CC) $(CFLAGS) $(INC) -Iv3dcore/include -Iv3dcore/hw $(VC4_INC) -S $$f -o $(B)/asm/$$(basename $$f .c).s || exit 1; \
 	done
 	@for f in $(V3D_SRC); do \
 	  $(CC) $(V3D_FLAGS) -S v3dcore/hw/$$f.c -o $(B)/asm/v3dcore_$$f.s || exit 1; \
+	done
+	@for f in $(VC4_SRC); do \
+	  $(CC) $(CFLAGS) $(VC4_INC) -S vc4core/$$f.c -o $(B)/asm/vc4core_$$f.s || exit 1; \
 	done
 	$(PYTHON) tools/check_fpconv.py $(B)/asm/*.s
 	@touch $@
@@ -89,7 +100,18 @@ $(B)/libv3dcore.a: $(V3D_OBJ)
 	rm -f $@
 	$(AR) rcs $@ $^
 
+# ---- vc4core
+$(B)/obj/vc4core/%.o: vc4core/%.c $(VC4_HDR) Makefile
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(VC4_INC) -c $< -o $@
+$(B)/libvc4core.a: $(VC4_OBJ)
+	rm -f $@
+	$(AR) rcs $@ $^
+
 # ---- library
+$(B)/obj/ogles2/vc4/%.o: ogles2/vc4/%.c $(wildcard ogles2/*.h ogles2/vc4/*.h) $(VC4_HDR) $(GEN_STAMP) Makefile
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INC) -Iv3dcore/include $(VC4_INC) -c $< -o $@
 $(V3D_USERS:%=$(B)/obj/ogles2/%.o): $(B)/obj/ogles2/%.o: ogles2/%.c $(wildcard ogles2/*.h) $(V3D_HDR) $(GEN_STAMP) Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(INC) -Iv3dcore/include -Iv3dcore/hw -c $< -o $@
@@ -104,8 +126,8 @@ $(B)/obj/gen/%.o: $(B)/gen/ogles2/%.c $(GEN_STAMP) Makefile
 	$(CC) $(CFLAGS) $(INC) -c $< -o $@
 
 # start.o first: the file's first code is "return -1" (start.s).
-$(B)/ogles2.library.debug: $(LIB_OBJ) $(B)/libv3dcore.a
-	$(CC) $(LIBLINK) -Wl,-Map,$(B)/ogles2.library.map -o $@ $(LIB_OBJ) $(B)/libv3dcore.a -lgcc
+$(B)/ogles2.library.debug: $(LIB_OBJ) $(B)/libv3dcore.a $(B)/libvc4core.a
+	$(CC) $(LIBLINK) -Wl,-Map,$(B)/ogles2.library.map -o $@ $(LIB_OBJ) $(B)/libv3dcore.a $(B)/libvc4core.a -lgcc
 # The linked table, checked slot by slot against abi_order.txt before stripping.
 $(B)/ogles2.library: $(B)/ogles2.library.debug gen/verify_table.py gen/abi_order.txt
 	$(PYTHON) gen/verify_table.py $< gen/abi_order.txt
