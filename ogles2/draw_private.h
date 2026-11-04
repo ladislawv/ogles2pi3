@@ -3,8 +3,7 @@
  * draw.c, the front end, and a backend's draw (ogles2/v3d/draw_v3d.c).
  * Small helpers, inline in both.
  *
- * Licence: taken from ogles2/draw.c, which adapts PiStorm3D's code, so it
- * is under the Hyperion MiniGL Open Source License (LICENSE, section 1).
+ * MIT licence (LICENSE).
  */
 #ifndef OGLES2_DRAW_PRIVATE_H
 #define OGLES2_DRAW_PRIVATE_H

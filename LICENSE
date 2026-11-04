@@ -12,12 +12,9 @@ keeps its own. The licence decision is D6 in docs/DEVELOPMENT_PLAN.md
    be published to the Amiga developer community. The files under that
    licence:
    - v3dcore/ (the backend);
-   - the front-end files that adapt PiStorm3D code: ogles2/job.c,
-     ogles2/v3d/job_v3d.c, ogles2/v3d/draw_v3d.c, ogles2/draw_private.h,
-     ogles2/v3d/texture_v3d.c, ogles2/texture_private.h, ogles2/v3d/fbo_v3d.c,
-     ogles2/v3d/program_v3d.c,
-     ogles2/display.c, ogles2/draw.c, ogles2/program.c, ogles2/texture.c,
-     ogles2/builtin_shaders.h;
+   - the V3D 4.2 backend's files that adapt PiStorm3D code (docs/PI3_PLAN.md
+     section 5.3): ogles2/v3d/job_v3d.c, draw_v3d.c, texture_v3d.c,
+     fbo_v3d.c, program_v3d.c, and ogles2/builtin_shaders.h;
    - tools/builtin_shaders/ (assembles the built-in shaders with the
      backend's assembler).
 
@@ -27,10 +24,10 @@ keeps its own. The licence decision is D6 in docs/DEVELOPMENT_PLAN.md
      include/libraries/, include/clib/ (they contain no MiniGL code, so a
      program of any licence, GPL included, may link them; the library
      itself is opened at run time with OpenLibrary);
-   - the other front-end files: ogles2/buffer.c, compiler.c, context.c,
-     debug.c, device.c, etc1.c, etc1.h, fbo.c, frame.c, library.c, log.c, vc4keys.c,
-     ogles2_internal.h, runtime.c, share.c, start.s, state.c, v3dp.c,
-     clear_mrt_v3dp.h;
+   - the front end, every file in ogles2/ (the parts that had come from
+     PiStorm3D were rewritten in P2, docs/PI3_PLAN.md section 5.3), and in
+     ogles2/v3d/ backend_v3d.c, backend_v3d.h, device_v3d.c, v3dp_v3d.c;
+     except ogles2/builtin_shaders.h (above);
    - cmd/, tests/, v3dp/, gen/ (except gen/khronos/), dev/, docs/, release/;
    - tools/v3dglslc/, tools/amictl/, tools/v3dp_tests/, tools/blake3_test/,
      tools/etc1_test/, tools/clear_mrt/, tools/check_fpconv.py;

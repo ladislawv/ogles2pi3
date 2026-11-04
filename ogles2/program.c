@@ -22,8 +22,7 @@
  * smooth-shaded shaders (ogles2/v3d/program_v3d.c), used for clears drawn as
  * rectangles.
  *
- * Licence: this file adapts PiStorm3D's code, so it is under the Hyperion
- * MiniGL Open Source License (LICENSE, section 1).
+ * MIT licence (LICENSE).
  */
 #include <exec/memory.h>
 #include <dos/dos.h>

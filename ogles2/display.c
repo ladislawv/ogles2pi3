@@ -1,7 +1,5 @@
 /*
- * The default framebuffer's surface (plan section 7.2), after PiStorm3D's
- * vid_OpenDisplay / vid_OpenWindow / vid_AdoptWindow / vid_AdoptBitMap
- * (gl/src/context.c), written for ogles2's tags:
+ * The default framebuffer's surface (plan section 7.2), for ogles2's tags:
  *
  *   OGLES2_CCT_MODEID     fullscreen: our own screen in that mode, plus a
  *                         borderless backdrop window for input
@@ -20,8 +18,11 @@
  * calls while the bitmap is locked!"): ogles2_display_lock before the job's
  * tile stores, ogles2_display_unlock after its render has finished.
  *
- * Licence: this file adapts PiStorm3D's code, so it is under the Hyperion
- * MiniGL Open Source License (LICENSE, section 1).
+ * Written for ogles2; PI3_PLAN P2 step 8 rewrote the parts that had come
+ * from PiStorm3D (the screen's depth, the windows' tags, the copy to a
+ * window).
+ *
+ * MIT licence (LICENSE).
  */
 #include <string.h>
 #include <exec/memory.h>
@@ -145,11 +146,37 @@ static void blank_pointer(struct Window *w)
         SetPointer(w, blank, 1, 1, 0, 0);
 }
 
+/* Opens a screen in `mode`. RTG drivers disagree about the SA_Depth of a
+ * 32-bit mode: its colour bits (24), what the mode reports, or 32. A depth
+ * a driver does not take fails with OSERR_TOODEEP; any other error is a
+ * real one. Each of the three is tried once, in that order. */
+static struct Screen *open_screen(struct OGLES2Display *d, ULONG mode, ULONG *err)
+{
+    ULONG depth[3];
+    struct Screen *s = 0;
+    int i, j;
+    depth[0] = 24;
+    depth[1] = GetCyberIDAttr(CYBRIDATTR_DEPTH, mode);
+    depth[2] = 32;
+    for (i = 0; i < 3 && !s; i++) {
+        for (j = 0; j < i && depth[j] != depth[i]; j++)
+            ;
+        if (j < i)
+            continue; /* that depth was tried already */
+        *err = 0;
+        s = OpenScreenTags(0, SA_DisplayID, mode, SA_Depth, depth[i], SA_Width, (ULONG)d->width,
+                           SA_Height, (ULONG)d->height, SA_Quiet, TRUE, SA_ShowTitle, FALSE,
+                           SA_Draggable, FALSE, SA_ErrorCode, (ULONG)err, TAG_DONE);
+        if (!s && *err != OSERR_TOODEEP)
+            break;
+    }
+    return s;
+}
+
 static BOOL open_fullscreen(struct OGLES2Display *d, ULONG mode)
 {
-    ULONG err = 0, tries[3];
-    int n = 0, i;
-    ULONG depth;
+    ULONG err = 0;
+    struct TagItem input[7];
 
     if (!IsCyberModeID(mode)) {
         ogles2_log("display: mode 0x%08lx is not an RTG mode", mode);
@@ -164,34 +191,29 @@ static BOOL open_fullscreen(struct OGLES2Display *d, ULONG mode)
         d->width = (UWORD)GetCyberIDAttr(CYBRIDATTR_WIDTH, mode);
         d->height = (UWORD)GetCyberIDAttr(CYBRIDATTR_HEIGHT, mode);
     }
-    /* PiStorm3D's depth ladder: 24 first (BGRA32 is 24 bits of colour), then
-     * the mode's own report, then 32, retrying only on OSERR_TOODEEP. */
-    depth = GetCyberIDAttr(CYBRIDATTR_DEPTH, mode);
-    tries[n++] = 24;
-    if (depth != 24)
-        tries[n++] = depth;
-    if (depth != 32)
-        tries[n++] = 32;
-    for (i = 0; i < n; i++) {
-        err = 0;
-        d->screen = OpenScreenTags(0, SA_Depth, tries[i], SA_DisplayID, mode, SA_Width,
-                                   (ULONG)d->width, SA_Height, (ULONG)d->height, SA_ErrorCode,
-                                   (ULONG)&err, SA_ShowTitle, FALSE, SA_Draggable, FALSE,
-                                   SA_Quiet, TRUE, TAG_DONE);
-        if (d->screen || err != OSERR_TOODEEP)
-            break;
-    }
-    if (!d->screen) {
+    if (!(d->screen = open_screen(d, mode, &err))) {
         ogles2_log("display: OpenScreen of mode 0x%08lx failed (error %ld)", mode, err);
         return FALSE;
     }
     d->own_screen = TRUE;
-    d->input_window = OpenWindowTags(0, WA_CustomScreen, (ULONG)d->screen, WA_Left, 0, WA_Top, 0,
-                                     WA_Width, (ULONG)d->screen->Width, WA_Height,
-                                     (ULONG)d->screen->Height, WA_Flags,
-                                     WFLG_ACTIVATE | WFLG_BORDERLESS | WFLG_BACKDROP |
-                                         WFLG_REPORTMOUSE | WFLG_RMBTRAP,
-                                     TAG_DONE);
+    /* The program's input on its screen: a window behind everything, as
+     * large as the screen, without borders, active, with mouse moves and
+     * the right button reported. */
+    input[0].ti_Tag = WA_CustomScreen;
+    input[0].ti_Data = (ULONG)d->screen;
+    input[1].ti_Tag = WA_Left;
+    input[1].ti_Data = 0;
+    input[2].ti_Tag = WA_Top;
+    input[2].ti_Data = 0;
+    input[3].ti_Tag = WA_Width;
+    input[3].ti_Data = (ULONG)d->screen->Width;
+    input[4].ti_Tag = WA_Height;
+    input[4].ti_Data = (ULONG)d->screen->Height;
+    input[5].ti_Tag = WA_Flags;
+    input[5].ti_Data = WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_ACTIVATE | WFLG_RMBTRAP | WFLG_REPORTMOUSE;
+    input[6].ti_Tag = TAG_DONE;
+    input[6].ti_Data = 0;
+    d->input_window = OpenWindowTagList(0, input);
     blank_pointer(d->input_window);
     d->bitmap = d->screen->RastPort.BitMap; /* render straight into the screen */
     return TRUE;
@@ -269,16 +291,38 @@ static BOOL open_window_target(struct OGLES2Display *d, struct Window *w)
     return TRUE;
 }
 
+/* No window, bitmap or mode given: a window of ours on the default public
+ * screen, its inner area the requested size, 30 pixels in from the
+ * screen's top left corner, titled, movable and depth-arranged, with the
+ * program's input (mouse moves, the right button). */
 static BOOL open_own_window(struct OGLES2Display *d)
 {
     struct Window *w;
+    struct TagItem t[10];
     struct Screen *pub = LockPubScreen(0);
     if (!pub)
         return FALSE;
-    w = OpenWindowTags(0, WA_PubScreen, (ULONG)pub, WA_InnerWidth, (ULONG)d->width,
-                       WA_InnerHeight, (ULONG)d->height, WA_Left, 30, WA_Top, 30, WA_Title,
-                       (ULONG) "ogles2", WA_DragBar, TRUE, WA_DepthGadget, TRUE, WA_Flags,
-                       WFLG_ACTIVATE | WFLG_REPORTMOUSE | WFLG_RMBTRAP, TAG_DONE);
+    t[0].ti_Tag = WA_Title;
+    t[0].ti_Data = (ULONG) "ogles2";
+    t[1].ti_Tag = WA_PubScreen;
+    t[1].ti_Data = (ULONG)pub;
+    t[2].ti_Tag = WA_Left;
+    t[2].ti_Data = 30;
+    t[3].ti_Tag = WA_Top;
+    t[3].ti_Data = 30;
+    t[4].ti_Tag = WA_InnerWidth;
+    t[4].ti_Data = (ULONG)d->width;
+    t[5].ti_Tag = WA_InnerHeight;
+    t[5].ti_Data = (ULONG)d->height;
+    t[6].ti_Tag = WA_DragBar;
+    t[6].ti_Data = TRUE;
+    t[7].ti_Tag = WA_DepthGadget;
+    t[7].ti_Data = TRUE;
+    t[8].ti_Tag = WA_Flags;
+    t[8].ti_Data = WFLG_RMBTRAP | WFLG_REPORTMOUSE | WFLG_ACTIVATE;
+    t[9].ti_Tag = TAG_DONE;
+    t[9].ti_Data = 0;
+    w = OpenWindowTagList(0, t);
     UnlockPubScreen(0, pub); /* an open window keeps its screen open */
     if (!w) {
         ogles2_log("display: cannot open a %ldx%ld window", (ULONG)d->width, (ULONG)d->height);
@@ -485,8 +529,7 @@ BOOL ogles2_display_lock(struct OGLES2Display *d)
 
 /* The GPU writes the render bitmap by DMA, past the CPU's caches: a line
  * the CPU read before keeps the previous frame's bytes (A1200, m4_setbitmap:
- * one pixel of a frame stale now and then; PiStorm3D's context.c names the
- * same "stale 64-byte CPU cache lines of the previous frame"). Where the CPU
+ * one pixel of a frame stale now and then). Where the CPU
  * reads the bitmap -- the application's own, or the window's copy -- each
  * job cleans its lines before the render (job.c cleans the whole data
  * cache then, M6) and invalidates them after, while locked (exec's rule for
@@ -535,18 +578,25 @@ void ogles2_display_read(struct OGLES2Display *d, UWORD x, UWORD y, UWORD w, UWO
 void ogles2_display_present(struct OGLES2Display *d)
 {
     struct Window *w = d->window;
+    WORD x, y, cw, ch;
     if (!w || !d->own_bitmap)
         return; /* fullscreen, and a window that is all of its screen, draw into
                  * the screen (with vsync, after the wait: frame.c); an
                  * application bitmap is the application's to present */
     if (d->vsync)
         WaitTOF(); /* the copy at the refresh */
-    /* A GimmeZeroZero window's RPort is its inner area already (SDL opens
-     * its windows so): its origin is inside the borders. */
-    if (w->Flags & WFLG_GIMMEZEROZERO)
-        ClipBlit(&d->rastport, 0, 0, w->RPort, 0, 0, d->width, d->height, 0xC0);
-    else
-        ClipBlit(&d->rastport, 0, 0, w->RPort, w->BorderLeft, w->BorderTop,
-                 w->Width - w->BorderLeft - w->BorderRight, w->Height - w->BorderTop - w->BorderBottom,
-                 0xC0);
+    /* The window's inner area: inside its borders, as large as it is now;
+     * a GimmeZeroZero window's RPort is that area already (SDL opens its
+     * windows so), the size the context was made for. */
+    if (w->Flags & WFLG_GIMMEZEROZERO) {
+        x = y = 0;
+        cw = (WORD)d->width;
+        ch = (WORD)d->height;
+    } else {
+        x = w->BorderLeft;
+        y = w->BorderTop;
+        cw = (WORD)(w->Width - x - w->BorderRight);
+        ch = (WORD)(w->Height - y - w->BorderBottom);
+    }
+    ClipBlit(&d->rastport, 0, 0, w->RPort, x, y, cw, ch, 0xC0); /* minterm 0xC0: a copy */
 }

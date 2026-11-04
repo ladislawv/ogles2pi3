@@ -79,8 +79,10 @@ static int session(int verbose)
 
         check(glGetString(0x1234) == 0 && glGetError() == GL_INVALID_ENUM,
               "bad glGetString name: NULL and GL_INVALID_ENUM");
-        glGenerateMipmap(GL_TEXTURE_2D); /* a stub until textures (M2) */
-        check(glGetError() == GL_INVALID_OPERATION, "stub sets GL_INVALID_OPERATION");
+        /* No program in use: glUniform* is GL_INVALID_OPERATION (GLES 2.0
+         * 2.10.4). This was glGenerateMipmap while it was a stub (until M2). */
+        glUniform1i(0, 0);
+        check(glGetError() == GL_INVALID_OPERATION, "glUniform1i without a program sets GL_INVALID_OPERATION");
         check(glGetError() == GL_NO_ERROR, "glGetError clears the error");
 
         get_error = (GLenum (*)(void))aglGetProcAddress("glGetError");
@@ -89,7 +91,7 @@ static int session(int verbose)
               "aglGetProcAddress first and last names");
         check(aglGetProcAddress("glNoSuchFunction") == 0, "aglGetProcAddress(unknown) = NULL");
         if (get_error) {
-            glGenerateMipmap(GL_TEXTURE_2D);
+            glUniform1i(0, 0);
             check(get_error() == GL_INVALID_OPERATION, "call through the context-free thunk");
         }
     }

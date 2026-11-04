@@ -1,45 +1,37 @@
 /*
- * Jobs (plan section 7.7), version 1: one job per context, for the default
- * framebuffer. A job is one binning pass plus one render pass. Ported from
- * PiStorm3D's gl_FrameBegin / gl_FramePresent (gl/src/context.c), with these
- * differences:
+ * Jobs (plan section 7.7): drawing as the GPU does it, one binning pass and
+ * one render pass, into the default framebuffer or a framebuffer object
+ * (ctx->job_fb). Here what is the same on every GPU (docs/PI3_PLAN.md
+ * §5.1): when a job begins and ends, its serial (shared objects keep the
+ * last job that used them, share.c), the glClear values it clears with, the
+ * GPU submission lock, a render left running while the CPU builds the next
+ * job (M6), the statistics and the reasons a job is dropped. The backend
+ * builds, submits and waits (backend.h; V3D 4.2: ogles2/v3d/job_v3d.c).
  *
- *  - The GPU submission lock (section 7.1, phase 1) is held from the binning
- *    submit until the render has finished, and the flush waits for the render
- *    before returning (PiStorm3D defers that wait to the next frame).
- *  - Lock order: GPU lock, then the bitmap lock, so a program waiting for its
- *    turn on the GPU never holds a bitmap lock. While the bitmap is locked
- *    nothing is logged (cybergraphics: no library calls under a bitmap lock;
- *    the exec cache and semaphore calls are unavoidable, as in PiStorm3D).
- *  - Depth and stencil of the default framebuffer are cleared by the hardware
- *    at the start of every tile and neither loaded nor stored (section 7.2:
- *    EGL leaves them undefined after a swap). This replaces PiStorm3D's
- *    depth_persist_seen heuristic and its one possibly corrupted frame.
- *  - No intermediate passes yet: nothing draws in the first M1 step.
- *  - M6 overlap: a flush may return once the render is submitted, so the
- *    CPU builds the next job while the GPU renders (PiStorm3D's deferred
- *    wait): an object's job, and a job on a fullscreen screen of our own,
- *    which shows what the GPU writes. ogles2_job_finish waits for it: at the
- *    next flush, or before the CPU reads what it writes or changes what it
- *    reads (texture.c, buffer.c, fbo.c, frame.c). The submission lock goes
- *    once the render is submitted (plan 7.1 phase 2 within ogles2): the
- *    next submitter, any context of any program, takes the lock and waits
- *    for that render on the GPU first (take_gpu), so programs take turns
- *    and none holds the lock across its CPU work. minigl.library does not
- *    take part (D3).
- *  - A job renders into the default framebuffer or into a framebuffer
- *    object (M5, plan 7.7; fbo.c): ctx->job_fb. Drawing into another
- *    framebuffer renders the open job first (jobs v1). An object's job loads
- *    and stores its colour image in the image's own layout and its depth
- *    and stencil every time, without the Y flip, with tile pools of its own
- *    when it has more tiles than the default framebuffer.
+ *  - Locks: the GPU submission lock (plan 7.1) before the bitmap's, so a
+ *    program waiting for the GPU never holds a bitmap; nothing is logged
+ *    while a bitmap is locked (cybergraphics: no library calls then; exec's
+ *    cache and semaphore calls are the exception).
+ *  - The default framebuffer's depth and stencil are cleared at the start of
+ *    every tile and neither loaded nor stored (plan 7.2: EGL leaves them
+ *    undefined after a swap), except across a flush in the middle of a
+ *    frame (glReadPixels, glFlush), which keeps them for the frame's next job.
+ *  - A flush may return once the render is submitted (M6): a framebuffer
+ *    object's job, and one on a screen of our own or on the screen a window
+ *    is all of. ogles2_job_finish waits for it, at the next flush or before
+ *    the CPU reads what it writes or changes what it reads (texture.c,
+ *    buffer.c, fbo.c, frame.c). The submission lock is given up once the
+ *    render is submitted: the next submitter, any context of any program,
+ *    waits for that render on the GPU first (take_gpu), so programs take
+ *    turns and none holds the lock across its CPU work.
+ *  - Drawing into another framebuffer renders the open job first (jobs v1).
+ *    An object's job loads and stores its images in their own layouts,
+ *    without the Y flip.
  *
- * Since P2 step 3 (docs/PI3_PLAN.md §5.1) the GPU's part (the control
- * lists, submission, the waits) is the backend's (backend.h; V3D 4.2:
- * ogles2/v3d/job_v3d.c); this file keeps the rest.
+ * Written for ogles2; PI3_PLAN P2 step 8 rewrote what had come from
+ * PiStorm3D's frame handling.
  *
- * Licence: this file adapts PiStorm3D's code, so it is under the Hyperion
- * MiniGL Open Source License (LICENSE, section 1).
+ * MIT licence (LICENSE).
  */
 #include <exec/execbase.h>
 #include <proto/exec.h>
@@ -49,24 +41,12 @@
 
 #define GPU_LOCK_TIMEOUT_MS 5000
 
-/* The control-list generation (backend.h): a monotonic CL-restart counter. Bumped at EVERY build_slot flip
- * (gl_FramePresent and the doing_intermediate_pass path, context.c) and used
- * as the invalidation key for every cache that holds addresses into a CL
- * buffer.
- *
- * PROCESS-GLOBAL, NOT a context field, and NEVER reset -- both properties are
- * load-bearing:
- *
- *  - build_slot is a 2-slot toggle, so an intermediate render pass that flips
- *    it mid-frame with no draws after it hands the next frame the same slot
- *    value. A cache keyed on slot parity then believes its addresses are still
- *    live when the buffer has been reset underneath them.
- *  - A per-context counter would restart at 0 when a context is destroyed and
- *    re-created, while draw.c's cache statics survive, so a fresh context
- *    could match a stale key and reuse addresses into the destroyed
- *    context's state_buf.
- *
- * Monotonic and global means no cache can ever observe a repeated value. */
+/* The job generation (backend.h): changes whenever a backend starts a
+ * control list afresh, so that a cache of addresses into one (draw.c's
+ * state packets and uniform streams, texture.c's records) sees that they
+ * are gone. One number for all contexts that only goes up: a cache that
+ * outlives its context, or one context's cache looked at by another, can
+ * never see a value again that it saw before. */
 ULONG ogles2_job_gen = 0;
 
 /* Starts the job if none is open: the backend's lists, then the job's

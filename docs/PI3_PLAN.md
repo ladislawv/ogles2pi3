@@ -576,6 +576,34 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   FAIL; the whole `make` (library, tests, fpcheck) builds; speed against step 6, alternating: Quake III 88.8,
   88.2, 87.3 fps against 88.5, 88.3, 88.1; gears bitmap arrays 817, 808, 809 against 817, 809,
   808, screen 1093, 1081, 1085 against 1106, 1086, 1081 (as step 6).
+- **Step 8 done (2026-11-04):** the front end MIT (§5.3). An audit compared job.c, display.c,
+  draw.c, program.c, texture.c and the two private headers with PiStorm3D's `gl/` and backend
+  sources, v3dcore and the other MiniGL trees in `external/`. Copied or closely adapted, now
+  rewritten (same behaviour): display.c's choice of a screen's depth (PiStorm3D's `tries[]`
+  ladder: now `open_screen`, each of 24, the mode's report and 32 tried once), the tag lists
+  of the fullscreen input window and of ogles2's own window (now tag arrays,
+  `OpenWindowTagList`; the values are what the user sees, so they stay), the copy to a window
+  (`ogles2_display_present`, one ClipBlit), and two comments: job.c's on the job generation
+  (v3dcore's text on `g_v3d_cl_generation`, word for word) and display.c's quoting PiStorm3D
+  on stale cache lines; job.c's header no longer calls the file a port. Judged independent or
+  only alike in structure, where the task fixes the order of steps (Mesa's code has the
+  same): job.c's flush and finish, `ogles2_draw_clear` (a clear drawn as a rectangle),
+  texture.c's `before_change` (renaming), the CPU's glCopyTex* path, frame.c's choice of a
+  drawn clear; one `AllocBitMap` call (the only way to write it). program.c, the
+  conversions of texture.c and the private headers had nothing of PiStorm3D's. The seven
+  files are MIT; `LICENSE` lists the Hyperion files anew: v3dcore/, the V3D backend's
+  job_v3d.c, draw_v3d.c, texture_v3d.c, fbo_v3d.c, program_v3d.c, builtin_shaders.h and
+  tools/builtin_shaders/. Found on the way: m1-5's smoke test had checked since M2 that
+  glGenerateMipmap is a stub (two FAILs with step 7's library too, run to check; the call
+  has not been a stub since M2, so earlier libraries fail them alike); it now
+  checks glUniform1i without a program (GL_INVALID_OPERATION): 59 PASS, none FAIL, as in
+  October. Pi 4 checks the same day: m1-5 (all four surfaces) 59 PASS; m5-1 255 PASS, no
+  FAIL; m7-6 36 of 36; m2-5 14 of 14 identical; m2-4 146, m7-4 129, m7-5 162 PASS, none FAIL;
+  speed against step 7, alternating: gears as step 7
+  (bitmap arrays 775, 773, 778 against 780, 773, 771; window 447, 446, 452 against 451, 446,
+  446), Quake III 88.3, 88.0, 87.4 fps against 89.0, 88.5, 88.2 (0.5 to 0.8 below in each
+  pair; this step changed nothing a timedemo frame runs: comments, and the opening and the
+  copy to a window, which a fullscreen timedemo does not use; for the acceptance to judge).
 - **Measuring speed between steps (learnt at step 3):** runs of one library minutes apart are
   not enough. Quake III's timedemo drifts by about 1.5 % within an hour (step 1's library:
   87.9 to 89.3 fps the same afternoon), and where the code lies moves gears: step 3 with 64
@@ -632,6 +660,11 @@ Checked 2026-11-03 against `LICENSE`, the file headers and the sources the compi
   - **the built `ogles2.library` contains `v3dcore`, so as a whole it stays under Hyperion's
     terms, as today;** its MIT files stay MIT on their own (`LICENSE` section 1 already says so).
     `LICENSE` lists the files anew after P2.
+  - **Done (2026-11-04, P2 step 8, §5.1):** the front end's PiStorm3D parts found by an audit
+    rewritten, its files MIT, `LICENSE` updated. Still to make opaque when VC4's are written
+    (P5): `texture_private.h` and `ogles2_internal.h` name v3dcore's types (`V3DTexture`,
+    `v3d_mem`, `struct V3DContext`); a type, not code, but an MIT header should not need a
+    Hyperion one.
 - **Third-party code: permissive, notices shipped, no copyleft:**
   - in the library: Mesa-derived code (MIT; Mesa's notices in those files); BLAKE3 (CC0 or
     Apache-2.0, used under CC0); the Khronos headers `gl2.h`, `gl2ext.h`, `khrplatform.h` (MIT).
@@ -903,9 +936,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0). A heatsink before long speed
    runs on it.
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
-   the Pi 4 card (PD7 decided: option 1): steps 1 to 7 done (§5.1), step 8 (the MIT
-   rewrite of the front end's PiStorm3D parts: job.c, display.c, draw.c, program.c,
-   texture.c) next, then the acceptance; each
+   the Pi 4 card (PD7 decided: option 1): steps 1 to 8 done (§5.1, §5.3), the acceptance
+   next (the whole of P2 against 1.3.3; Quake III's 2 % from step 5 looked at there); each
    step's speed compared with the last commit's library, alternating runs (§5.1).
 3. P4's S1, next: the key states `-g 21 -o` compiles (today the one reference draw; the
    canonical keys of §4.2 and PD7 decide the rest); the library's limits for the Pi 3 in the

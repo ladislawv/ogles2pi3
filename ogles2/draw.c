@@ -8,8 +8,7 @@
  * rectangles and the copies on the GPU. What a draw puts into the job is
  * the backend's (backend.h; V3D 4.2: ogles2/v3d/draw_v3d.c, P2 step 4).
  *
- * Licence: this file adapts PiStorm3D's code, so it is under the Hyperion
- * MiniGL Open Source License (LICENSE, section 1).
+ * MIT licence (LICENSE).
  */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -812,7 +811,7 @@ BOOL ogles2_draw_copy(struct OGLES2Context *ctx, struct OGLES2Texture *src, cons
 /* ---- clears that the tile buffer cannot do ----
  * A clear confined by the scissor box or by write masks, or one after draws
  * in the same job (the tile buffer clears before any of them), is drawn as a
- * rectangle (plan 7.7; PiStorm3D's gl_ClearViaQuad, Mesa's blitter clear):
+ * rectangle (plan 7.7; as Mesa's blitter clear does):
  * the built-in program, an identity matrix, the clear colour as a constant
  * attribute, z at the clear depth, and a state that writes exactly what
  * glClear writes. The application's state is restored afterwards. */

@@ -3,8 +3,7 @@
  * storage (ogles2/v3d/texture_v3d.c) both see them (docs/PI3_PLAN.md §5.1,
  * P2 step 5), and the small helpers both use, inline.
  *
- * Licence: taken from ogles2/texture.c, which adapts PiStorm3D's code, so
- * it is under the Hyperion MiniGL Open Source License (LICENSE, section 1).
+ * MIT licence (LICENSE).
  */
 #ifndef OGLES2_TEXTURE_PRIVATE_H
 #define OGLES2_TEXTURE_PRIVATE_H

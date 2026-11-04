@@ -9,7 +9,7 @@
  * grows. On the GPU the texture is stored in the hardware format level 0's
  * format and type map to (plan 7.6, Mesa's v3dx_format_table.c: RGB565,
  * RGBA4, RGB5_A1, R8 and RG8 with swizzles, else RGBA8), packed from those
- * copies at upload, with PiStorm3D's layout code (v3dcore's v3d_texture.c:
+ * copies at upload, in the backend's layout (V3D 4.2: v3dcore's v3d_texture.c,
  * Mesa's level layout, UIF/UBLINEAR/LINEARTILE tiling).
  *
  * A texture changed after a draw of the open job used it is renamed (plan
@@ -27,8 +27,7 @@
  * layout, loads, stores and the draw's records. Here: the objects, their
  * RAM copies, completeness, the fallback texture.
  *
- * Licence: this file adapts PiStorm3D's code, so it is under the Hyperion
- * MiniGL Open Source License (LICENSE, section 1).
+ * MIT licence (LICENSE).
  */
 #include <exec/memory.h>
 #include <proto/exec.h>
