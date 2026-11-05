@@ -517,11 +517,54 @@ static void case_pclear(void)
  * textures, texture_vc4.c), then drawn from it as the textured quad: the
  * fragment variant for an X8Z24 sampler (the shader scales the word's top
  * 24 bits, Mesa's), NEAREST, CLAMP. */
-static struct vc4_mem zsbuf; /* below, with the jobs case */
-static int begin_target(const struct vc4_target *t);
 static int two_inputs(struct vc4p *p, uint32_t attr1_format, uint32_t tex0_format, const void *a0, uint32_t b0,
                       uint32_t s0, const void *a1, uint32_t b1, uint32_t s1, uint32_t size, uint32_t mode,
                       uint32_t count, struct vc4p_draw *d);
+
+/* mipmap: the six levels in vc4core's miptree layout (tiling.c: Mesa's,
+ * levels from the smallest, level 0 last and page aligned; T and LT by
+ * size), the four quads in one job: each must show the level the TMU picks,
+ * as Mesa's does. */
+static void case_mipmap(void)
+{
+    static uint8_t lv[MIP_SIZE * MIP_SIZE * 4];
+    struct vc4_texture_layout lay;
+    struct vc4p p;
+    struct vc4p_draw d;
+    int l, i, q, ok;
+    printf("mipmap (a 32x32 texture's six levels, NEAREST_MIPMAP_NEAREST, four quad sizes)\n");
+    vc4_texture_layout(&lay, MIP_SIZE, MIP_SIZE, 4, MIP_LEVELS, 1);
+    if (lay.size > tex.size) {
+        printf("  the miptree needs %u bytes, the texture block has %u\n", lay.size, tex.size);
+        failures++;
+        return;
+    }
+    for (l = 0; l < MIP_LEVELS; l++) {
+        for (i = 0; i < (int)(lay.level[l].width * lay.level[l].height); i++)
+            memcpy(lv + 4 * i, mip_col[l], 4);
+        vc4_texture_store(tex.cpu, &lay, (uint32_t)l, 0, lv, lay.level[l].width * 4);
+    }
+    if (load_flat(&p, "texture-texture.vc4p") < 0 || begin_case(0) < 0) {
+        failures++;
+        return;
+    }
+    ok = 1;
+    for (q = 0; q < 4 && ok; q++) {
+        ok = two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R8G8B8A8_UNORM, mip_quad[q], 8, 8, mip_uv, 8, 8,
+                        sizeof mip_uv, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+        if (!ok)
+            break;
+        d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_RGBA8888, MIP_LEVELS - 1, 0);
+        d.tex[0][1] = vc4_tex_p1(VC4_TEX_RGBA8888, MIP_SIZE, MIP_SIZE, VC4_MAG_NEAREST, VC4_MIN_NEAR_MIP_NEAR,
+                                 VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+        ok = vc4p_emit(&job, &d, W, H) == 0;
+    }
+    end_case("mipmap", ok);
+    vc4p_free(&p);
+}
+
+static struct vc4_mem zsbuf; /* below, with the jobs case */
+static int begin_target(const struct vc4_target *t);
 
 static void case_depthtex(void)
 {
@@ -1197,7 +1240,7 @@ static void case_overflow(void)
 static const char *const all_cases[] = {"triangle", "texture", "depth",  "blend", "indices", "indices8",
                                         "scissor",  "lines",    "points",  "stencil", "attrib", "textures", "rgb565",
                                         "cube",     "padded",  "msaa",    "jobs",    "rtt",    "overflow",
-                                        "pclear",   "depthtex"};
+                                        "pclear",   "depthtex", "mipmap"};
 #define NCASES (int)(sizeof all_cases / sizeof all_cases[0])
 
 /* One case by name; the jobs it ran (0: unknown). */
@@ -1220,6 +1263,8 @@ static int run_case(const char *name)
         case_scissor();
     else if (!strcmp(name, "pclear"))
         case_pclear();
+    else if (!strcmp(name, "mipmap"))
+        case_mipmap();
     else if (!strcmp(name, "depthtex")) {
         case_depthtex();
         return 2;

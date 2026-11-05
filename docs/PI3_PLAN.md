@@ -1224,6 +1224,10 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    glClears) pixel for pixel; found on the way that a colour-masked clear's vertex variant writes
    no varyings, so a vertex variant must be paired with its fragment one by the inputs (as the
    library does; the tests' loader now too). All cases and a 300-round soak (8,160 jobs) clean.
+   **Mipmaps (2026-11-05):** the `mipmap` case samples a 32x32 texture's six levels in vc4core's
+   layout (`tiling.c`) with NEAREST_MIPMAP_NEAREST through quads of 32, 16, 8 and 4 pixels (each
+   shows its own level): Mesa's picture pixel for pixel; with it all cases and a 200-round soak
+   (6,040 jobs) clean.
    The GPU lock needs no `lock.c`: the VC4 backend keeps its own public semaphore
    (`"VC4 submit"`, backend_vc4.c), and the Linux tests are the GPU's only user.
    Left: the speed runs again with the heatsink, the emulations'

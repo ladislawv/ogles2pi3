@@ -62,6 +62,22 @@ static const float pclr_col[4] = {1, 0.6f, 0, 1};
  * then that texture drawn as the textured quad (tq_pos, tq_uv below), NEAREST,
  * CLAMP: its depths as greys. */
 
+/* mipmap (texture.vert, texture.frag): a 32x32 RGBA8 texture with its six
+ * levels, each a solid colour (mip_col), NEAREST_MIPMAP_NEAREST, CLAMP; four
+ * quads of 32, 16, 8 and 4 pixels (mip_quad: 4 vertices of x, y each; uv 0
+ * to 1 over each), so each shows the level the TMU picks for it. */
+#define MIP_SIZE 32
+#define MIP_LEVELS 6
+static const unsigned char mip_col[MIP_LEVELS][4] = {
+    {255, 0, 0, 255}, {0, 255, 0, 255}, {0, 0, 255, 255}, {255, 255, 0, 255}, {255, 0, 255, 255}, {0, 255, 255, 255}};
+static const float mip_quad[4][8] = {
+    {-0.9f, -0.5f, -0.4f, -0.5f, -0.9f, 0.0f, -0.4f, 0.0f},       /* 32 pixels */
+    {-0.25f, -0.5f, 0.0f, -0.5f, -0.25f, -0.25f, 0.0f, -0.25f},   /* 16 */
+    {0.25f, -0.5f, 0.375f, -0.5f, 0.25f, -0.375f, 0.375f, -0.375f}, /* 8 */
+    {0.6f, -0.5f, 0.6625f, -0.5f, 0.6f, -0.4375f, 0.6625f, -0.4375f}, /* 4 */
+};
+static const float mip_uv[4 * 2] = {0, 0, 1, 0, 0, 1, 1, 1};
+
 /* attrib (color.vert, color.frag): a triangle, its colours unsigned bytes,
  * normalized (attribute 1), smooth shaded. */
 static const float attr_pos[3 * 3] = {-0.8f, -0.8f, 0, 0.8f, -0.6f, 0, 0.0f, 0.85f, 0};

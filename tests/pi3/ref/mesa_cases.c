@@ -236,6 +236,36 @@ int main(int argc, char **argv)
     save("pclear");
 
     {
+        static unsigned char lv[MIP_SIZE * MIP_SIZE * 4];
+        GLuint mt;
+        int l, i, q;
+        glGenTextures(1, &mt);
+        glBindTexture(GL_TEXTURE_2D, mt);
+        for (l = 0; l < MIP_LEVELS; l++) {
+            int s = MIP_SIZE >> l;
+            for (i = 0; i < s * s; i++)
+                memcpy(lv + 4 * i, mip_col[l], 4);
+            glTexImage2D(GL_TEXTURE_2D, l, GL_RGBA, s, s, 0, GL_RGBA, GL_UNSIGNED_BYTE, lv);
+        }
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        begin();
+        glUseProgram(texp);
+        glUniform1i(glGetUniformLocation(texp, "tex"), 0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, mip_uv);
+        glEnableVertexAttribArray(1);
+        for (q = 0; q < 4; q++) {
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, mip_quad[q]);
+            glEnableVertexAttribArray(0);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        }
+        glDisableVertexAttribArray(1);
+        save("mipmap");
+    }
+
+    {
         GLuint dt, dfb;
         glGenTextures(1, &dt);
         glBindTexture(GL_TEXTURE_2D, dt);
