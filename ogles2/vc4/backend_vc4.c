@@ -198,6 +198,10 @@ static struct V3DContext *context_new(UWORD w, UWORD h, int depth_bits, BOOL msa
         FreeVec(c);
         return 0;
     }
+    /* job.c cleans the whole data cache after job_build (each exec cache
+     * call cleans all of it on Emu68, about 41 us): vc4core's own flushes,
+     * one a list block, are left out */
+    c->job[0].caller_flushes = c->job[1].caller_flushes = 1;
     return (struct V3DContext *)c; /* the front end's handle; this backend's object */
 }
 

@@ -227,6 +227,8 @@ struct vc4_job
     uint32_t bin_us, render_us; /* how long the last run's binning and rendering took */
     uint32_t overflows;    /* the binner asked for more memory this many times (each got a chunk) */
     int out_of_overflow;   /* the last binning stopped: the pools had no more chunks */
+    int caller_flushes;    /* the caller makes the CPU's writes visible itself, after
+                            * vc4_job_end_lists (ogles2.library: one clean of the whole cache) */
     uint64_t t_render;     /* when the render was started */
 };
 

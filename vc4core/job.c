@@ -213,6 +213,8 @@ int vc4_job_end_lists(struct vc4_job *job)
     build_rcl(job);
     if (job->bcl.failed || job->rcl.failed || job->state.failed)
         return -1;
+    if (job->caller_flushes)
+        return 0;
     vc4_cl_flush(&job->bcl);
     vc4_cl_flush(&job->rcl);
     vc4_buf_flush(&job->state);
