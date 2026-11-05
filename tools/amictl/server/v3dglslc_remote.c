@@ -20,7 +20,8 @@
  * be. Ctrl-C ends it. WAIT: while a local server has the port, wait for it
  * to leave (it does at the next expunge) instead of ending.
  *
- *   v3dglslc-remote [PORT=6802] [TOKEN=//amictld.token] [COMPILER=LIBS:v3dglslc] [WAIT] [NOFALLBACK]
+ *   v3dglslc-remote [PORT=6803] [TOKEN=//amictld.token] [COMPILER=LIBS:v3dglslc] [WAIT] [NOFALLBACK]
+ * Port 6803: ogles3's bridge, on the same station, uses 6802.
  *
  * TOKEN's default is amictld's, from a package's directory in amictld's
  * work/. Frames (big-endian u32s; a string is its length, 0xffffffff for
@@ -131,37 +132,42 @@ static void drop_link(const char *why)
     }
 }
 
-/* A connection: the bridge, if it knows the token. */
+/* A connection: the bridge, if it knows the token and speaks these frames;
+ * it replaces the link only then (another bridge, ogles3's say, knocking on
+ * the port leaves a working link alone). */
 static void take_connection(void)
 {
     struct sockaddr_in a;
     socklen_t n = sizeof(a);
     struct timeval tv;
-    char magic[4], *t;
+    char magic[4], *t = 0;
     ULONG len;
     LONG one = 1;
-    int s = accept(ls, (struct sockaddr *)&a, &n);
+    int old = cs, s = accept(ls, (struct sockaddr *)&a, &n);
     if (s < 0)
         return;
-    drop_link("a new one connected");
-    cs = s;
-    tv.tv_sec = 60; /* a compile on the PC takes milliseconds */
+    tv.tv_sec = 10; /* the handshake; a compile on the PC takes milliseconds */
     tv.tv_usec = 0;
-    setsockopt(cs, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-    setsockopt(cs, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-    setsockopt(cs, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
-    if (!recv_all(magic, 4) || memcmp(magic, "V2H1", 4) || !recv_str(&t, &len) || !t || strcmp(t, token)) {
+    setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    setsockopt(s, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+    cs = s; /* recv_all and send_all use cs */
+    if (!recv_all(magic, 4) || memcmp(magic, "V2H1", 4) || !recv_str(&t, &len) || !t || strcmp(t, token) ||
+        !send_all("V2OK", 4)) {
         free(t);
-        CloseSocket(cs);
-        cs = -1;
-        printf("v3dglslc-remote: a connection without the token, closed\n");
+        CloseSocket(s);
+        cs = old;
+        printf("v3dglslc-remote: a connection without the token or these frames, closed\n");
         return;
     }
     free(t);
-    if (!send_all("V2OK", 4)) {
-        drop_link("no answer");
-        return;
+    if (old >= 0) {
+        printf("v3dglslc-remote: bridge gone (a new one connected)\n");
+        CloseSocket(old);
     }
+    tv.tv_sec = 60;
+    setsockopt(cs, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(cs, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
     printf("v3dglslc-remote: bridge connected\n");
 }
 
@@ -375,7 +381,7 @@ static void fall_back(struct V3DGLSLRequest *r)
 int main(int argc, char **argv)
 {
     const char *token_file = "//amictld.token";
-    int listen_port = 6802, wait_free = 0, i;
+    int listen_port = 6803, wait_free = 0, i;
     struct sockaddr_in a;
     LONG one = 1;
     char *t;
@@ -393,7 +399,7 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[i], "NOFALLBACK"))
             no_fallback = 1;
         else {
-            printf("usage: v3dglslc-remote [PORT=6802] [TOKEN=//amictld.token] [COMPILER=LIBS:v3dglslc] [WAIT] "
+            printf("usage: v3dglslc-remote [PORT=6803] [TOKEN=//amictld.token] [COMPILER=LIBS:v3dglslc] [WAIT] "
                    "[NOFALLBACK]\n");
             return 10;
         }

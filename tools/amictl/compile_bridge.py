@@ -5,10 +5,12 @@ there with the host v3dglslc (SERVE: the same requests as frames on its
 stdin, the same files byte for byte) and sends the written files back.
 Ported from ogles3 (its frames carry other fields: these are "V2").
 
-    python3 tools/amictl/compile_bridge.py [--port 6802] [--compiler PATH]
+    python3 tools/amictl/compile_bridge.py [--port 6803] [--compiler PATH]
     python3 tools/amictl/compile_bridge.py --check
 
-The station's address and token are amictl's (station.local). It runs until
+Port 6803: ogles3's bridge to the same station uses 6802, and the two must
+not take each other's links. The station's address and token are amictl's
+(station.local). It runs until
 stopped (Ctrl-C), connecting again whenever the link ends. --check needs no
 Amiga: the test programs as requests through the same path, each file
 compared with the command line's: the Pi 4's (tools/v3dglslc/test/shaders,
@@ -228,7 +230,7 @@ def check(comp):
 
 
 def main(argv):
-    port, path = 6802, default_compiler()
+    port, path = 6803, default_compiler()
     if "--port" in argv:
         port = int(argv[argv.index("--port") + 1])
     if "--compiler" in argv:
