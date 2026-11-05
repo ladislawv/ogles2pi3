@@ -112,6 +112,11 @@ static ULONG bus_of(const void *cpu)
     return (ULONG)cpu - dma_cpu + dma_bus;
 }
 
+uint32_t vc4_os_bus(const void *p)
+{
+    return bus_of(p);
+}
+
 static int read_tree(void)
 {
     APTR soc, aliases, key;

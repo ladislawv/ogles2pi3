@@ -53,13 +53,19 @@ void vc4_mem_write(struct vc4_mem *m, uint32_t off, const void *src, uint32_t le
 #define OVERFLOW_SIZE (512u << 10)
 #endif
 
+void vc4_pools_layout(uint32_t tiles, uint32_t *tsda_size, uint32_t *talloc_size, uint32_t *total)
+{
+    *tsda_size = (tiles * 48 + 4095) & ~4095u;
+    *talloc_size = (tiles * 32 + TALLOC_EXTRA + 4095) & ~4095u;
+    *total = *tsda_size + *talloc_size + OVERFLOW_CHUNKS * OVERFLOW_SIZE;
+}
+
 int vc4_pools_init(struct vc4_pools *p, uint16_t tiles_x, uint16_t tiles_y)
 {
-    uint32_t tiles = (uint32_t)tiles_x * tiles_y;
-    uint32_t tsda_size = (tiles * 48 + 4095) & ~4095u;
-    uint32_t talloc_size = (tiles * 32 + TALLOC_EXTRA + 4095) & ~4095u;
+    uint32_t tsda_size, talloc_size, total;
+    vc4_pools_layout((uint32_t)tiles_x * tiles_y, &tsda_size, &talloc_size, &total);
     memset(p, 0, sizeof(*p));
-    if (vc4_mem_alloc(&p->mem, tsda_size + talloc_size + OVERFLOW_CHUNKS * OVERFLOW_SIZE) < 0)
+    if (vc4_mem_alloc(&p->mem, total) < 0)
         return -1;
     if ((p->mem.bus & 0xf0000000u) != ((p->mem.bus + p->mem.size - 1) & 0xf0000000u)) {
         vc4_os_log("the binner's pools cross a 256 MB boundary (0x%08x + %u)", p->mem.bus, p->mem.size);

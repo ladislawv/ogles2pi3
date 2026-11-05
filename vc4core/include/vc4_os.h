@@ -25,6 +25,10 @@ int vc4_os_alloc(uint32_t size, struct vc4_mem *m);
 /* 1 if the GPU reaches the CPU's [addr, addr+size) (RAM the device tree
  * lists: not the Amiga's own chip RAM, for one), else 0. */
 int vc4_os_gpu_reachable(uint32_t addr, uint32_t size);
+/* The GPU's bus address of the CPU's p, in memory the GPU reaches (a
+ * display's bitmap: memory vc4_os_alloc did not give); 0 where the OS layer
+ * has no such mapping (Linux: only vc4_mem blocks have bus addresses). */
+uint32_t vc4_os_bus(const void *p);
 void vc4_os_free(struct vc4_mem *m);
 /* The CPU's writes to [p, p+n) made visible to the GPU, and the GPU's to the
  * CPU (nothing to do where the memory is mapped uncached). */

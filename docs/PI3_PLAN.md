@@ -1211,7 +1211,43 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    choice by stage and primitive). Built into the library (`libvc4core.a`, 267,352 bytes;
    the float-conversion check covers the new files) but **not chosen at device open yet**: the
    Pi 4 runs the V3D backend as before (its checks on the A1200 are owed with the next run).
-   Next in P5: jobs (vc4core's job with the front end's targets), draw (the key builder, the
-   program's variants, the uniform streams of `tests/pi3/vc4core/vc4p.c`), textures (the storage
-   table, tiling.c), framebuffer targets, programs (`variant_read` for `VC4_VARIANT`, variants
-   requested from the compiler by key: version-2 requests), then the choice at device open.
+   **Then (2026-11-05) the backend's other groups, written and built, untested until the A1200
+   has the Pi 3 card** (the library 289,096 bytes; still not chosen):
+   - jobs (`job_vc4.c`): vc4core's `vc4_job_run` split into its steps (`vc4_job_end_lists`,
+     `vc4_job_bin`, `vc4_job_render_start`, `vc4_job_render_wait`; they log and reset nothing,
+     the caller does: a bitmap may be locked), so a render runs on while the CPU builds the next
+     job, as on the Pi 4 (M6); two jobs a context, one building while the other renders, and the
+     blocks freed after a job in the slot that renders after any job that may read them. The
+     default framebuffer is rendered straight into the bitmap with the frame as wide as its row
+     (`BytesPerRow` / 4, a multiple of 16 bytes; the context's pools have a tile column more for
+     it); a bitmap with other rows drops the frame with the reason logged (the copy from a
+     buffer of our own: left). Depth and stencil kept across a mid-frame flush in a Z24S8 T image
+     (not with 4x MSAA: the general store keeps one sample; left). The GPU's ERRSTAT logged after
+     the render, VCMBE excepted (§3.1); nothing is logged under the bitmap lock;
+   - draw (`draw_vc4.c`): the draw's keys built (`key_vc4.c`) and the program's variants
+     chosen by them (`ogles2_vc4_variant_find`: wraps and the comparison function aside, a vertex
+     variant paired with its fragment variant by the inputs it writes, gl_PointSize's flag tried
+     both ways since the front end does not know it); a key the program has no variant for draws
+     with the front end's choice, logged once a program (compiling it on the miss: left); the
+     uniform streams of all of vc4's recipe types GLES2 uses (stencil words as Mesa's
+     `vc4_state.c`, the blend colour in the target's byte order, the sample mask, the stream's
+     own address); vertex data in the GPU's byte order (the key holds the types; a disabled
+     array's value as four floats), the shader record, the state packets (clip window,
+     configuration bits with early Z as Mesa's, depth offset, viewport); array draws over 65535
+     vertices split as Mesa's `vc4_draw_vbo`; 32-bit indices drawn as 16-bit while they fit;
+   - textures (`texture_vc4.c`): the storage table's formats packed from the RGBA8 RAM copies
+     (BGRA and ETC1 arrive converted: stored as RGBA8 and RGB8), the miptree in tiling.c's layout,
+     whole levels by `vc4_texture_store`, boxes texel by texel, loads back after a job drew into
+     one, renaming, a level as a render target (RGBA8888, BGR565), the TMU's words P0, P1, P2
+     for the uniform stream; float, depth and S3TC textures not stored (left), so
+     `GL_OES_depth_texture` is not offered;
+   - framebuffer targets (`fbo_vc4.c`): every depth or stencil renderbuffer a Z24S8 T image
+     (the tile buffer loads and stores the two together), a framebuffer object's own pools when
+     its frame has more tiles across or down than the context's (`vc4_pools_layout`);
+   - refused still: glGenerateMipmap and glCopyTex* on the GPU (the front end's CPU paths
+     run), the built-in image (clears of part of a framebuffer: nothing drawn), the internal
+     programs.
+   vc4core's cases on the Pi 3 still all pass after the split (500-round soak, 13,100 jobs).
+   Next in P5: variants compiled on a miss (version-2 requests with the program's keys, the
+   file written anew and reloaded), the built-in image's clear, then the choice at device open
+   (by the device tree's compatible string) and the first run on the A1200 with the Pi 3.

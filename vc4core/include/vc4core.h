@@ -202,6 +202,10 @@ struct vc4_pools
 };
 
 int vc4_pools_init(struct vc4_pools *p, uint16_t tiles_x, uint16_t tiles_y);
+/* The pools' layout for `tiles` tiles, for a caller with its own block (a
+ * framebuffer object's): the tile state's bytes (first), the tile
+ * allocation's (next), all of them with the overflow memory (after). */
+void vc4_pools_layout(uint32_t tiles, uint32_t *tsda_size, uint32_t *talloc_size, uint32_t *total);
 void vc4_pools_free(struct vc4_pools *p);
 /* Overflow chunk n of a job (0 first): its bus address and size; 0 when the
  * pools have no more. All of them lie in the pools' one block: overflow
@@ -222,6 +226,8 @@ struct vc4_job
     uint32_t errstat_bin;  /* after its binning */
     uint32_t bin_us, render_us; /* how long the last run's binning and rendering took */
     uint32_t overflows;    /* the binner asked for more memory this many times (each got a chunk) */
+    int out_of_overflow;   /* the last binning stopped: the pools had no more chunks */
+    uint64_t t_render;     /* when the render was started */
 };
 
 int vc4_job_init(struct vc4_job *job);
@@ -235,6 +241,18 @@ int vc4_job_begin(struct vc4_job *job, const struct vc4_target *t, struct vc4_po
  * them (timeout_us each). 0; -1 out of memory; -2 the binning, -3 the
  * rendering did not finish (the core was reset). */
 int vc4_job_run(struct vc4_job *job, uint32_t timeout_us);
+/* vc4_job_run in its steps, for a caller that lets the render run on while
+ * the CPU builds the next job (ogles2.library), and that logs and resets
+ * itself (these log nothing: a bitmap may be locked): the lists ended and
+ * made visible to the GPU (0, -1 out of memory); the binning run and waited
+ * for (0, -2: did not finish, out_of_overflow says if for want of memory);
+ * the render started; waited for (0, -3: did not finish; errstat set and
+ * its error bits cleared). Only one job on the core at a time: a binning
+ * starts after the last render finished. */
+int vc4_job_end_lists(struct vc4_job *job);
+int vc4_job_bin(struct vc4_job *job, uint32_t timeout_us);
+void vc4_job_render_start(struct vc4_job *job);
+int vc4_job_render_wait(struct vc4_job *job, uint32_t timeout_us);
 
 /* ---- textures (tiling.c) ---- */
 

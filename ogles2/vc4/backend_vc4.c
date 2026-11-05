@@ -1,13 +1,16 @@
 /*
  * The VC4 backend's table (ogles2/backend.h, docs/PI3_PLAN.md §5.1, P5):
- * the Raspberry Pi 3's VideoCore IV on vc4core. Written a group at a time;
- * so far the capabilities, the device, GPU memory and the contexts' pools.
- * The other groups refuse (a job is dropped, a draw fails, a program file is
- * refused) until written. The device open does not choose it yet: the Pi 4
- * runs as before until the A1200 has the Pi 3 card for the first time.
+ * the Raspberry Pi 3's VideoCore IV on vc4core. Here the capabilities, the
+ * device, GPU memory and the contexts; the groups in job_vc4.c, draw_vc4.c,
+ * texture_vc4.c, fbo_vc4.c and program_vc4.c. Not written yet, and refused:
+ * glGenerateMipmap and glCopyTex* on the GPU (the front end's CPU paths run
+ * instead), the built-in image (clears of part of a framebuffer), the
+ * internal programs. The device open does not choose this backend yet: the
+ * Pi 4 runs as before until the A1200 has the Pi 3 card for the first time.
  *
  * Contexts: the front end keeps a context's backend object in ctx->v3d, the
- * V3D backend's type; this backend keeps its own struct vc4_ctx there.
+ * V3D backend's type; this backend keeps its own struct vc4_ctx there
+ * (backend_vc4.h).
  *
  * MIT licence (LICENSE).
  */
@@ -30,7 +33,7 @@ static const struct OGLES2Caps caps = {
     "GL_EXT_debug_marker GL_OES_required_internalformat GL_OES_rgb8_rgba8 "
     "GL_OES_draw_elements_base_vertex GL_OES_compressed_ETC1_RGB8_texture GL_OES_packed_depth_stencil "
     "GL_EXT_blend_minmax GL_EXT_texture_format_BGRA8888 GL_OES_texture_npot GL_OES_fbo_render_mipmap "
-    "GL_OES_standard_derivatives GL_OES_depth_texture",
+    "GL_OES_standard_derivatives",
     2048,  /* textures (vc4_screen.c) */
     2048,  /* viewport and renderbuffers: Mesa's on the Pi 3 (§2 "Render targets") */
     1,     /* draw buffers: one colour buffer (EXT_draw_buffers comes emulated, §2.1) */
@@ -112,6 +115,11 @@ static ULONG bytes(void)
     return bytes_in_use;
 }
 
+ULONG ogles2_vc4_bus(ULONG cpu)
+{
+    return vc4_os_bus((const void *)cpu);
+}
+
 static BOOL gpu_reachable(ULONG addr, ULONG size)
 {
     return vc4_os_gpu_reachable(addr, size) ? TRUE : FALSE;
@@ -154,31 +162,16 @@ static void mem_free(struct v3d_mem *m)
     m->hostptr = 0;
 }
 
-/* Jobs run to their end before the next starts (vc4_job_run): nothing reads
- * a block after its job, so it is freed at once. */
-static void mem_free_after(struct OGLES2Context *user, struct v3d_mem *m)
-{
-    (void)user;
-    mem_free(m);
-}
+/* ---- a context's pools and jobs ---- */
 
-/* ---- a context's pools and job ---- */
-
-struct vc4_ctx
-{
-    struct vc4_pools pools;
-    struct vc4_job job;
-    UWORD w, h;
-    int depth_bits;
-    BOOL msaa;
-};
-
-/* Pools for a w x h frame in the tile size of its mode (64, 32 with MSAA). */
+/* Pools for a w x h frame in the tile size of its mode (64, 32 with MSAA),
+ * a tile column more: the frame is as wide as the bitmap's row, which may
+ * be longer than the display (job_vc4.c). */
 static BOOL pools_for(struct vc4_ctx *c, UWORD w, UWORD h)
 {
     UWORD t = c->msaa ? 32 : 64;
     vc4_pools_free(&c->pools);
-    return vc4_pools_init(&c->pools, (UWORD)((w + t - 1) / t), (UWORD)((h + t - 1) / t)) == 0;
+    return vc4_pools_init(&c->pools, (UWORD)((w + t - 1) / t + 1), (UWORD)((h + t - 1) / t)) == 0;
 }
 
 static struct V3DContext *context_new(UWORD w, UWORD h, int depth_bits, BOOL msaa)
@@ -190,9 +183,10 @@ static struct V3DContext *context_new(UWORD w, UWORD h, int depth_bits, BOOL msa
     c->h = h;
     c->depth_bits = depth_bits;
     c->msaa = msaa;
-    if (!pools_for(c, w, h) || vc4_job_init(&c->job) < 0) {
+    if (!pools_for(c, w, h) || vc4_job_init(&c->job[0]) < 0 || vc4_job_init(&c->job[1]) < 0) {
         vc4_pools_free(&c->pools);
-        vc4_job_free(&c->job);
+        vc4_job_free(&c->job[0]);
+        vc4_job_free(&c->job[1]);
         FreeVec(c);
         return 0;
     }
@@ -203,7 +197,7 @@ static BOOL context_resize(struct V3DContext *v, UWORD w, UWORD h)
 {
     struct vc4_ctx *c = (struct vc4_ctx *)v;
     UWORD t = c->msaa ? 32 : 64;
-    if ((UWORD)((w + t - 1) / t) <= c->pools.tiles_x && (UWORD)((h + t - 1) / t) <= c->pools.tiles_y) {
+    if ((UWORD)((w + t - 1) / t + 1) <= c->pools.tiles_x && (UWORD)((h + t - 1) / t) <= c->pools.tiles_y) {
         c->w = w;
         c->h = h;
         return TRUE;
@@ -218,47 +212,24 @@ static BOOL context_resize(struct V3DContext *v, UWORD w, UWORD h)
 static void context_free(struct V3DContext *v)
 {
     struct vc4_ctx *c = (struct vc4_ctx *)v;
+    int k;
     if (!c)
         return;
-    vc4_job_free(&c->job);
+    for (k = 0; k < VC4_SLOTS; k++) {
+        ogles2_vc4_defer_free_all(c, k);
+        vc4_job_free(&c->job[k]);
+    }
+    if (c->zs.size)
+        vc4_mem_free(&c->zs);
     vc4_pools_free(&c->pools);
     FreeVec(c);
 }
 
-/* ---- the groups still to write (P5): they refuse ---- */
+/* ---- not written yet: refused (the front end's CPU paths run instead) ---- */
 
-static const char not_yet[] = "the VC4 backend does not do this yet (P5)";
-
-static void job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *tg, BOOL bad) { (void)ctx; (void)tg; (void)bad; }
-static BOOL job_has_draws(struct OGLES2Context *ctx) { (void)ctx; return FALSE; }
-static BOOL job_keep_zs(struct OGLES2Context *ctx) { (void)ctx; return TRUE; }
-static const char *job_check(struct OGLES2Context *ctx) { (void)ctx; return not_yet; }
-static BOOL job_build(struct OGLES2Context *ctx, const struct OGLES2Target *tg, BOOL store_zs) { (void)ctx; (void)tg; (void)store_zs; return FALSE; }
-static int job_bin(struct OGLES2Context *ctx, const struct OGLES2Target *tg) { (void)ctx; (void)tg; return OGLES2_WAIT_ERROR; }
-static UBYTE job_render(struct OGLES2Context *ctx) { (void)ctx; return 0; }
-static int wait_render(UBYTE frame) { (void)frame; return OGLES2_WAIT_OK; }
-static void job_retire(struct OGLES2Context *ctx) { (void)ctx; }
-static void job_end(struct OGLES2Context *ctx, BOOL submitted) { (void)ctx; (void)submitted; }
-static void job_report_stop(struct OGLES2Context *ctx) { (void)ctx; }
-static void job_free(struct OGLES2Context *ctx) { (void)ctx; }
-static BOOL draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc) { (void)ctx; (void)dc; return FALSE; }
-static void draw_free(struct OGLES2Context *ctx) { (void)ctx; }
-static BOOL tex_upload(struct OGLES2Texture *t) { (void)t; return FALSE; }
-static void tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w, int h) { (void)t; (void)k; (void)l; (void)src; (void)x; (void)y; (void)w; (void)h; }
-static BOOL tex_load(struct OGLES2Texture *t, int k, int l, int x, int y, int w, int h, UBYTE *dst, ULONG stride) { (void)t; (void)k; (void)l; (void)x; (void)y; (void)w; (void)h; (void)dst; (void)stride; return FALSE; }
-static void tex_free(struct OGLES2Texture *t) { (void)t; }
-static BOOL tex_rename(struct OGLES2Context *user, struct OGLES2Texture *t) { (void)user; (void)t; return FALSE; }
-static int tex_levels(const struct OGLES2Texture *t) { (void)t; return 0; }
-static BOOL tex_holds(const struct OGLES2Texture *t, int k, int l) { (void)t; (void)k; (void)l; return FALSE; }
 static BOOL tex_can_generate(const struct OGLES2Texture *t, int n) { (void)t; (void)n; return FALSE; }
 static int tex_generate(struct OGLES2Texture *t, int n) { (void)t; (void)n; return GL_INVALID_OPERATION; }
 static int tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra) { (void)t; (void)src; (void)stride; (void)w; (void)h; (void)bgra; return GL_INVALID_OPERATION; }
-static BOOL rb_zs_storage(GLenum format, UWORD w, UWORD h, struct v3d_mem *mem, ULONG *base, ULONG *ub, ULONG *bytes_, UBYTE *cpp) { (void)format; (void)w; (void)h; (void)mem; (void)base; (void)ub; (void)bytes_; (void)cpp; return FALSE; }
-static void rb_surface(GLenum format, ULONG base, ULONG ub, ULONG bytes_, BOOL stencil_only, struct OGLES2Surface *s) { (void)format; (void)base; (void)ub; (void)bytes_; (void)stencil_only; (void)s; }
-static void target_layout(struct OGLES2Target *t, UBYTE depth_format, BOOL wide) { (void)t; (void)depth_format; (void)wide; }
-static BOOL target_pools(struct OGLES2Context *ctx, struct v3d_mem *alloc, struct v3d_mem *st, ULONG *tiles, ULONG name, struct OGLES2Target *t) { (void)ctx; (void)alloc; (void)st; (void)tiles; (void)name; (void)t; return FALSE; }
-static BOOL tex_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l, struct OGLES2Surface *s) { (void)ctx; (void)t; (void)k; (void)l; (void)s; return FALSE; }
-static BOOL tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l, struct OGLES2Surface *s) { (void)ctx; (void)t; (void)l; (void)s; return FALSE; }
 static const struct OGLES2Image *builtin_image(void) { return 0; }
 static const UBYTE *internal_program(int which, ULONG *len) { (void)which; *len = 0; return 0; }
 
@@ -280,37 +251,37 @@ const struct OGLES2Backend ogles2_backend_vc4 = {
     context_free,
     mem_alloc,
     mem_free,
-    mem_free_after,
-    job_begin,
-    job_has_draws,
-    job_keep_zs,
-    job_check,
-    job_build,
-    job_bin,
-    job_render,
-    wait_render,
-    job_retire,
-    job_end,
-    job_report_stop,
-    job_free,
-    draw,
-    draw_free,
-    tex_upload,
-    tex_store,
-    tex_load,
-    tex_free,
-    tex_rename,
-    tex_levels,
-    tex_holds,
+    ogles2_vc4_mem_free_after,
+    ogles2_vc4_job_begin,
+    ogles2_vc4_job_has_draws,
+    ogles2_vc4_job_keep_zs,
+    ogles2_vc4_job_check,
+    ogles2_vc4_job_build,
+    ogles2_vc4_job_bin,
+    ogles2_vc4_job_render,
+    ogles2_vc4_wait_render,
+    ogles2_vc4_job_retire,
+    ogles2_vc4_job_end,
+    ogles2_vc4_job_report_stop,
+    ogles2_vc4_job_free,
+    ogles2_vc4_draw,
+    ogles2_vc4_draw_free,
+    ogles2_vc4_tex_upload,
+    ogles2_vc4_tex_store,
+    ogles2_vc4_tex_load,
+    ogles2_vc4_tex_free,
+    ogles2_vc4_tex_rename,
+    ogles2_vc4_tex_levels,
+    ogles2_vc4_tex_holds,
     tex_can_generate,
     tex_generate,
     tex_from_raster,
-    rb_zs_storage,
-    rb_surface,
-    target_layout,
-    target_pools,
-    tex_surface,
-    tex_zs_surface,
+    ogles2_vc4_rb_zs_storage,
+    ogles2_vc4_rb_surface,
+    ogles2_vc4_target_layout,
+    ogles2_vc4_target_pools,
+    ogles2_vc4_tex_surface,
+    ogles2_vc4_tex_zs_surface,
     ogles2_vc4_variant_read,
     ogles2_vc4_variant_recipe,
     ogles2_vc4_variant_choose,

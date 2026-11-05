@@ -2,9 +2,8 @@
  * The VC4 backend's program variants (ogles2/backend.h, docs/PI3_PLAN.md
  * §4.3, §5.1, P5): a .vc4p VC4_VARIANT's key and prog data (v3dp/FORMAT.md
  * 1.1), its uniform recipe's types (Mesa vc4's enum quniform_contents at the
- * validated commit) and, for now, the variant a draw uses by stage and
- * primitive alone; the choice by the whole key (ogles2/vc4/key_vc4.c) comes
- * with the draw.
+ * validated commit), the front end's variant by stage and primitive, and
+ * the draw's choice by the whole key (ogles2/vc4/key_vc4.c builds it).
  *
  * MIT licence (LICENSE).
  */
@@ -38,8 +37,8 @@ static const UBYTE *inputs(struct ogles2_rd *s, UBYTE *n)
 const char *ogles2_vc4_variant_read(struct ogles2_rd *s, struct OGLES2Variant *v)
 {
     struct vc4_prog *pd = VC4_PROG(v);
-    const UBYTE *key = s->p;
-    UBYTE n, j;
+    const UBYTE *key = s->p, *key_inputs = 0;
+    UBYTE n = 0, j;
     if (v->stage == OGLES2_VARIANT_FS) {
         if (!need(s, FS_KEY_BYTES))
             return "truncated VC4_VARIANT key";
@@ -52,7 +51,7 @@ const char *ogles2_vc4_variant_read(struct ogles2_rd *s, struct OGLES2Variant *v
             return "truncated VC4_VARIANT key";
         v->per_vertex_point_size = key[SAMPLER_KEY_BYTES + 32 + 1];
         s->p += SAMPLER_KEY_BYTES + 32 + 4;
-        (void)inputs(s, &n); /* the key's fs_inputs: the fragment variant's, which the file pairs */
+        key_inputs = inputs(s, &n); /* the fragment shader's inputs it writes (FORMAT.md 1.1) */
     } else {
         return "unknown VC4_VARIANT stage";
     }
@@ -68,6 +67,10 @@ const char *ogles2_vc4_variant_read(struct ogles2_rd *s, struct OGLES2Variant *v
     pd->color_inputs = u32(s);
     pd->num_texture_samples = u32(s);
     pd->fs_inputs = inputs(s, &pd->nfs_inputs);
+    if (v->stage != OGLES2_VARIANT_FS) { /* its own list is empty: the key's is what pairs it */
+        pd->fs_inputs = key_inputs;
+        pd->nfs_inputs = n;
+    }
     v->threads = pd->fs_threaded ? 2 : 1;
     v->num_inputs = pd->num_inputs;
     return s->bad ? "truncated VC4_VARIANT prog data" : 0;
@@ -102,21 +105,88 @@ const char *ogles2_vc4_variant_recipe(struct OGLES2Variant *v, BOOL *clip_z, ULO
     return 0;
 }
 
-/* The first variant of the stage for the primitive class (the key's other
- * parts: with the draw). */
+/* The first variant of the stage for the primitive class, else the
+ * stage's first (the draw chooses by the whole key: ogles2_vc4_variant_find). */
 const struct OGLES2Variant *ogles2_vc4_variant_choose(const struct OGLES2Image *im, UBYTE stage, UBYTE cbufs,
                                                       GLenum mode)
 {
     BOOL points = mode == GL_POINTS, lines = mode == GL_LINES || mode == GL_LINE_LOOP || mode == GL_LINE_STRIP;
+    const struct OGLES2Variant *any = 0;
     UWORD i;
     (void)cbufs;
     for (i = 0; i < im->nvariants; i++) {
         const struct OGLES2Variant *v = &im->variants[i];
         if (v->stage != stage)
             continue;
+        if (!any)
+            any = v;
         if (stage == OGLES2_VARIANT_FS ? v->is_points == points && v->is_lines == lines
                                        : v->per_vertex_point_size == points)
             return v;
     }
+    return any;
+}
+
+/* Key bytes alike, each sampler entry's comparison function and wraps
+ * (bytes 9 to 11) aside. */
+static BOOL key_same(const UBYTE *a, const UBYTE *b, ULONG n)
+{
+    ULONG i;
+    for (i = 0; i < n; i++) {
+        if (i < SAMPLER_KEY_BYTES && (i & 15) >= 9 && (i & 15) <= 11)
+            continue;
+        if (a[i] != b[i])
+            return FALSE;
+    }
+    return TRUE;
+}
+
+static BOOL inputs_same(const struct vc4_prog *a, const struct vc4_prog *b)
+{
+    UBYTE k;
+    if (a->nfs_inputs != b->nfs_inputs)
+        return FALSE;
+    for (k = 0; k < 2 * a->nfs_inputs; k++)
+        if (a->fs_inputs[k] != b->fs_inputs[k])
+            return FALSE;
+    return TRUE;
+}
+
+#define VS_KEY_PSIZE (SAMPLER_KEY_BYTES + 32 + 1)
+
+static const struct OGLES2Variant *find(const struct OGLES2Image *im, UBYTE stage, const UBYTE *key,
+                                        const struct OGLES2Variant *fs, int psize)
+{
+    UWORD i;
+    for (i = 0; i < im->nvariants; i++) {
+        const struct OGLES2Variant *v = &im->variants[i];
+        if (v->stage != stage || !v->key)
+            continue;
+        if (stage == OGLES2_VARIANT_FS) {
+            if (v->key_len >= FS_KEY_BYTES && key_same(v->key, key, FS_KEY_BYTES))
+                return v;
+            continue;
+        }
+        /* attribute formats and the samplers; is_coord is the stage's */
+        if (v->key_len < VS_KEY_PSIZE + 1 || !key_same(v->key, key, SAMPLER_KEY_BYTES + 32) ||
+            v->key[VS_KEY_PSIZE] != psize)
+            continue;
+        if (stage == OGLES2_VARIANT_VS && fs && !inputs_same(VC4_PROG_C(v), VC4_PROG_C(fs)))
+            continue;
+        return v;
+    }
     return 0;
+}
+
+const struct OGLES2Variant *ogles2_vc4_variant_find(const struct OGLES2Image *im, UBYTE stage, const UBYTE *key,
+                                                    const struct OGLES2Variant *fs, BOOL points)
+{
+    const struct OGLES2Variant *v;
+    if (stage == OGLES2_VARIANT_FS)
+        return find(im, stage, key, 0, 0);
+    /* gl_PointSize: the key's flag is the shader's writing it, which the
+     * front end does not know; points try both */
+    if ((v = find(im, stage, key, fs, key[VS_KEY_PSIZE])) != 0 || !points)
+        return v;
+    return find(im, stage, key, fs, !key[VS_KEY_PSIZE]);
 }

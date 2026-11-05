@@ -156,6 +156,12 @@ int vc4_os_gpu_reachable(uint32_t addr, uint32_t size)
     return 1;
 }
 
+uint32_t vc4_os_bus(const void *p)
+{
+    (void)p;
+    return 0;
+}
+
 /* /dev/mem maps the firmware's memory uncached (O_SYNC): nothing to do. */
 void vc4_os_flush(const void *p, uint32_t n)
 {

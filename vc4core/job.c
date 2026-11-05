@@ -175,12 +175,12 @@ static void build_rcl(struct vc4_job *job)
         }
 }
 
-/* Waits until count register reg (BFC, RFC: 8 bits) reaches 1; the binner's
- * out-of-memory requests are served meanwhile with the pools' overflow
- * memory. */
-static int wait_count(struct vc4_job *job, uint32_t reg, uint32_t timeout_us, uint32_t *took)
+/* Waits until count register reg (BFC, RFC: 8 bits) reaches 1, from t0
+ * on; the binner's out-of-memory requests are served meanwhile with the
+ * pools' overflow memory. Logs nothing (a caller may hold a bitmap lock). */
+static int wait_count(struct vc4_job *job, uint32_t reg, uint64_t t0, uint32_t timeout_us, uint32_t *took)
 {
-    uint64_t t0 = vc4_os_time_us(), t;
+    uint64_t t;
     for (;;) {
         t = vc4_os_time_us();
         if (vc4_read(reg) & 0xff) {
@@ -192,8 +192,7 @@ static int wait_count(struct vc4_job *job, uint32_t reg, uint32_t timeout_us, ui
              * (Linux's vc4_overflow_mem_work gives a new bin slot). */
             uint32_t size, at;
             if ((at = vc4_pools_overflow(job->pools, ++job->overflows, &size)) == 0) {
-                vc4_os_log("job: the binner needs more than the pools' %u overflow chunks",
-                           job->pools->overflow_chunks);
+                job->out_of_overflow = 1;
                 return -1; /* it would wait for ever */
             }
             /* the new memory first, then the request cleared (Linux's
@@ -207,20 +206,23 @@ static int wait_count(struct vc4_job *job, uint32_t reg, uint32_t timeout_us, ui
     }
 }
 
-int vc4_job_run(struct vc4_job *job, uint32_t timeout_us)
+int vc4_job_end_lists(struct vc4_job *job)
 {
-    uint32_t err;
     VC4_EMIT0(&job->bcl, INCREMENT_SEMAPHORE);
     VC4_EMIT0(&job->bcl, FLUSH);
     build_rcl(job);
-    if (job->bcl.failed || job->rcl.failed || job->state.failed) {
-        vc4_os_log("job: out of GPU memory for its lists");
+    if (job->bcl.failed || job->rcl.failed || job->state.failed)
         return -1;
-    }
     vc4_cl_flush(&job->bcl);
     vc4_cl_flush(&job->rcl);
     vc4_buf_flush(&job->state);
+    return 0;
+}
+
+int vc4_job_bin(struct vc4_job *job, uint32_t timeout_us)
+{
     job->overflows = 0;
+    job->out_of_overflow = 0;
     {
         uint32_t size, at = vc4_pools_overflow(job->pools, 0, &size);
         vc4_write(V3D_BPOA, at);
@@ -233,29 +235,56 @@ int vc4_job_run(struct vc4_job *job, uint32_t timeout_us)
     vc4_write(V3D_SLCACTL, 0x0f0f0f0fu); /* TMU1, TMU0, uniform, instruction caches of each slice */
     vc4_write(V3D_CT0CA, vc4_cl_start(&job->bcl));
     vc4_write(V3D_CT0EA, vc4_cl_end(&job->bcl)); /* starts the binner */
-    if (wait_count(job, V3D_BFC, timeout_us, &job->bin_us) < 0) {
-        vc4_reset("a binning job it did not finish");
+    if (wait_count(job, V3D_BFC, vc4_os_time_us(), timeout_us, &job->bin_us) < 0)
         return -2;
-    }
     job->errstat_bin = vc4_read(V3D_ERRSTAT);
+    return 0;
+}
+
+void vc4_job_render_start(struct vc4_job *job)
+{
     /* Before the render, as Linux's vc4_submit_next_render_job. */
     vc4_write(V3D_L2CACTL, V3D_L2CACTL_L2CCLR);
     vc4_write(V3D_SLCACTL, 0x0f0f0000u);
+    job->t_render = vc4_os_time_us();
     vc4_write(V3D_CT1CA, vc4_cl_start(&job->rcl));
     vc4_write(V3D_CT1EA, vc4_cl_end(&job->rcl));
-    if (wait_count(job, V3D_RFC, timeout_us, &job->render_us) < 0) {
-        vc4_reset("a render job it did not finish");
+}
+
+int vc4_job_render_wait(struct vc4_job *job, uint32_t timeout_us)
+{
+    uint32_t err;
+    if (wait_count(job, V3D_RFC, job->t_render, timeout_us, &job->render_us) < 0)
         return -3;
-    }
     err = vc4_read(V3D_ERRSTAT);
     job->errstat = err;
-    if (err != V3D_ERRSTAT_IDLE) {
-        /* The error bits stay set until written back (1 clears: found
-         * 2026-11-04; else every later job reports them) */
+    /* The error bits stay set until written back (1 clears: found
+     * 2026-11-04; else every later job reports them) */
+    if (err != V3D_ERRSTAT_IDLE)
         vc4_write(V3D_ERRSTAT, err & ~V3D_ERRSTAT_IDLE);
-        vc4_os_log("job: ERRSTAT 0x%08x after it, 0x%08x after its binning (0x%08x when all is well)", err,
-                   job->errstat_bin, V3D_ERRSTAT_IDLE);
-    }
+    return 0;
+}
 
+int vc4_job_run(struct vc4_job *job, uint32_t timeout_us)
+{
+    int r;
+    if (vc4_job_end_lists(job) < 0) {
+        vc4_os_log("job: out of GPU memory for its lists");
+        return -1;
+    }
+    if ((r = vc4_job_bin(job, timeout_us)) < 0) {
+        if (job->out_of_overflow)
+            vc4_os_log("job: the binner needs more than the pools' %u overflow chunks", job->pools->overflow_chunks);
+        vc4_reset("a binning job it did not finish");
+        return r;
+    }
+    vc4_job_render_start(job);
+    if ((r = vc4_job_render_wait(job, timeout_us)) < 0) {
+        vc4_reset("a render job it did not finish");
+        return r;
+    }
+    if (job->errstat != V3D_ERRSTAT_IDLE)
+        vc4_os_log("job: ERRSTAT 0x%08x after it, 0x%08x after its binning (0x%08x when all is well)", job->errstat,
+                   job->errstat_bin, V3D_ERRSTAT_IDLE);
     return 0;
 }
