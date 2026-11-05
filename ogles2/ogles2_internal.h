@@ -309,6 +309,10 @@ struct OGLES2Image
     UBYTE nkeyed_req;
     ULONG keyed_req[16];
     char *bind_src;
+    /* A backend's cache for the image (VC4: the variants chosen for its
+     * draws' latest keys, ogles2/vc4/draw_vc4.c): AllocVec'd, freed with the
+     * image, dropped when its keyed image is replaced. */
+    void *be_cache;
     struct OGLES2Image *next;             /* the context's program cache (program.c) */
 };
 

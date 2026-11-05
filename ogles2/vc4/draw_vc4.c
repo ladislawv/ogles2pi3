@@ -467,6 +467,57 @@ static void choose(struct OGLES2Context *ctx, struct vc4_draw *d, const struct O
     }
 }
 
+/* The image's last choices (its be_cache): a draw whose keys equal one's
+ * (a hash, then every byte) takes its variants without the search, which
+ * compares 292-byte keys variant by variant. A few entries an image: a
+ * program's draws mostly repeat a handful of states. */
+#define CHOICES 4
+struct choice
+{
+    ULONG h;
+    UBYTE used;
+    UBYTE keys[VC4_KEY_FS_BYTES + VC4_KEY_VS_BYTES];
+    struct chosen ch;
+};
+struct choices
+{
+    UBYTE next;
+    struct choice e[CHOICES];
+};
+
+static void choose_cached(struct OGLES2Context *ctx, struct vc4_draw *d, const struct OGLES2DrawCall *dc,
+                          const UBYTE *kfs, const UBYTE *kvs, BOOL points, struct chosen *ch)
+{
+    struct OGLES2Image *im = (struct OGLES2Image *)dc->p->image;
+    struct choices *c = im->be_cache;
+    struct choice *e;
+    ULONG h = 2166136261UL, i;
+    for (i = 0; i < VC4_KEY_FS_BYTES; i++)
+        h = (h ^ kfs[i]) * 16777619UL;
+    for (i = 0; i < VC4_KEY_VS_BYTES; i++)
+        h = (h ^ kvs[i]) * 16777619UL;
+    if (c)
+        for (i = 0; i < CHOICES; i++) {
+            e = &c->e[i];
+            if (e->used && e->h == h && !memcmp(e->keys, kfs, VC4_KEY_FS_BYTES) &&
+                !memcmp(e->keys + VC4_KEY_FS_BYTES, kvs, VC4_KEY_VS_BYTES)) {
+                *ch = e->ch;
+                return;
+            }
+        }
+    choose(ctx, d, dc, kfs, kvs, points, ch);
+    /* the search may have replaced the keyed image, and with it the cache */
+    if (!(c = im->be_cache) && !(c = im->be_cache = AllocVec(sizeof(*c), MEMF_ANY | MEMF_CLEAR)))
+        return;
+    e = &c->e[c->next];
+    c->next = (UBYTE)((c->next + 1) % CHOICES);
+    e->used = 1;
+    e->h = h;
+    memcpy(e->keys, kfs, VC4_KEY_FS_BYTES);
+    memcpy(e->keys + VC4_KEY_FS_BYTES, kvs, VC4_KEY_VS_BYTES);
+    e->ch = *ch;
+}
+
 static ULONG code_bus(const struct OGLES2Image *im, const struct OGLES2Variant *v)
 {
     return im->code_mem ? im->code_mem->busaddr + v->code_offset : 0;
@@ -508,7 +559,7 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
         ogles2_vc4_stencil_words(s, di.stencil, &twoside, &full);
     ogles2_vc4_draw_keys(ctx, p, mode, c->color_format,
                          (const struct vc4_key_sampler(*)[OGLES2_MAX_STAGE_SAMPLERS])sm.key, sm.n, points, kfs, kvs);
-    choose(ctx, d, dc, kfs, kvs, points, &ch);
+    choose_cached(ctx, d, dc, kfs, kvs, points, &ch);
     cs = ch.v[0];
     vs = ch.v[1];
     fs = ch.v[2];

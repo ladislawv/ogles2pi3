@@ -1277,6 +1277,10 @@ Everything that can run here runs here first (the developer, 2026-11-03).
      device on the Pi 3 (version 2); the Pi 4's stay version 1. A program from
      glProgramBinaryOES is loaded from the copy the library keeps (a VC4 image's keys point into
      its file); no `.v3dw` or `.v3da` is looked for on VC4 (its fragment key holds those states);
+     a draw whose two keys equal one of the image's last four (a hash, then every byte) takes
+     their variants without the search (which compares 292-byte keys variant by variant: too
+     slow on the 68k for every draw); the cache is the image's, freed with it and dropped when
+     its keyed image is replaced;
      the
      uniform streams of all of vc4's recipe types GLES2 uses (stencil words as Mesa's
      `vc4_state.c`, the blend colour in the target's byte order, the sample mask, the stream's

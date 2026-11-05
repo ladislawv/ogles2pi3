@@ -430,6 +430,8 @@ void ogles2_image_free(struct OGLES2Image *im, struct OGLES2Context *ctx)
     ogles2_image_free(im->wide, ctx); /* its code: deferred the same way */
     ogles2_image_free(im->a2c, ctx);
     ogles2_image_free(im->keyed, ctx);
+    if (im->be_cache)
+        FreeVec(im->be_cache);
     if (im->bind_src)
         FreeVec(im->bind_src);
     if (im->vs_src)

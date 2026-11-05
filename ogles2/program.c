@@ -1113,6 +1113,10 @@ const struct OGLES2Image *ogles2_image_keyed(struct OGLES2Context *ctx, struct O
                    (ULONG)path);
         ogles2_image_free(im->keyed, ctx); /* its code: after the open job */
         im->keyed = k;
+        if (im->be_cache) { /* it may name the old one's variants */
+            FreeVec(im->be_cache);
+            im->be_cache = 0;
+        }
     }
     return im->keyed;
 }
