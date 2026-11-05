@@ -1,0 +1,63 @@
+; Run-P5 - ogles2 P5 run 1: the Raspberry Pi 3 card's first run. See ReadMe.txt.
+;   CD to this directory, then:   Execute Run-P5
+;   After a reboot in the middle:  Execute Run-P5 FROM=<step>
+; Nothing is installed: libs/ is added to LIBS: for the run and removed at the
+; end. Output goes to results/.
+.key FROM/K
+.def FROM 1
+.bra {
+.ket }
+
+FailAt 21
+If NOT EXISTS libs/ogles2.library
+  Echo "Please CD into the ogles2-p5-1 directory first,"
+  Echo "then run:  Execute Run-P5"
+  Quit 20
+EndIf
+
+Assign P5RUN: ""
+If NOT EXISTS P5RUN:results
+  MakeDir P5RUN:results
+EndIf
+Echo "ogles2 P5 run 1, starting at step {FROM}" >>P5RUN:results/00-progress.txt
+Date >>P5RUN:results/00-progress.txt
+
+If NOT {FROM} GT 1 VAL
+  Echo "Step 1 of 4: the 3D core alone: its device tree facts and one triangle (nothing shown)"
+  P5RUN:bin/vc4_draw --dir=P5RUN:vc4p --refdir=P5RUN:ref triangle >P5RUN:results/1-triangle.txt
+  Echo "step 1 done" >>P5RUN:results/00-progress.txt
+EndIf
+
+If NOT {FROM} GT 2 VAL
+  Echo "Step 2 of 4: the 3D core alone: every case against Mesa's pictures (nothing shown)"
+  P5RUN:bin/vc4_draw --dir=P5RUN:vc4p --refdir=P5RUN:ref >P5RUN:results/2-cases.txt
+  Echo "step 2 done" >>P5RUN:results/00-progress.txt
+EndIf
+
+Assign LIBS: P5RUN:libs ADD
+SetEnv OGLES2/LogFile P5RUN:results/ogles2.log
+Avail FLUSH >NIL:
+
+If NOT {FROM} GT 3 VAL
+  Echo "Step 3 of 4: the library: smoke test (no drawing)"
+  P5RUN:bin/smoke >P5RUN:results/3-smoke.txt
+  Echo "step 3 done" >>P5RUN:results/00-progress.txt
+EndIf
+
+If NOT {FROM} GT 4 VAL
+  Echo "Step 4 of 4: the library: the GPU clears an application bitmap (nothing shown)"
+  P5RUN:bin/m1_clear BITMAP >P5RUN:results/4-bitmap.txt
+  Echo "step 4 done" >>P5RUN:results/00-progress.txt
+EndIf
+
+UnSetEnv OGLES2/LogFile
+Assign LIBS: P5RUN:libs REMOVE
+If NOT EXISTS P5RUN:results/notes.txt
+  Copy P5RUN:notes-template.txt P5RUN:results/notes.txt
+EndIf
+List P5RUN:results >P5RUN:results/99-files.txt
+Echo "finished" >>P5RUN:results/00-progress.txt
+Date >>P5RUN:results/00-progress.txt
+Assign P5RUN:
+Echo ""
+Echo "Done. Please add a few words to results/notes.txt and send the results directory back."

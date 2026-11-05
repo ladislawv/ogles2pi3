@@ -310,6 +310,12 @@ $(B)/amictl/amictld: $(AMICTL_SRC) tools/amictl/server/os_amiga.c Makefile
 	@mkdir -p $(dir $@)
 	$(CC) -std=gnu99 -O2 -Wall -Wno-pointer-sign -mcpu=68020 -mcrt=nix20 -fbbb=abcfhilmnprsz0 \
 	    -o $@ tools/amictl/server/amictld.c tools/amictl/server/os_amiga.c
+# vc4core's cases (tests/pi3/vc4core, Linux) on AmigaOS with os_amiga.c: the
+# Pi 3 card's bring-up under Emu68, against the same Mesa pictures.
+$(B)/tests/vc4_draw: tests/pi3/vc4core/draw.c tests/pi3/vc4core/vc4p.c tests/pi3/vc4core/vc4p.h tests/pi3/ref/cases.h \
+                     $(VC4_SRC:%=vc4core/%.c) $(VC4_HDR) Makefile
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(VC4_INC) -o $@ tests/pi3/vc4core/draw.c tests/pi3/vc4core/vc4p.c $(VC4_SRC:%=vc4core/%.c)
 # The shader compiler on the PC (tools/amictl/compile_bridge.py's peer).
 $(B)/amictl/v3dglslc-remote: tools/amictl/server/v3dglslc_remote.c v3dp/v3dglsl_port.h Makefile
 	@mkdir -p $(dir $@)

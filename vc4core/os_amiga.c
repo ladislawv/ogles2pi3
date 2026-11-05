@@ -301,8 +301,17 @@ int vc4_os_mbox(uint32_t tag, uint32_t *val, int n)
 
 int vc4_os_open(void)
 {
+    static int told;
     if (read_tree() < 0)
         return -1;
+    if (!told) { /* Emu68's facts (docs/PI3_PLAN.md §7), once */
+        told = 1;
+        vc4_os_log("device tree: /soc 0x%08x -> 0x%08x; RAM 0x%08x is bus 0x%08x; mailbox at 0x%08x, 3D core at "
+                   "0x%08x, timer at 0x%08x; %d RAM range(s), the first 0x%08x-0x%08x",
+                   (unsigned)soc_bus, (unsigned)soc_cpu, (unsigned)dma_cpu, (unsigned)dma_bus, (unsigned)mbox,
+                   (unsigned)regs, (unsigned)systimer, ram_ranges, (unsigned)(ram_ranges ? ram_lo[0] : 0),
+                   (unsigned)(ram_ranges ? ram_hi[0] : 0));
+    }
     if (!mbreq_block) {
         if (!(mbreq_block = AllocVec(256 + 16, MEMF_FAST | MEMF_PUBLIC | MEMF_CLEAR)))
             return -1;

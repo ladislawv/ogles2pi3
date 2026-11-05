@@ -36,9 +36,9 @@ void vc4_mem_write(struct vc4_mem *m, uint32_t off, const void *src, uint32_t le
 {
     const uint8_t *s = src;
     uint32_t k;
-    for (k = 0; k < len; k += 4)
-        *(volatile uint32_t *)(m->cpu + off + k) =
-            (uint32_t)s[k] | (uint32_t)s[k + 1] << 8 | (uint32_t)s[k + 2] << 16 | (uint32_t)s[k + 3] << 24;
+    for (k = 0; k < len; k += 4) /* the bytes in their order, on either host */
+        vc4_put32(m->cpu + off + k,
+                  (uint32_t)s[k] | (uint32_t)s[k + 1] << 8 | (uint32_t)s[k + 2] << 16 | (uint32_t)s[k + 3] << 24);
 }
 
 /* The binner's memory for tiles_x x tiles_y tiles: the tile state data

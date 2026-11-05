@@ -19,6 +19,8 @@
  *   speed     GPU-only numbers on a 1024x768 frame (named only: not in the
  *             default list or a soak's)
  *   sudo ./vc4_draw --dir=VC4P_DIR --refdir=PPM_DIR [--soak=ROUNDS [--loud]] [--passes=N] [CASE...]
+ * Also built for AmigaOS (the Makefile's tests/vc4_draw, with os_amiga.c):
+ * the Pi 3 card's bring-up under Emu68, the same cases and pictures.
  * The .vc4p files are named as v3dglslc -o names them
  * (<vertex>-<fragment>.vc4p for these).
  *
@@ -29,6 +31,11 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#ifdef __amigaos__
+#define NULL_DEVICE "NIL:"
+#else
+#define NULL_DEVICE "/dev/null"
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -37,6 +44,15 @@
 #define H 128
 
 static int failures;
+
+#ifdef __amigaos__
+/* os_amiga.c's log lines (the library has its own) */
+void vc4_os_log_line(const char *line)
+{
+    printf("vc4core: %s\n", line);
+}
+#endif
+
 static const char *dir = ".", *refdir = ".";
 static struct vc4_pools pools;
 static struct vc4_job job;
@@ -1268,6 +1284,10 @@ int main(int argc, char **argv)
     if (!n)
         for (k = 0; k < NCASES; k++)
             names[n++] = all_cases[k];
+    if (!vc4_os_present()) { /* the Pi 4 card: its V3D 4.2 is elsewhere */
+        printf("vc4_draw: the device tree names no VideoCore IV (the Pi 3 card is not in?)\n");
+        return 20;
+    }
     if (vc4_open() < 0)
         return 2;
     if (vc4_pools_init(&pools, 4, 4) < 0 /* 128x128 in 32x32 tiles (MSAA) */ || vc4_job_init(&job) < 0 ||
@@ -1282,7 +1302,7 @@ int main(int argc, char **argv)
          * one every tenth round with 2 draws unless --passes says), each
          * picture checked; only the rounds with failures reported, unless
          * --loud. */
-        int round, quiet = open("/dev/null", O_WRONLY), out = dup(1), before;
+        int round, quiet = open(NULL_DEVICE, O_WRONLY), out = dup(1), before;
         long jobs = 0;
         uint64_t t0 = vc4_os_time_us();
         int passes_given = overflow_passes != 6;

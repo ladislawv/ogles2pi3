@@ -1067,7 +1067,15 @@ Everything that can run here runs here first (the developer, 2026-11-03).
   RTG driver. Read with `Emu68DeviceTree` (PiStorm3D's tool) as in DEVELOPMENT_PLAN §13 (run 1),
   and from Emu68's source (`src/aarch64/start.c`, `src/raspi/start_rpi64.c`).
 - **The probe again under AmigaOS** (`tests/pi3_probe/`'s m68k build): power-on, identity, a clear,
-  a triangle; then the library.
+  a triangle; then the library. **Prepared (2026-11-05) as the package `tests/a1200/p5-1`**, with
+  vc4core's own cases instead of the probe: `tests/vc4_draw` (the Makefile: `tests/pi3/vc4core`'s
+  `draw.c` and `vc4p.c` with vc4core and `os_amiga.c`) draws the triangle, then every case, against
+  Mesa's pictures from the test Pi 3 (in the package), nothing shown; `os_amiga.c` logs what it read
+  from the device tree (the `/soc` mapping, the RAM's bus address, the mailbox, the 3D core, the
+  timer, the RAM ranges) for this section; then the sync-logging library's smoke test and
+  `m1_clear BITMAP` through the VC4 backend. `vc4_draw` refuses to run without a VideoCore IV in
+  the device tree. Two stores that assumed a little-endian host were found and fixed on the way
+  (`vc4_mem_write`, the test loader's code copy).
 - **GPU reachability:** `ogles2_device_gpu_reachable` (DEVELOPMENT_PLAN §7.3) checks the RAM
   ranges on both; `vc4core` turns a 68k address into a bus address through the alias.
 - **The test station:** `tools/amictl` as now; the same `tests/a1200/` packages on both cards, run
@@ -1307,5 +1315,6 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    the CPU without a log line each time. To verify at the first run with the Pi 3 card: that Emu68 maps
    the peripherals at 0xF2000000 there too (the front end's clock reads the system timer at a
    fixed address), the winding bit (the V3D backend's rule), the point coordinates' origin.
-   Next in P5: the first run on the A1200 with the Pi 3 card (Emu68's facts, §7; then the test
-   packages); meanwhile the GPU paths of glGenerateMipmap and glCopyTex*.
+   Next in P5: the first run on the A1200 with the Pi 3 card, the package `p5-1` (§7: Emu68's facts,
+   vc4core under AmigaOS, the library's first clears; then the test packages); meanwhile the GPU
+   paths of glGenerateMipmap and glCopyTex*.

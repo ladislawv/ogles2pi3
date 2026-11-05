@@ -414,9 +414,8 @@ int vc4p_emit(struct vc4_job *job, const struct vc4p_draw *d, uint16_t width, ui
         if (!c)
             return -1;
         for (i = 0; i < st[k]->code_bytes; i += 4)
-            *(volatile uint32_t *)(c + i) = (uint32_t)st[k]->code[i] | (uint32_t)st[k]->code[i + 1] << 8 |
-                                            (uint32_t)st[k]->code[i + 2] << 16 |
-                                            (uint32_t)st[k]->code[i + 3] << 24;
+            vc4_put32(c + i, (uint32_t)st[k]->code[i] | (uint32_t)st[k]->code[i + 1] << 8 |
+                                 (uint32_t)st[k]->code[i + 2] << 16 | (uint32_t)st[k]->code[i + 3] << 24);
         if (stream(job, d, st[k], &unif[k]) < 0)
             return -1;
     }
