@@ -12,6 +12,12 @@
  * 16 bytes), the draws clipped to the visible width; the columns past it
  * are the bitmap's padding and get the clear colour. A bitmap with other
  * rows is not drawn into (the copy from a buffer of our own: left, §10).
+ * A bitmap that does not start on 16 bytes (the stores ignore the low 4
+ * bits) or lies outside the GPU's memory: the frame goes into a buffer of
+ * the context's in the bitmap's layout, copied into it after the render
+ * while it is locked (window and bitmap modes, whose renders are waited for
+ * at the flush; a screen of our own, whose render runs on, is on 16 bytes
+ * in the firmware's framebuffer memory on Emu68, P5 run 1).
  *
  * Depth and stencil: the tile buffer's (Z24S8), cleared at a job's start;
  * kept across a mid-frame flush in a T-format image of the context's (4x
@@ -39,6 +45,9 @@
 /* The job on the GPU (one at a time: job.c's take_gpu), and its number. */
 static struct vc4_job *running;
 static UBYTE running_frame, frames;
+/* its frame's copy into the display's bitmap (vc4_ctx's shadow): 0 none */
+static ULONG running_copy_to, running_copy_len;
+static uint8_t *running_copy_from;
 static ULONG errors_logged;
 
 /* ---- blocks freed after a job ---- */
@@ -226,7 +235,34 @@ BOOL ogles2_vc4_job_build(struct OGLES2Context *ctx, const struct OGLES2Target *
             return FALSE;
         }
         t->width = (UWORD)fw;
-        t->color.bus = ogles2_vc4_bus(ctx->display.base);
+        c->copy_to[c->build] = 0;
+        if (!(ctx->display.base & 15) && vc4_os_gpu_reachable(ctx->display.base, bprow * (ULONG)ctx->height)) {
+            t->color.bus = ogles2_vc4_bus(ctx->display.base);
+        } else {
+            /* The stores ignore the address's low 4 bits (the frame would
+             * land up to 12 bytes early, over what lies before the bitmap:
+             * P5 run 1, AllocBitMap's 0x...b4 and the allocator's header;
+             * vc4_draw rasteroff), and cannot reach other memory: the
+             * context's buffer, the bitmap's layout, copied after the
+             * render (wait_render), the bitmap's picture copied in first
+             * when the frame keeps it. */
+            ULONG len = bprow * (ULONG)ctx->height;
+            if (c->shadow.size < len) {
+                if (c->shadow.size)
+                    vc4_mem_free(&c->shadow);
+                if (vc4_mem_alloc(&c->shadow, len) < 0) {
+                    c->shadow.size = 0;
+                    c->why_bad = "no GPU memory for a copy of the display's bitmap (it does not start on 16 "
+                                 "bytes, or the GPU does not reach it)";
+                    return FALSE;
+                }
+            }
+            if (!ctx->job_clear_color)
+                CopyMem((APTR)ctx->display.base, c->shadow.cpu, len);
+            t->color.bus = c->shadow.bus;
+            c->copy_to[c->build] = ctx->display.base;
+            c->copy_len[c->build] = len;
+        }
         t->color.tiling = VC4_TILING_RASTER;
         t->color.format = VC4_COLOR_RGBA8888;
         t->store = VC4_COLOR;
@@ -276,6 +312,11 @@ BOOL ogles2_vc4_job_build(struct OGLES2Context *ctx, const struct OGLES2Target *
         c->why_bad = "out of GPU memory for its lists";
         return FALSE;
     }
+    if (ctx->frames < 2) { /* P5: each context's first jobs' targets, logged at job_end (the bitmap is locked now) */
+        c->told_target = 1;
+        c->t_clear = t->clear, c->t_load = t->load, c->t_store = t->store;
+        c->t_clear_z = t->clear_z, c->t_clear_s = t->clear_s;
+    }
     c->why_bad = 0;
     return TRUE;
 }
@@ -295,6 +336,9 @@ UBYTE ogles2_vc4_job_render(struct OGLES2Context *ctx)
     struct vc4_ctx *c = VC4_CTX(ctx);
     running = &c->job[c->build];
     running_frame = ++frames;
+    running_copy_to = c->copy_to[c->build];
+    running_copy_len = c->copy_len[c->build];
+    running_copy_from = c->shadow.cpu;
     vc4_job_render_start(running);
     return running_frame;
 }
@@ -305,7 +349,18 @@ int ogles2_vc4_wait_render(UBYTE frame)
     if (!j || frame != running_frame)
         return OGLES2_WAIT_OK; /* waited for already */
     running = 0;
-    return vc4_job_render_wait(j, RENDER_TIMEOUT_US) < 0 ? OGLES2_WAIT_TIMED_OUT : OGLES2_WAIT_OK;
+    if (vc4_job_render_wait(j, RENDER_TIMEOUT_US) < 0)
+        return OGLES2_WAIT_TIMED_OUT;
+    if (running_copy_to) {
+        /* The frame from the context's buffer into the display's bitmap
+         * (still locked: the front end unlocks it after this wait), out of
+         * the CPU's cache before the front end's CachePostDMA over it. */
+        vc4_os_invalidate(running_copy_from, running_copy_len);
+        CopyMem(running_copy_from, (APTR)running_copy_to, running_copy_len);
+        vc4_os_flush((const void *)running_copy_to, running_copy_len);
+        running_copy_to = 0;
+    }
+    return OGLES2_WAIT_OK;
 }
 
 /* After a render that finished (the locks given up): the blocks its job
@@ -330,7 +385,19 @@ void ogles2_vc4_job_end(struct OGLES2Context *ctx, BOOL submitted)
     struct vc4_ctx *c = VC4_CTX(ctx);
     if (c->why_bad && !c->bad) /* job_build's reason (the frame was dropped: logged as an overflow) */
         ogles2_log("job: %s", (ULONG)c->why_bad);
+    if (c->told_target) {
+        c->told_target = 0;
+        ogles2_log("job: clear %lx load %lx store %lx, depth 0x%06lx stencil %ld%s", (ULONG)c->t_clear,
+                   (ULONG)c->t_load, (ULONG)c->t_store, c->t_clear_z, (ULONG)c->t_clear_s,
+                   (ULONG)(submitted ? "" : " (not submitted)"));
+    }
     c->why_bad = 0;
+    if (submitted && c->copy_to[c->build] && !c->told_shadow) {
+        c->told_shadow = TRUE;
+        ogles2_log("job: the display's bitmap (0x%08lx) does not start on 16 bytes or is outside the GPU's memory: "
+                   "drawn into a buffer of the context's and copied (logged once a context)",
+                   c->copy_to[c->build]);
+    }
     if (submitted) {
         c->build = (UBYTE)(1 - c->build);
     } else {

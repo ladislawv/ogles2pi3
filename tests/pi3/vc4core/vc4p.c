@@ -482,9 +482,18 @@ int vc4p_emit(struct vc4_job *job, const struct vc4p_draw *d, uint16_t width, ui
         const uint8_t *s = d->attr[k].data;
         if (!a)
             return -1;
-        for (i = 0; i < d->attr[k].size; i += 4)
-            vc4_put32(a + i, (uint32_t)s[i] | (uint32_t)s[i + 1] << 8 | (uint32_t)s[i + 2] << 16 |
-                                 (uint32_t)s[i + 3] << 24);
+        /* 32-bit components (floats) as the host's words, bytes in memory
+         * order: on the 68k the two differ (big-endian host, P5). */
+        if (vs->attr_formats[k] == VC4P_FORMAT_R8G8B8A8_UNORM)
+            for (i = 0; i < d->attr[k].size; i += 4)
+                vc4_put32(a + i, (uint32_t)s[i] | (uint32_t)s[i + 1] << 8 | (uint32_t)s[i + 2] << 16 |
+                                     (uint32_t)s[i + 3] << 24);
+        else
+            for (i = 0; i < d->attr[k].size; i += 4) {
+                uint32_t w;
+                memcpy(&w, s + i, 4);
+                vc4_put32(a + i, w);
+            }
     }
     /* The shader record, Mesa's vc4_emit_gl_shader_state. */
     r = vc4_buf_alloc(&job->state, 36 + 8 * n, 16, &rec);

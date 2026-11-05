@@ -110,7 +110,8 @@ static void build_rcl(struct vc4_job *job)
 {
     const struct vc4_target *t = &job->target;
     struct vc4_cl *cl = &job->rcl;
-    int load_c = (t->load & VC4_COLOR) && !(t->clear & VC4_COLOR) && t->color.bus;
+    uint32_t load_bus = t->color_load_bus ? t->color_load_bus : t->color.bus;
+    int load_c = (t->load & VC4_COLOR) && !(t->clear & VC4_COLOR) && load_bus;
     int load_zs = (t->load & VC4_ZS) && !(t->clear & VC4_ZS) && t->zs.bus;
     int store_c = (t->store & VC4_COLOR) && t->color.bus;
     int store_zs = (t->store & VC4_ZS) && t->zs.bus;
@@ -143,7 +144,7 @@ static void build_rcl(struct vc4_job *job)
             int first = !x && !y, last = x == job->tiles_x - 1 && y == job->tiles_y - 1;
             if (load_c)
                 VC4_EMIT(cl, LOAD_TILE_BUFFER_GENERAL,
-                         .memory_base_address_of_frame_tile_dump_buffer = t->color.bus,
+                         .memory_base_address_of_frame_tile_dump_buffer = load_bus,
                          .buffer_to_store = VC4_BUFFER_TO_STORE_COLOR,
                          .format = t->color.tiling,
                          .pixel_color_format = pixel_format(t->color.format));

@@ -20,4 +20,9 @@ mkdir -p "$PKG/libs" "$PKG/bin" "$PKG/vc4p" "$PKG/ref"
 cp "$BS/ogles2.library" "$PKG/libs/"
 cp "$B/tests/vc4_draw" "$BS/tests/m1_clear" "$BS/tests/smoke" "$BS/cmd/OGLES2Log" "$PKG/bin/"
 cp "$P3"/vc4p/*.vc4p "$PKG/vc4p/"
-scp -q 'pi3:pi3/ref/out/mesa_*.ppm' "$PKG/ref/" || { echo "Mesa's pictures: the Pi 3 (pi3) did not answer"; exit 1; }
+# REF=<dir>: Mesa's pictures from there (a copy kept while the Pi 3 is in the PiStorm)
+if [ -n "${REF:-}" ]; then
+    cp "$REF"/mesa_*.ppm "$PKG/ref/"
+else
+    scp -q 'pi3:pi3/ref/out/mesa_*.ppm' "$PKG/ref/" || { echo "Mesa's pictures: the Pi 3 (pi3) did not answer (REF=<dir> takes a copy)"; exit 1; }
+fi

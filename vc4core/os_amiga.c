@@ -317,6 +317,30 @@ int vc4_os_open(void)
             return -1;
         mbreq = (uint8_t *)(((ULONG)mbreq_block + 15) & ~15u);
     }
+    {
+        /* The firmware's split of the RAM, ARM's and the VideoCore's, both
+         * reached by the GPU through the same alias: the device tree's
+         * memory node lists only what Emu68 gave AmigaOS, while the RTG
+         * driver's bitmaps are in the firmware's framebuffer memory, mapped
+         * 1:1 (P5 run 1: the Workbench screen at 0x38e00000, read by the GPU
+         * at 0xf8e00000 word for word, vc4_draw peekscreen). */
+        static const uint32_t tags[2] = {0x00010005u /* ARM memory */, 0x00010006u /* VideoCore memory */};
+        static int told_split;
+        int k;
+        for (k = 0; k < 2 && ram_ranges < MAX_RAM; k++) {
+            uint32_t v[2] = {0, 0};
+            if (vc4_os_mbox(tags[k], v, 2) < 8 || !v[1])
+                continue;
+            ram_lo[ram_ranges] = dma_cpu + v[0];
+            ram_hi[ram_ranges] = dma_cpu + v[0] + v[1];
+            if (!told_split)
+                vc4_os_log("mailbox: %s memory 0x%08x-0x%08x (68k), reached by the GPU",
+                           k ? "the VideoCore's" : "the ARM's", (unsigned)ram_lo[ram_ranges],
+                           (unsigned)ram_hi[ram_ranges]);
+            ram_ranges++;
+        }
+        told_split = 1;
+    }
     return 0;
 }
 

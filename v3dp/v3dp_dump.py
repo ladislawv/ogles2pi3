@@ -159,11 +159,13 @@ def vc4_variant(r):
     for i in range(16):
         fmt, swz = r.u32(), r.u8s(4)
         cm, cf, ws, wt, ffl = r.u8(), r.u8(), r.u8(), r.u8(), r.u8()
-        r.pad(3)
-        if fmt or any(swz) or cm or cf or ws or wt or ffl:
-            tex.append("%d:fmt%d swz%s wrap%d,%d%s%s" % (i, fmt, "".join(map(str, swz)), ws, wt,
-                                                       " cmp%d/%d" % (cm, cf) if cm else "",
-                                                       " first-level" if ffl else ""))
+        emu, aniso = r.u8(), r.u8()  # patch 0019: bit 0 LOD bias, bit 1 LOD clamp; 2^aniso lookups
+        r.pad(1)
+        if fmt or any(swz) or cm or cf or ws or wt or ffl or emu or aniso:
+            tex.append("%d:fmt%d swz%s wrap%d,%d%s%s%s%s%s" % (
+                i, fmt, "".join(map(str, swz)), ws, wt, " cmp%d/%d" % (cm, cf) if cm else "",
+                " first-level" if ffl else "", " lod-bias" if emu & 1 else "",
+                " lod-clamp" if emu & 2 else "", " aniso%d" % aniso if aniso else ""))
     if tex:
         k["tex"] = " ".join(tex)
     if stage == 4:
@@ -181,7 +183,8 @@ def vc4_variant(r):
     else:
         k["attr_formats"] = r.u32s(8)
         k["is_coord"], k["per_vertex_point_size"] = r.u8(), r.u8()
-        r.pad(2)
+        k["clip_halfz"] = r.u8()  # patch 0020
+        r.pad(1)
         k["fs_inputs"] = vc4_inputs(r)
     d = {}
     for f in "fs_threaded num_inputs vattrs_live disable_early_z".split():

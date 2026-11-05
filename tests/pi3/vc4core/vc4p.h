@@ -61,6 +61,8 @@ struct vc4p_attrib
     uint32_t type, slot;
 };
 
+/* About 165 KB: static, never on the stack (the A1200's jobs get 200 KB;
+ * two of them overflowed it in rtt, P5 run 1). */
 struct vc4p
 {
     uint32_t cbuf_words[2];       /* vertex, fragment */

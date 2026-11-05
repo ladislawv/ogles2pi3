@@ -1,0 +1,581 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 aglCreateContext2: probes "T" (ENV:OGLES2/Probe)
+    10 display: render bitmap at 0x09830644, 1024 bytes a row: in memory the GPU reaches
+    11 display: application bitmap, 256x128, BGRA
+    12 aglCreateContext2: context 0x08F79CE4, 256x128
+    13 compiler: Stuff:amictld/work/ogles2-m6-6/libs/v3dglslc, 78 bytes, id 34E713EE
+    14 compiler: shader compiled in 180 ms
+    15 compiler: shader compiled in 40 ms
+    16 compiler: program compiled in 320 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p
+    17 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+    18 compiler: shader compiled in 240 ms
+    19 compiler: shader compiled in 80 ms
+    20 compiler: program compiled in 1280 ms, OGLES2Cache:1656c863a995438bf1702079.vc4p
+    21 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+    22 compiler: shader compiled in 160 ms
+    23 compiler: program compiled in 160 ms, OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4p
+    24 glLinkProgram: OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4p (3 variants, 464 bytes of code)
+    25 compiler: shader compiled in 160 ms
+    26 compiler: program compiled in 720 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4p
+    27 glLinkProgram: OGLES2Cache:20eb75f38febbc45b4acb470.vc4p (3 variants, 384 bytes of code)
+    28 compiler: shader compiled in 80 ms
+    29 compiler: program compiled in 80 ms, OGLES2Cache:82b090295244c1a5b86feecf.vc4p
+    30 glLinkProgram: OGLES2Cache:82b090295244c1a5b86feecf.vc4p (3 variants, 408 bytes of code)
+    31 texture 1: 100x60, 7 levels stored at +0x3000 +0x1000 +0x800 ... (T), bus 0xC98DF000
+    32 compiler: program compiled in 240 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    33 draw: program 1656c863a995438bf1702079: 4 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    34 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    35 trace: glDeleteTextures #1: 1 names from 1
+    36 texture 1: 4x4, 3 levels stored at +0x1000 +0xFC0 +0xF80 ... (LT), bus 0xC97A8000
+    37 draw: sampler 0 emulated: force_first 0 bias 0 clamp 0 aniso 2, first 0, P0 0xC97A9002; bias 0/100, LOD -100000/100..200/100, 4x4
+    38 compiler: program compiled in 640 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    39 draw: program 1656c863a995438bf1702079: 5 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    40 trace: glDeleteTextures #2: 1 names from 1
+    41 texture 1: 4x4, 3 levels stored at +0x1000 +0xFC0 +0xF80 ... (LT), bus 0xC97A5000
+    42 draw: sampler 0 emulated: force_first 0 bias 1 clamp 0 aniso 0, first 0, P0 0xC97A6002; bias 100/100, LOD -100000/100..200/100, 4x4
+    43 compiler: program compiled in 180 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    44 draw: program 1656c863a995438bf1702079: 6 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    45 draw: sampler 0 emulated: force_first 0 bias 1 clamp 0 aniso 0, first 0, P0 0xC97A6002; bias 200/100, LOD -100000/100..200/100, 4x4
+    46 draw: sampler 0 emulated: force_first 0 bias 1 clamp 0 aniso 0, first 0, P0 0xC97A6001; bias 200/100, LOD -100000/100..100/100, 4x4
+    47 draw: sampler 0 emulated: force_first 0 bias 0 clamp 1 aniso 0, first 1, P0 0xC97A6002; bias 0/100, LOD 100/100..200/100, 4x4
+    48 compiler: program compiled in 300 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    49 draw: program 1656c863a995438bf1702079: 7 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    50 draw: sampler 0 emulated: force_first 0 bias 0 clamp 1 aniso 0, first 0, P0 0xC97A6002; bias 0/100, LOD 200/100..200/100, 4x4
+    51 draw: sampler 0 emulated: force_first 0 bias 1 clamp 1 aniso 0, first 0, P0 0xC97A6002; bias 200/100, LOD -100000/100..100/100, 4x4
+    52 compiler: program compiled in 520 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    53 draw: program 1656c863a995438bf1702079: 8 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    54 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 2, P0 0xC97A6002; bias 0/100, LOD 200/100..200/100, 4x4
+    55 compiler: program compiled in 340 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    56 draw: program 1656c863a995438bf1702079: 9 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    57 texture 1 sampled while incomplete or not stored: it reads black (logged once a texture)
+    58 trace: glDeleteTextures #3: 1 names from 1
+    59 compiler: program compiled in 180 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    60 draw: program 1656c863a995438bf1702079: 10 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    61 trace: glDeleteTextures #4: 1 names from 1
+    62 compiler: shader compiled in 20 ms
+    63 compiler: shader compiled in 40 ms
+    64 compiler: program compiled in 40 ms, OGLES2Cache:d539b785b0d8a841564cc9c5.vc4p
+    65 glLinkProgram: OGLES2Cache:d539b785b0d8a841564cc9c5.vc4p (3 variants, 552 bytes of code)
+    66 compiler: program compiled in 100 ms, OGLES2Cache:d539b785b0d8a841564cc9c5.vc4k
+    67 draw: program d539b785b0d8a841564cc9c5: 4 variants for other draws, compiled (OGLES2Cache:d539b785b0d8a841564cc9c5.vc4k)
+    68 compiler: program compiled in 1020 ms, OGLES2Cache:d539b785b0d8a841564cc9c5.vc4k
+    69 draw: program d539b785b0d8a841564cc9c5: 5 variants for other draws, compiled (OGLES2Cache:d539b785b0d8a841564cc9c5.vc4k)
+    70 trace: glDeleteTextures #5: 1 names from 1
+    71 compiler: program compiled in 300 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    72 draw: program b5dddc8cd309fdea4d334b4b: 4 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    73 compiler: program compiled in 100 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    74 draw: program b5dddc8cd309fdea4d334b4b: 5 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    75 compiler: program compiled in 300 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    76 draw: program b5dddc8cd309fdea4d334b4b: 8 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    77 trace: glDeleteBuffers #6: 1 names from 1
+    78 glProgramBinaryOES: refused: CRC mismatch (damaged file)
+    79 trace: glDeleteTextures #7: 1 names from 1
+    80 compiler: program compiled in 300 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+    81 draw: program 20eb75f38febbc45b4acb470: 4 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+    82 compiler: program compiled in 820 ms, OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k
+    83 draw: program fefb2ddbea600443ecbddbd7: 4 variants for other draws, compiled (OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k)
+    84 compiler: program compiled in 60 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+    85 draw: program 20eb75f38febbc45b4acb470: 5 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+    86 trace: glDeleteTextures #8: 1 names from 1
+    87 trace: glDeleteTextures #9: 1 names from 2
+    88 texture 1: 4x4, 3 levels stored at +0x1000 +0xFC0 +0xF80 ... (LT), bus 0xC98DE000
+    89 draw: sampler 0 emulated: force_first 0 bias 1 clamp 0 aniso 0, first 0, P0 0xC98DF092; bias 200/100, LOD -100000/100..200/100, 4x4
+    90 compiler: program compiled in 460 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+    91 draw: program 20eb75f38febbc45b4acb470: 6 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+    92 trace: glDeleteTextures #10: 1 names from 1
+    93 trace: glDeleteTextures #11: 1 names from 1
+    94 trace: glDeleteTextures #12: 1 names from 1
+    95 compiler: program compiled in 380 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+    96 draw: program 20eb75f38febbc45b4acb470: 7 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+    97 trace: glDeleteTextures #13: 1 names from 1
+    98 compiler: program compiled in 460 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    99 draw: program b5dddc8cd309fdea4d334b4b: 9 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   100 trace: glDeleteTextures #14: 1 names from 2
+   101 trace: glDeleteTextures #15: 1 names from 1
+   102 trace: glDeleteTextures #16: 1 names from 2
+   103 trace: glDeleteTextures #17: 1 names from 1
+   104 compiler: program compiled in 1320 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   105 draw: program b5dddc8cd309fdea4d334b4b: 10 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   106 compiler: program compiled in 240 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+   107 draw: program 20eb75f38febbc45b4acb470: 8 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+   108 trace: glDeleteTextures #18: 1 names from 2
+   109 trace: glDeleteTextures #19: 1 names from 1
+   110 compiler: program compiled in 800 ms, OGLES2Cache:82b090295244c1a5b86feecf.vc4k
+   111 draw: program 82b090295244c1a5b86feecf: 4 variants for other draws, compiled (OGLES2Cache:82b090295244c1a5b86feecf.vc4k)
+   112 compiler: program compiled in 160 ms, OGLES2Cache:82b090295244c1a5b86feecf.vc4k
+   113 draw: program 82b090295244c1a5b86feecf: 5 variants for other draws, compiled (OGLES2Cache:82b090295244c1a5b86feecf.vc4k)
+   114 trace: glDeleteTextures #20: 1 names from 2
+   115 trace: glDeleteTextures #21: 1 names from 1
+   116 marker: event "m6_ext: an event marker"
+   117 marker: group "m6_ext: a group"
+   118 marker:   event "inside "
+   119 marker:   group "nested"
+   120 marker:   end of group ""
+   121 marker: end of group ""
+   122 marker: group "deep"
+   123 marker:   group "deep"
+   124 marker:     group "deep"
+   125 marker:       group "deep"
+   126 marker:         group "deep"
+   127 marker:           group "deep"
+   128 marker:             group "deep"
+   129 marker:               group "deep"
+   130 marker:                 group "deep"
+   131 marker:                   group "deep"
+   132 marker:                     group "deep"
+   133 marker:                       group "deep"
+   134 marker:                         group "deep"
+   135 marker:                           group "deep"
+   136 marker:                             group "deep"
+   137 marker:                               group "deep"
+   138 marker:                                 group "deep"
+   139 marker:                                   group "deep"
+   140 marker:                                     group "deep"
+   141 marker:                                       group "deep"
+   142 marker:                                         group "deep"
+   143 marker:                                           group "deep"
+   144 marker:                                             group "deep"
+   145 marker:                                               group "deep"
+   146 marker:                                                 group "deep"
+   147 marker:                                                   group "deep"
+   148 marker:                                                     group "deep"
+   149 marker:                                                       group "deep"
+   150 marker:                                                         group "deep"
+   151 marker:                                                           group "deep"
+   152 marker:                                                             group "deep"
+   153 marker:                                                               group "deep"
+   154 marker:                                                                 group "deep"
+   155 marker:                                                                 group "deep"
+   156 marker:                                                                 group "deep"
+   157 marker:                                                                 group "deep"
+   158 marker:                                                                 group "deep"
+   159 marker:                                                                 group "deep"
+   160 marker:                                                                 group "deep"
+   161 marker:                                                                 group "deep"
+   162 marker:                                                                 group "deep"
+   163 marker:                                                                 group "deep"
+   164 marker:                                                                 group "deep"
+   165 marker:                                                                 group "deep"
+   166 marker:                                                                 group "deep"
+   167 marker:                                                                 group "deep"
+   168 marker:                                                                 group "deep"
+   169 marker:                                                                 group "deep"
+   170 marker:                                                                 group "deep"
+   171 marker:                                                                 group "deep"
+   172 marker:                                                                 group "deep"
+   173 marker:                                                                 group "deep"
+   174 marker:                                                                 group "deep"
+   175 marker:                                                                 group "deep"
+   176 marker:                                                                 group "deep"
+   177 marker:                                                                 group "deep"
+   178 marker:                                                                 group "deep"
+   179 marker:                                                                 group "deep"
+   180 marker:                                                                 group "deep"
+   181 marker:                                                                 group "deep"
+   182 marker:                                                                 group "deep"
+   183 marker:                                                                 group "deep"
+   184 marker:                                                                 group "deep"
+   185 marker:                                                                 group "deep"
+   186 marker:                                                                 group "deep"
+   187 marker:                                                                 group "deep"
+   188 marker:                                                                 group "deep"
+   189 marker:                                                                 group "deep"
+   190 marker:                                                                 group "deep"
+   191 marker:                                                                 group "deep"
+   192 marker:                                                                 end of group ""
+   193 marker:                                                                 end of group ""
+   194 marker:                                                                 end of group ""
+   195 marker:                                                                 end of group ""
+   196 marker:                                                                 end of group ""
+   197 marker:                                                                 end of group ""
+   198 marker:                                                                 end of group ""
+   199 marker:                                                                 end of group ""
+   200 marker:                                                                 end of group ""
+   201 marker:                                                                 end of group ""
+   202 marker:                                                                 end of group ""
+   203 marker:                                                                 end of group ""
+   204 marker:                                                                 end of group ""
+   205 marker:                                                                 end of group ""
+   206 marker:                                                                 end of group ""
+   207 marker:                                                                 end of group ""
+   208 marker:                                                                 end of group ""
+   209 marker:                                                                 end of group ""
+   210 marker:                                                                 end of group ""
+   211 marker:                                                                 end of group ""
+   212 marker:                                                                 end of group ""
+   213 marker:                                                                 end of group ""
+   214 marker:                                                                 end of group ""
+   215 marker:                                                                 end of group ""
+   216 marker:                                                                 end of group ""
+   217 marker:                                                                 end of group ""
+   218 marker:                                                                 end of group ""
+   219 marker:                                                                 end of group ""
+   220 marker:                                                                 end of group ""
+   221 marker:                                                                 end of group ""
+   222 marker:                                                                 end of group ""
+   223 marker:                                                                 end of group ""
+   224 marker:                                                               end of group ""
+   225 marker:                                                             end of group ""
+   226 marker:                                                           end of group ""
+   227 marker:                                                         end of group ""
+   228 marker:                                                       end of group ""
+   229 marker:                                                     end of group ""
+   230 marker:                                                   end of group ""
+   231 marker:                                                 end of group ""
+   232 marker:                                               end of group ""
+   233 marker:                                             end of group ""
+   234 marker:                                           end of group ""
+   235 marker:                                         end of group ""
+   236 marker:                                       end of group ""
+   237 marker:                                     end of group ""
+   238 marker:                                   end of group ""
+   239 marker:                                 end of group ""
+   240 marker:                               end of group ""
+   241 marker:                             end of group ""
+   242 marker:                           end of group ""
+   243 marker:                         end of group ""
+   244 marker:                       end of group ""
+   245 marker:                     end of group ""
+   246 marker:                   end of group ""
+   247 marker:                 end of group ""
+   248 marker:               end of group ""
+   249 marker:             end of group ""
+   250 marker:           end of group ""
+   251 marker:         end of group ""
+   252 marker:       end of group ""
+   253 marker:     end of group ""
+   254 marker:   end of group ""
+   255 marker: end of group ""
+   256 marker: event ""
+   257 aglDestroyContext: context 0x08F79CE4: freeing
+   258 trace: aglDestroyContext: the job finished
+   259 trace: aglDestroyContext: draw and job state freed
+   260 trace: aglDestroyContext: programs and shaders freed
+   261 trace: aglDestroyContext: framebuffers and textures freed
+   262 trace: aglDestroyContext: buffers freed
+   263 device: context freed, 0 bytes of GPU memory still in use
+   264 aglDestroyContext: context 0x08F79CE4 (48 frames, 0 dropped, 0 binning blocks added)
+   265 timing: 48 jobs, each on average: 198805 us of CPU work before its flush, 39 us waiting for binning, 560 us for the render
+   266 timing: and in each flush 135 us building the render list, 54 us for the CPU cache before the GPU, 68 us after
+   267 close (count 0)
+   268 open (count 1)
+   269 display: render bitmap at 0x09830644, 1024 bytes a row: in memory the GPU reaches
+   270 display: application bitmap, 256x128, BGRA
+   271 aglCreateContext2: context 0x08F22044, 256x128
+   272 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+   273 glLinkProgram: OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4p (3 variants, 464 bytes of code)
+   274 draw: program 1656c863a995438bf1702079: 10 variants for other draws (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   275 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   276 compiler: program compiled in 1600 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   277 draw: program 1656c863a995438bf1702079: 11 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   278 compiler: program compiled in 240 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   279 draw: program 1656c863a995438bf1702079: 12 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   280 compiler: program compiled in 640 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   281 draw: program 1656c863a995438bf1702079: 13 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   282 compiler: program compiled in 2480 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   283 draw: program 1656c863a995438bf1702079: 14 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   284 compiler: program compiled in 1140 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   285 draw: program 1656c863a995438bf1702079: 15 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   286 compiler: program compiled in 2100 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   287 draw: program 1656c863a995438bf1702079: 16 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   288 texture 1: 64x64, 7 levels stored at +0x2000 +0x1000 +0xC00 ... (T), bus 0xCA481000
+   289 texture 1 sampled while incomplete or not stored: it reads black (logged once a texture)
+   290 texture 1: 64x64, 7 levels stored at +0x2000 +0x1000 +0xC00 ... (T), bus 0xCA485000
+   291 draw: program fefb2ddbea600443ecbddbd7: 4 variants for other draws (OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k)
+   292 compiler: program compiled in 180 ms, OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k
+   293 draw: program fefb2ddbea600443ecbddbd7: 5 variants for other draws, compiled (OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k)
+   294 texture 1 changed after a draw used it in the same frame: renamed (logged once)
+   295 compiler: program compiled in 340 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   296 draw: program 1656c863a995438bf1702079: 17 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   297 aglDestroyContext: context 0x08F22044: freeing
+   298 device: context freed, 0 bytes of GPU memory still in use
+   299 aglDestroyContext: context 0x08F22044 (29 frames, 0 dropped, 0 binning blocks added)
+   300 timing: 29 jobs, each on average: 305035 us of CPU work before its flush, 55 us waiting for binning, 441 us for the render
+   301 timing: and in each flush 115 us building the render list, 52 us for the CPU cache before the GPU, 68 us after
+   302 timing: 27 swaps, 342178 us from one to the next on average, 3 us of it presenting
+   303 timing: per frame 1 draws, 327368 us in them; in all 0 ms in glBuffer(Sub)Data, 5 ms in glTex(Sub)Image2D
+   304 close (count 0)
+   305 open (count 1)
+   306 display: render bitmap at 0x09830644, 1280 bytes a row: in memory the GPU reaches
+   307 display: application bitmap, 320x240, BGRA
+   308 aglCreateContext2: context 0x08F22044, 320x240
+   309 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   310 draw: program b5dddc8cd309fdea4d334b4b: 10 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   311 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   312 compiler: program compiled in 560 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   313 draw: program b5dddc8cd309fdea4d334b4b: 11 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   314 compiler: program compiled in 1400 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   315 draw: program b5dddc8cd309fdea4d334b4b: 12 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   316 compiler: program compiled in 240 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   317 draw: program b5dddc8cd309fdea4d334b4b: 13 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   318 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+   319 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+   320 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+   321 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+   322 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+   323 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+   324 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+   325 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+   326 aglDestroyContext: context 0x08F22044: freeing
+   327 device: context freed, 0 bytes of GPU memory still in use
+   328 aglDestroyContext: context 0x08F22044 (118 frames, 0 dropped, 0 binning blocks added)
+   329 timing: 118 jobs, each on average: 19392 us of CPU work before its flush, 43 us waiting for binning, 797 us for the render
+   330 timing: and in each flush 86 us building the render list, 59 us for the CPU cache before the GPU, 66 us after
+   331 timing: 118 swaps, 20803 us from one to the next on average, 3 us of it presenting
+   332 timing: per frame 1 draws, 19239 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+   333 close (count 0)
+   334 open (count 1)
+   335 display: render bitmap at 0x09830644, 1024 bytes a row: in memory the GPU reaches
+   336 display: application bitmap, 256x128, BGRA
+   337 aglCreateContext2: context 0x08F79CE4, 256x128
+   338 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   339 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+   340 framebuffer 1 is not complete (0x8CD7): nothing drawn or read (logged once)
+   341 draw: program 1656c863a995438bf1702079: 17 variants for other draws (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   342 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   343 draw: program b5dddc8cd309fdea4d334b4b: 13 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   344 compiler: program compiled in 1060 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   345 draw: program b5dddc8cd309fdea4d334b4b: 15 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   346 compiler: program compiled in 500 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   347 draw: program b5dddc8cd309fdea4d334b4b: 17 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   348 texture 1: 64x64, 2 levels stored at +0x1000 +0x0 +0x0 ... (T), bus 0xCA4A6000
+   349 texture 1: 64x64, 7 levels stored at +0x2000 +0x1000 +0xC00 ... (T), bus 0xCA4A6000
+   350 glCopyTexSubImage2D: no program for copies on the GPU (none for this GPU): the CPU copies
+   351 framebuffer 1: tile pools of its own for 512x512
+   352 aglDestroyContext: context 0x08F79CE4: freeing
+   353 device: context freed, 0 bytes of GPU memory still in use
+   354 aglDestroyContext: context 0x08F79CE4 (102 frames, 0 dropped, 0 binning blocks added)
+   355 timing: 102 jobs, each on average: 15998 us of CPU work before its flush, 29 us waiting for binning, 363 us for the render
+   356 timing: and in each flush 105 us building the render list, 52 us for the CPU cache before the GPU, 29 us after
+   357 timing: 43 swaps, 42163 us from one to the next on average, 4 us of it presenting
+   358 timing: per frame 2 draws, 37350 us in them; in all 0 ms in glBuffer(Sub)Data, 7 ms in glTex(Sub)Image2D
+   359 close (count 0)
+   360 open (count 1)
+   361 display: render bitmap at 0x09830644, 1024 bytes a row: in memory the GPU reaches
+   362 display: application bitmap, 256x128, BGRA
+   363 aglCreateContext2: context 0x08F79CE4, 256x128
+   364 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   365 draw: program b5dddc8cd309fdea4d334b4b: 17 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   366 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   367 aglDestroyContext: context 0x08F79CE4: freeing
+   368 device: context freed, 0 bytes of GPU memory still in use
+   369 aglDestroyContext: context 0x08F79CE4 (3 frames, 0 dropped, 0 binning blocks added)
+   370 timing: 3 jobs, each on average: 2642 us of CPU work before its flush, 37 us waiting for binning, 512 us for the render
+   371 timing: and in each flush 458 us building the render list, 87 us for the CPU cache before the GPU, 66 us after
+   372 timing: 2 swaps, 3588 us from one to the next on average, 5 us of it presenting
+   373 timing: per frame 1 draws, 3720 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+   374 display: render bitmap at 0x09830644, 1024 bytes a row: in memory the GPU reaches
+   375 display: application bitmap, 256x128, BGRA
+   376 aglCreateContext2: context 0x08F79CE4, 256x128
+   377 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   378 draw: program b5dddc8cd309fdea4d334b4b: 17 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   379 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   380 compiler: program compiled in 640 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   381 draw: program b5dddc8cd309fdea4d334b4b: 18 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   382 compiler: program compiled in 820 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   383 draw: program b5dddc8cd309fdea4d334b4b: 19 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   384 aglDestroyContext: context 0x08F79CE4: freeing
+   385 device: context freed, 0 bytes of GPU memory still in use
+   386 aglDestroyContext: context 0x08F79CE4 (7 frames, 0 dropped, 0 binning blocks added)
+   387 timing: 7 jobs, each on average: 212470 us of CPU work before its flush, 29 us waiting for binning, 564 us for the render
+   388 timing: and in each flush 262 us building the render list, 55 us for the CPU cache before the GPU, 62 us after
+   389 timing: 4 swaps, 498284 us from one to the next on average, 3 us of it presenting
+   390 timing: per frame 1 draws, 371121 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+   391 close (count 0)
+   392 open (count 1)
+   393 aglCreateContext2: context 0x08F79CE4, 0x0, state only
+   394 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   395 glLinkProgram: program b5dddc8cd309fdea4d334b4b: 3 variants
+  fragment, triangles: 13 instructions, 1 threads, 0 spill bytes, 0 uniforms
+  vertex: 41 instructions, 1 threads, 0 spill bytes, 20 uniforms
+  binning: 38 instructions, 1 threads,
+   396 compiler: shader compiled in 40 ms
+   397 compiler: shader compiled in 40 ms
+   398 compiler: program compiled in 660 ms, OGLES2Cache:d59c497ea5e22752b642e93f.vc4p
+   399 glLinkProgram: OGLES2Cache:d59c497ea5e22752b642e93f.vc4p (3 variants, 2136 bytes of code)
+   400 glLinkProgram: program d59c497ea5e22752b642e93f: 3 variants
+  fragment, triangles: 13 instructions, 1 threads, 0 spill bytes, 0 uniforms
+  vertex: 216 instructions, 1 threads, 0 spill bytes, 64 uniforms
+  binning: 38 instructions, 1 threads
+   401 compiler: shader compiled in 60 ms
+   402 compiler: shader compiled in 40 ms
+   403 compiler: program compiled in 940 ms, OGLES2Cache:979ada9f17d3d1821c3b45bb.vc4p
+   404 glLinkProgram: OGLES2Cache:979ada9f17d3d1821c3b45bb.vc4p (3 variants, 7040 bytes of code)
+   405 glLinkProgram: program 979ada9f17d3d1821c3b45bb: 3 variants
+  fragment, triangles: 10 instructions, 1 threads, 0 spill bytes, 0 uniforms
+  vertex: 436 instructions, 1 threads, 0 spill bytes, 160 uniforms
+  binning: 434 instructions, 1 threa
+   406 glLinkProgram: program b5dddc8cd309fdea4d334b4b: 3 variants
+  fragment, triangles: 13 instructions, 1 threads, 0 spill bytes, 0 uniforms
+  vertex: 41 instructions, 1 threads, 0 spill bytes, 20 uniforms
+  binning: 38 instructions, 1 threads,
+   407 compiler: shader compiled in 60 ms
+   408 compiler: shader compiled in 40 ms
+   409 compiler: program compiled in 260 ms, OGLES2Cache:ac1ecb1e7ef3afc88d3666c9.vc4p
+   410 glLinkProgram: OGLES2Cache:ac1ecb1e7ef3afc88d3666c9.vc4p (3 variants, 1256 bytes of code)
+   411 glLinkProgram: program ac1ecb1e7ef3afc88d3666c9: 3 variants
+  fragment, triangles: 47 instructions, 2 threads, 0 spill bytes, 11 uniforms
+  vertex: 62 instructions, 1 threads, 0 spill bytes, 32 uniforms
+  binning: 48 instructions, 1 threads
+   412 compiler: shader compiled in 60 ms
+   413 compiler: shader compiled in 80 ms
+   414 compiler: program compiled in 220 ms, OGLES2Cache:645f9567abe1c3a6e41839b9.vc4p
+   415 glLinkProgram: OGLES2Cache:645f9567abe1c3a6e41839b9.vc4p (3 variants, 912 bytes of code)
+   416 glLinkProgram: program 645f9567abe1c3a6e41839b9: 3 variants
+  fragment, triangles: 33 instructions, 2 threads, 0 spill bytes, 9 uniforms
+  vertex: 41 instructions, 1 threads, 0 spill bytes, 20 uniforms
+  binning: 40 instructions, 1 threads,
+   417 glLinkProgram: program 645f9567abe1c3a6e41839b9: 3 variants
+  fragment, triangles: 33 instructions, 2 threads, 0 spill bytes, 9 uniforms
+  vertex: 41 instructions, 1 threads, 0 spill bytes, 20 uniforms
+  binning: 40 instructions, 1 threads,
+   418 compiler: shader compiled in 100 ms
+   419 compiler: program compiled in 120 ms, OGLES2Cache:6525c1a37d1f1d6e8cf661b4.vc4p
+   420 glLinkProgram: OGLES2Cache:6525c1a37d1f1d6e8cf661b4.vc4p (3 variants, 736 bytes of code)
+   421 glLinkProgram: program 6525c1a37d1f1d6e8cf661b4: 3 variants
+  fragment, triangles: 13 instructions, 1 threads, 0 spill bytes, 0 uniforms
+  vertex: 41 instructions, 1 threads, 0 spill bytes, 20 uniforms
+  binning: 38 instructions, 1 threads,
+   422 compiler: shader failed in 20 ms
+   423 aglDestroyContext: context 0x08F79CE4: freeing
+   424 aglDestroyContext: context 0x08F79CE4 (0 frames, 0 dropped, 0 binning blocks added)
+   425 close (count 0)
+   426 open (count 1)
+   427 display: render bitmap at 0x09830644, 1024 bytes a row: in memory the GPU reaches
+   428 display: application bitmap, 256x128, BGRA
+   429 aglCreateContext2: context 0x08F79CE4, 256x128
+   430 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   431 draw: program b5dddc8cd309fdea4d334b4b: 19 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   432 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   433 glLinkProgram: OGLES2Cache:979ada9f17d3d1821c3b45bb.vc4p (3 variants, 7040 bytes of code)
+   434 compiler: program compiled in 820 ms, OGLES2Cache:979ada9f17d3d1821c3b45bb.vc4k
+   435 draw: program 979ada9f17d3d1821c3b45bb: 4 variants for other draws, compiled (OGLES2Cache:979ada9f17d3d1821c3b45bb.vc4k)
+   436 compiler: program compiled in 580 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   437 draw: program b5dddc8cd309fdea4d334b4b: 20 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   438 compiler: program compiled in 1260 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   439 draw: program b5dddc8cd309fdea4d334b4b: 21 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   440 aglDestroyContext: context 0x08F79CE4: freeing
+   441 device: context freed, 0 bytes of GPU memory still in use
+   442 aglDestroyContext: context 0x08F79CE4 (15 frames, 0 dropped, 0 binning blocks added)
+   443 timing: 15 jobs, each on average: 180780 us of CPU work before its flush, 30 us waiting for binning, 404 us for the render
+   444 timing: and in each flush 130 us building the render list, 70 us for the CPU cache before the GPU, 137 us after
+   445 timing: 15 swaps, 196389 us from one to the next on average, 28 us of it presenting
+   446 timing: per frame 1 draws, 180718 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+   447 close (count 0)
+   448 open (count 1)
+   449 display: render bitmap at 0x09830644, 1024 bytes a row: in memory the GPU reaches
+   450 display: application bitmap, 256x128, BGRA
+   451 aglCreateContext2: context 0x08F79CE4, 256x128
+   452 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   453 draw: program b5dddc8cd309fdea4d334b4b: 21 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   454 compiler: program compiled in 1480 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   455 draw: program b5dddc8cd309fdea4d334b4b: 23 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   456 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   457 glDrawElements: the indices lie outside the element buffer; nothing drawn
+   458 glDrawArrays: attribute 0 reads past the end of buffer 1; nothing drawn
+   459 glDrawArrays: attribute 0 is enabled without an array; nothing drawn
+   460 aglDestroyContext: context 0x08F79CE4: freeing
+   461 device: context freed, 0 bytes of GPU memory still in use
+   462 aglDestroyContext: context 0x08F79CE4 (48 frames, 0 dropped, 0 binning blocks added)
+   463 timing: 48 jobs, each on average: 31890 us of CPU work before its flush, 29 us waiting for binning, 382 us for the render
+   464 timing: and in each flush 85 us building the render list, 48 us for the CPU cache before the GPU, 65 us after
+   465 timing: 48 swaps, 1393 us from one to the next on average, 3 us of it presenting
+   466 timing: per frame 1 draws, 31728 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+   467 close (count 0)
+   468 open (count 1)
+   469 display: render bitmap at 0x09830644, 1024 bytes a row: in memory the GPU reaches
+   470 display: application bitmap, 256x128, BGRA
+   471 aglCreateContext2: context 0x08F79CE4, 256x128
+   472 compiler: shader compiled in 60 ms
+   473 compiler: shader compiled in 20 ms
+   474 compiler: program compiled in 200 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p
+   475 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   476 compiler: shader compiled in 80 ms
+   477 compiler: shader compiled in 80 ms
+   478 compiler: program compiled in 140 ms, OGLES2Cache:1656c863a995438bf1702079.vc4p
+   479 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+   480 compiler: shader compiled in 40 ms
+   481 compiler: program compiled in 120 ms, OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4p
+   482 glLinkProgram: OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4p (3 variants, 464 bytes of code)
+   483 compiler: shader compiled in 40 ms
+   484 compiler: program compiled in 40 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4p
+   485 glLinkProgram: OGLES2Cache:20eb75f38febbc45b4acb470.vc4p (3 variants, 384 bytes of code)
+   486 compiler: shader compiled in 40 ms
+   487 compiler: program compiled in 40 ms, OGLES2Cache:82b090295244c1a5b86feecf.vc4p
+   488 glLinkProgram: OGLES2Cache:82b090295244c1a5b86feecf.vc4p (3 variants, 408 bytes of code)
+   489 texture 1: 100x60, 7 levels stored at +0x3000 +0x1000 +0x800 ... (T), bus 0xC98DF000
+   490 compiler: program compiled in 120 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   491 draw: program 1656c863a995438bf1702079: 4 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   492 job: the display's bitmap (0x09830644) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   493 texture 1: 4x4, 3 levels stored at +0x1000 +0xFC0 +0xF80 ... (LT), bus 0xC97A8000
+   494 draw: sampler 0 emulated: force_first 0 bias 0 clamp 0 aniso 2, first 0, P0 0xC97A9002; bias 0/100, LOD -100000/100..200/100, 4x4
+   495 compiler: program compiled in 440 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   496 draw: program 1656c863a995438bf1702079: 5 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   497 texture 1: 4x4, 3 levels stored at +0x1000 +0xFC0 +0xF80 ... (LT), bus 0xC97A5000
+   498 draw: sampler 0 emulated: force_first 0 bias 1 clamp 0 aniso 0, first 0, P0 0xC97A6002; bias 100/100, LOD -100000/100..200/100, 4x4
+   499 compiler: program compiled in 880 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   500 draw: program 1656c863a995438bf1702079: 6 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   501 draw: sampler 0 emulated: force_first 0 bias 1 clamp 0 aniso 0, first 0, P0 0xC97A6002; bias 200/100, LOD -100000/100..200/100, 4x4
+   502 draw: sampler 0 emulated: force_first 0 bias 1 clamp 0 aniso 0, first 0, P0 0xC97A6001; bias 200/100, LOD -100000/100..100/100, 4x4
+   503 draw: sampler 0 emulated: force_first 0 bias 0 clamp 1 aniso 0, first 1, P0 0xC97A6002; bias 0/100, LOD 100/100..200/100, 4x4
+   504 compiler: program compiled in 360 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   505 draw: program 1656c863a995438bf1702079: 7 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   506 draw: sampler 0 emulated: force_first 0 bias 0 clamp 1 aniso 0, first 0, P0 0xC97A6002; bias 0/100, LOD 200/100..200/100, 4x4
+   507 draw: sampler 0 emulated: force_first 0 bias 1 clamp 1 aniso 0, first 0, P0 0xC97A6002; bias 200/100, LOD -100000/100..100/100, 4x4
+   508 compiler: program compiled in 400 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   509 draw: program 1656c863a995438bf1702079: 8 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   510 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 2, P0 0xC97A6002; bias 0/100, LOD 200/100..200/100, 4x4
+   511 compiler: program compiled in 1280 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   512 draw: program 1656c863a995438bf1702079: 9 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   513 texture 1 sampled while incomplete or not stored: it reads black (logged once a texture)
+   514 compiler: program compiled in 1580 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   515 draw: program 1656c863a995438bf1702079: 10 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   516 compiler: shader compiled in 40 ms
+   517 compiler: shader compiled in 40 ms
+   518 compiler: program compiled in 80 ms, OGLES2Cache:d539b785b0d8a841564cc9c5.vc4p
+   519 glLinkProgram: OGLES2Cache:d539b785b0d8a841564cc9c5.vc4p (3 variants, 552 bytes of code)
+   520 compiler: program compiled in 160 ms, OGLES2Cache:d539b785b0d8a841564cc9c5.vc4k
+   521 draw: program d539b785b0d8a841564cc9c5: 4 variants for other draws, compiled (OGLES2Cache:d539b785b0d8a841564cc9c5.vc4k)
+   522 compiler: program compiled in 160 ms, OGLES2Cache:d539b785b0d8a841564cc9c5.vc4k
+   523 draw: program d539b785b0d8a841564cc9c5: 5 variants for other draws, compiled (OGLES2Cache:d539b785b0d8a841564cc9c5.vc4k)
+   524 compiler: program compiled in 240 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   525 draw: program b5dddc8cd309fdea4d334b4b: 4 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   526 compiler: program compiled in 1060 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   527 draw: program b5dddc8cd309fdea4d334b4b: 5 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   528 compiler: program compiled in 1360 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   529 draw: program b5dddc8cd309fdea4d334b4b: 8 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   530 glProgramBinaryOES: refused: CRC mismatch (damaged file)
+   531 compiler: program compiled in 120 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+   532 draw: program 20eb75f38febbc45b4acb470: 4 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+   533 compiler: program compiled in 100 ms, OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k
+   534 draw: program fefb2ddbea600443ecbddbd7: 4 variants for other draws, compiled (OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k)
+   535 compiler: program compiled in 180 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+   536 draw: program 20eb75f38febbc45b4acb470: 5 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+   537 texture 1: 4x4, 3 levels stored at +0x1000 +0xFC0 +0xF80 ... (LT), bus 0xC98DE000
+   538 draw: sampler 0 emulated: force_first 0 bias 1 clamp 0 aniso 0, first 0, P0 0xC98DF092; bias 200/100, LOD -100000/100..200/100, 4x4
+   539 compiler: program compiled in 1440 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+   540 draw: program 20eb75f38febbc45b4acb470: 6 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+   541 compiler: program compiled in 140 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+   542 draw: program 20eb75f38febbc45b4acb470: 7 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+   543 compiler: program compiled in 1140 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   544 draw: program b5dddc8cd309fdea4d334b4b: 9 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   545 compiler: program compiled in 760 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   546 draw: program b5dddc8cd309fdea4d334b4b: 10 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   547 compiler: program compiled in 240 ms, OGLES2Cache:20eb75f38febbc45b4acb470.vc4k
+   548 draw: program 20eb75f38febbc45b4acb470: 8 variants for other draws, compiled (OGLES2Cache:20eb75f38febbc45b4acb470.vc4k)
+   549 compiler: program compiled in 120 ms, OGLES2Cache:82b090295244c1a5b86feecf.vc4k
+   550 draw: program 82b090295244c1a5b86feecf: 4 variants for other draws, compiled (OGLES2Cache:82b090295244c1a5b86feecf.vc4k)
+   551 compiler: program compiled in 1000 ms, OGLES2Cache:82b090295244c1a5b86feecf.vc4k
+   552 draw: program 82b090295244c1a5b86feecf: 5 variants for other draws, compiled (OGLES2Cache:82b090295244c1a5b86feecf.vc4k)
+   553 aglDestroyContext: context 0x08F79CE4: freeing
+   554 device: context freed, 0 bytes of GPU memory still in use
+   555 aglDestroyContext: context 0x08F79CE4 (48 frames, 0 dropped, 0 binning blocks added)
+   556 timing: 48 jobs, each on average: 278907 us of CPU work before its flush, 34 us waiting for binning, 533 us for the render
+   557 timing: and in each flush 128 us building the render list, 55 us for the CPU cache before the GPU, 65 us after

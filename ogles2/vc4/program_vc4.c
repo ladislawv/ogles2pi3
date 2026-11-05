@@ -82,7 +82,11 @@ const char *ogles2_vc4_variant_read(struct ogles2_rd *s, struct OGLES2Variant *v
 #define VC4_U_TEXTURE_MSAA_ADDR 10
 #define VC4_U_UBO0_ADDR 11
 #define VC4_U_UBO1_ADDR 12
-#define VC4_U_LAST 24 /* UNIFORMS_ADDRESS */
+/* patch 0019's five after UNIFORMS_ADDRESS (24): LOD bias, min and max LOD,
+ * width, height (backend_vc4.h; draw_vc4.c fills them). At 24, every
+ * variant with an emulated texture parameter was refused at load, and its
+ * draws took the closest variant (P5 run 1, m6-6). */
+#define VC4_U_LAST 29 /* TEXTURE_HEIGHT */
 
 const char *ogles2_vc4_variant_recipe(struct OGLES2Variant *v, BOOL *clip_z, ULONG *bad)
 {
@@ -128,13 +132,18 @@ const struct OGLES2Variant *ogles2_vc4_variant_choose(const struct OGLES2Image *
 }
 
 /* Key bytes alike, each sampler entry's comparison function and wraps
- * (bytes 9 to 11) aside. */
+ * (bytes 9 to 11) aside, except that a wrap of 6 (MIRROR_CLAMP_TO_EDGE: the
+ * shader's absolute value, patch 0019) must be in both or neither (P5 run
+ * 1: a mirror-clamp draw took the plain variant). */
 static BOOL key_same(const UBYTE *a, const UBYTE *b, ULONG n)
 {
     ULONG i;
     for (i = 0; i < n; i++) {
-        if (i < SAMPLER_KEY_BYTES && (i & 15) >= 9 && (i & 15) <= 11)
+        if (i < SAMPLER_KEY_BYTES && (i & 15) >= 9 && (i & 15) <= 11) {
+            if ((i & 15) != 9 && (a[i] == 6) != (b[i] == 6))
+                return FALSE;
             continue;
+        }
         if (a[i] != b[i])
             return FALSE;
     }
@@ -168,8 +177,10 @@ static const struct OGLES2Variant *find(const struct OGLES2Image *im, UBYTE stag
             continue;
         }
         /* attribute formats and the samplers; is_coord is the stage's */
-        if (v->key_len < VS_KEY_PSIZE + 1 || !key_same(v->key, key, SAMPLER_KEY_BYTES + 32) ||
-            v->key[VS_KEY_PSIZE] != psize)
+        /* and clip_halfz (patch 0020, the byte after gl_PointSize's: P5 run 1,
+         * EXT_clip_control's ZERO_TO_ONE took the plain variant) */
+        if (v->key_len < VS_KEY_PSIZE + 2 || !key_same(v->key, key, SAMPLER_KEY_BYTES + 32) ||
+            v->key[VS_KEY_PSIZE] != psize || v->key[VS_KEY_PSIZE + 1] != key[VS_KEY_PSIZE + 1])
             continue;
         if (stage == OGLES2_VARIANT_VS && fs && !inputs_same(VC4_PROG_C(v), VC4_PROG_C(fs)))
             continue;
@@ -184,9 +195,11 @@ const struct OGLES2Variant *ogles2_vc4_variant_find(const struct OGLES2Image *im
     const struct OGLES2Variant *v;
     if (stage == OGLES2_VARIANT_FS)
         return find(im, stage, key, 0, 0);
-    /* gl_PointSize: the key's flag is the shader's writing it, which the
-     * front end does not know; points try both */
-    if ((v = find(im, stage, key, fs, key[VS_KEY_PSIZE])) != 0 || !points)
+    /* gl_PointSize: a points draw's key asks for the per-vertex size (GLES2
+     * points take it from the shader, as Mesa's key: without it the variant
+     * drops the shader's size, P5 run 1's 1-pixel particles); points 2: the
+     * other one too, the draw's last resort (draw_vc4.c, choose) */
+    if ((v = find(im, stage, key, fs, key[VS_KEY_PSIZE])) != 0 || points != 2)
         return v;
     return find(im, stage, key, fs, !key[VS_KEY_PSIZE]);
 }

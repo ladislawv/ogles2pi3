@@ -198,10 +198,14 @@ static void test_debug_log(void)
     GLint ok;
     char log[1024];
     GLuint p = link_files("tex", &ok);
+    /* The Pi 4's binary holds a points variant from the start; the Pi 3's
+     * (VC4) its triangles one, others added by key as draws need them */
+    const char *r = (const char *)glGetString(GL_RENDERER);
+    int vc4 = r && !strncmp(r, "VideoCore IV", 12);
     log[0] = 0;
     glGetProgramInfoLog(p, sizeof(log), 0, log);
-    check(ok && strstr(log, "fragment, points: ") && strstr(log, " instructions, ") &&
-              strstr(log, "binning"),
+    check(ok && strstr(log, vc4 ? "fragment, triangles: " : "fragment, points: ") &&
+              strstr(log, " instructions, ") && strstr(log, "binning"),
           "OGLES2_CCT_DEBUG_SHADER_LOG: the link log lists the variants");
     glDeleteProgram(p);
 }

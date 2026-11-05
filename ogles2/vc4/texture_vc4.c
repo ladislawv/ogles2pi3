@@ -56,6 +56,7 @@ struct vc4_tex
 #define VT(t) ((struct vc4_tex *)(t)->gpu)
 
 static BOOL told_format;
+static ULONG told_levels; /* textures whose levels were logged (tex_alloc) */
 
 static void le16(UBYTE *d, ULONG v)
 {
@@ -315,6 +316,13 @@ BOOL ogles2_vc4_tex_upload(struct OGLES2Texture *t)
         FreeVec(g);
         return FALSE;
     }
+    if (n > 1 && told_levels < 16) { /* P5: the mip levels' layout, the first few textures */
+        told_levels++;
+        ogles2_log("texture %ld: %ldx%ld, %ld levels stored at +0x%lx +0x%lx +0x%lx ... (%s), bus 0x%08lx",
+                   (ULONG)t->name, (ULONG)f0->w[0], (ULONG)f0->h[0], (ULONG)n, g->lay.level[0].offset,
+                   g->lay.level[1].offset, n > 2 ? g->lay.level[2].offset : 0UL,
+                   (ULONG)(g->lay.level[0].tiling == VC4_TILING_LT ? "LT" : "T"), g->mem.busaddr);
+    }
     t->gpu = (V3DTexture *)g;
     t->hw_type = f->hw_type;
     t->cpp = f->cpp;
@@ -469,7 +477,12 @@ BOOL ogles2_vc4_sampler(struct OGLES2Context *ctx, int unit, int kind, ULONG p[4
     depth = g->cls == CLASS_DEPTH16 || g->cls == CLASS_DEPTH24;
     p[1] = vc4_tex_p1(g->f->hw_type, g->lay.width, g->lay.height,
                       t->mag_filter == GL_NEAREST || depth ? VC4_MAG_NEAREST : VC4_MAG_LINEAR,
-                      depth ? (mipmapped(t->min_filter) ? VC4_MIN_NEAR_MIP_NEAR : VC4_MIN_NEAREST)
+                      depth ? (mipmapped(t->min_filter) || first ? VC4_MIN_NEAR_MIP_NEAR : VC4_MIN_NEAREST)
+                      /* a base level above 0 unmipmapped: the explicit LOD
+                       * (force_first) counts only with a mip filter (P5 run 1:
+                       * NEAREST read level 0) */
+                      : first && !mipmapped(t->min_filter)
+                            ? (t->min_filter == GL_NEAREST ? VC4_MIN_NEAR_MIP_NEAR : VC4_MIN_LIN_MIP_NEAR)
                             : min_filter(t->min_filter),
                       wrap(t->wrap_s), wrap(t->wrap_t));
     /* P2 (Mesa's vc4_uniforms.c): PTYPE 1 (the cube map stride) for every

@@ -121,6 +121,9 @@ static BOOL probe_bitmap(struct OGLES2Display *d)
     /* Kept: VC4's first job sizes its frame by the row before any lock
      * (ogles2/vc4/job_vc4.c); each lock reads it again. */
     d->bprow = bprow;
+    ogles2_log("display: render bitmap at 0x%08lx, %ld bytes a row: %s", base, bprow,
+               (ULONG)(ogles2_device_gpu_reachable(base, bprow * (ULONG)d->height) ? "in memory the GPU reaches"
+                                                                                  : "NOT in memory the GPU reaches"));
     return TRUE;
 }
 

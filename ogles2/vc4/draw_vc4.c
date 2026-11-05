@@ -46,6 +46,20 @@ struct vc4_draw
     const struct OGLES2Image *told_big;  /* a draw VC4 cannot do whole: logged once a program */
 };
 
+static ULONG told_emu; /* samplers whose emulation was logged (sampler_states) */
+
+/* Vertex j of a draw as the emitted vertex data numbers it: the element
+ * rebased by the front end's minimum, or the array's j (glPolygonMode's
+ * edges, ogles2_vc4_draw). */
+static ULONG poly_index(const struct OGLES2Elements *el, ULONG j)
+{
+    if (!el)
+        return j;
+    return el->type == GL_UNSIGNED_INT     ? ((const ULONG *)el->indices)[j] - el->min
+         : el->type == GL_UNSIGNED_SHORT ? (ULONG)(UWORD)(((const UWORD *)el->indices)[j] - el->min)
+                                          : (ULONG)(UBYTE)(((const UBYTE *)el->indices)[j] - el->min);
+}
+
 static struct vc4_draw *draw_state(struct OGLES2Context *ctx)
 {
     struct vc4_draw *d = ctx->be_draw;
@@ -117,6 +131,16 @@ static BOOL sampler_states(struct OGLES2Context *ctx, struct OGLES2Program *p, s
                 if (!ogles2_vc4_sampler(ctx, unit_of(p, u, e), ogles2_sampler_kind(un->type), sm->p[st][idx], ks,
                                         &sm->first[st][idx], sm->emu[st][idx]))
                     return FALSE;
+                if ((ks->force_first || ks->lod_bias || ks->lod_clamp || ks->aniso) && told_emu < 24) {
+                    /* P5 run 1's emulations, as drawn: the first few */
+                    const GLfloat *e = sm->emu[st][idx];
+                    told_emu++;
+                    ogles2_log("draw: sampler %ld emulated: force_first %ld bias %ld clamp %ld aniso %ld, first %ld, "
+                               "P0 0x%08lx; bias %ld/100, LOD %ld/100..%ld/100, %ldx%ld",
+                               (ULONG)idx, (ULONG)ks->force_first, (ULONG)ks->lod_bias, (ULONG)ks->lod_clamp,
+                               (ULONG)ks->aniso, sm->first[st][idx], sm->p[st][idx][0], (LONG)(e[0] * 100.0f),
+                               (LONG)(e[1] * 100.0f), (LONG)(e[2] * 100.0f), (LONG)e[3], (LONG)e[4]);
+                }
                 if (idx + 1 > sm->n[st])
                     sm->n[st] = (UBYTE)(idx + 1);
             }
@@ -167,7 +191,9 @@ static ULONG write_uniforms(struct OGLES2Context *ctx, struct vc4_ctx *c, const 
             w = di->sm->p[si][x][2] | ((d >> 16) & 1);
             break;
         case VC4_U_TEXTURE_FIRST_LEVEL: w = fbits((GLfloat)di->sm->first[si][x]); break;
-        case VC4_U_UBO0_ADDR: w = di->ubo[si]; break;
+        case VC4_U_UBO0_ADDR: /* the array's offset in the buffer (Mesa's reloc: + data) */
+            w = di->ubo[si] + d;
+            break;
         case VC4_U_BLEND_CONST_COLOR_X:
         case VC4_U_BLEND_CONST_COLOR_Y:
         case VC4_U_BLEND_CONST_COLOR_Z:
@@ -470,6 +496,9 @@ static void choose(struct OGLES2Context *ctx, struct vc4_draw *d, const struct O
     memcpy(recs + VC4_KEY_FS_BYTES, kvs, VC4_KEY_VS_BYTES);
     if ((k = ogles2_image_keyed(ctx, im, recs, sizeof(recs))) != 0 && find_all(im, k, kfs, kvs, points, ch))
         return;
+    /* points: a variant without the per-vertex size before the closest */
+    if (points && (find_all(im, k, kfs, kvs, 2, ch) || find_all(im, 0, kfs, kvs, 2, ch)))
+        return;
     if (d->missed[0] != im) {
         d->missed[0] = im;
         ogles2_log("draw: the program has no shader variants for this draw's state, and none were compiled; "
@@ -552,13 +581,37 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     struct chosen ch;
     UBYTE kfs[VC4_KEY_FS_BYTES], kvs[VC4_KEY_VS_BYTES];
     ULONG code[3], unif[3], rec;
-    GLenum mode = dc->mode;
+    GLenum mode = dc->mode, poly = 0;
     BOOL twoside = FALSE, full = FALSE, points = mode == GL_POINTS;
     int nslots = p->nslots == 0xff ? 0 : p->nslots, i, k;
     struct vc4_cl *cl = &c->job[c->build].bcl;
 
     if (c->bad)
         return FALSE;
+    /* glPolygonMode, which VC4 has no hardware for (P5 run 1, m6_ext): a
+     * triangle draw's vertices drawn as points, or its triangles' edges as a
+     * line list built at the emission below; face culling cannot come first
+     * (the CPU has no transformed vertices): a culled face's edges are drawn */
+    if (mode >= GL_TRIANGLES && s->polygon_mode != GL_FILL) {
+        poly = mode;
+        mode = s->polygon_mode == GL_POINT ? GL_POINTS : GL_LINES;
+        points = mode == GL_POINTS;
+    }
+    {
+        /* A job near the end of its blocks (VC4_CL_BLOCKS of state and of
+         * binning list: a frame of many draws, m4_stress's 100,000, P5) is
+         * rendered now, mid-frame, and this draw goes into the next job
+         * (depth and stencil kept, the colour loaded), as the Pi 4's lists
+         * grow instead */
+        const struct vc4_job *j = &c->job[c->build];
+        if (c->has_draws && (j->state.cur >= VC4_CL_BLOCKS - 2 || j->bcl.cur >= VC4_CL_BLOCKS - 2)) {
+            ogles2_job_flush(ctx, FALSE);
+            ogles2_job_begin(ctx);
+            if (c->bad)
+                return FALSE;
+            cl = &c->job[c->build].bcl;
+        }
+    }
     if (!(d = draw_state(ctx)) || !im->code_mem)
         goto nomem;
     memset(&sm, 0, sizeof(sm));
@@ -620,7 +673,34 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     mark(ctx, 5);
 
     emit_state(ctx, c, fs, &di);
-    if (el) {
+    if (poly && mode == GL_LINES) {
+        /* each triangle's three edges, as 16-bit indices */
+        ULONG n = el ? (ULONG)el->count : (ULONG)dc->count, ntri, t, j = 0, ib, max = 0;
+        UBYTE *x;
+        ntri = poly == GL_TRIANGLES ? n / 3 : n >= 3 ? n - 2 : 0;
+        if (ntri) {
+            if (!(x = claim(c, ntri * 12 + 4, 16, &ib)))
+                goto nomem;
+            for (t = 0; t < ntri; t++) {
+                ULONG v[3], q;
+                v[0] = poly_index(el, poly == GL_TRIANGLES ? 3 * t : poly == GL_TRIANGLE_FAN ? 0 : t);
+                v[1] = poly_index(el, poly == GL_TRIANGLES ? 3 * t + 1 : t + 1);
+                v[2] = poly_index(el, poly == GL_TRIANGLES ? 3 * t + 2 : t + 2);
+                for (q = 0; q < 6; q++, j++) {
+                    ULONG e = v[((q + 1) >> 1) % 3]; /* 0 1, 1 2, 2 0 */
+                    if (e > max)
+                        max = e;
+                    x[2 * j] = (UBYTE)e;
+                    x[2 * j + 1] = (UBYTE)(e >> 8);
+                }
+            }
+            if (max > MAX_VERTS)
+                return TRUE; /* nothing drawn (as the indexed path) */
+            vc4_gl_shader_state(cl, rec, nslots ? nslots : 1);
+            VC4_EMIT(cl, INDEXED_PRIMITIVE_LIST, .primitive_mode = GL_LINES, .index_type = 1u, .length = j,
+                     .address_of_indices_list = ib, .maximum_index = max);
+        }
+    } else if (el) {
         /* indices rebased by the front end: 8-bit as they are, 16-bit
          * little-endian, 32-bit as 16-bit while they fit */
         ULONG n = (ULONG)el->count, ib, max = 0, j;

@@ -1098,10 +1098,138 @@ Everything that can run here runs here first (the developer, 2026-11-03).
   `m1_clear BITMAP` through the VC4 backend. `vc4_draw` refuses to run without a VideoCore IV in
   the device tree. Two stores that assumed a little-endian host were found and fixed on the way
   (`vc4_mem_write`, the test loader's code copy).
+- **Run 1 (2026-11-05), the A1200 with a Raspberry Pi 3 Model B Rev 1.2, Emu68 on CaffeineOS;**
+  the steps run one at a time through the station (Wi-Fi, below):
+  - **Emu68's facts:** `/soc` 0x7e000000 at 0xf2000000 (68k); RAM 0 is bus 0xc0000000 (68k
+    addresses are ARM physical ones); the mailbox at 0xf200b880, the 3D core at 0xf2c00000, the
+    timer at 0xf2003000; the device tree's memory node one range, 0x01000000-0x2e000000 (what
+    Emu68 gave AmigaOS); V3D 2.1, 3 slices of 4 QPUs, VPM 12 KB. The firmware's split (mailbox):
+    the ARM's 0x00000000-0x3e000000, the VideoCore's 0x3e000000-0x40000000. **The RTG driver's
+    bitmaps (screens) lie outside the memory node**, in the ARM's part the firmware keeps for its
+    framebuffer (the Workbench screen at 0x38e00000, a 640x480 screen at 0x395e9000), mapped
+    1:1: the GPU reads them at 0xc0000000 + the address word for word (`vc4_draw peekscreen`,
+    loads only); so `vc4_os_gpu_reachable` takes the mailbox's two ranges too.
+  - **vc4core's cases:** the triangle first drew nothing: `vc4p_emit` put the vertex data
+    together as little-endian bytes, so the 68k's float positions reached the GPU byte-swapped
+    (fixed: 32-bit components as the host's words, bytes in memory order; the half-float planes
+    likewise). Then every case as Mesa's pictures, MSAA, the two-job loads and the overflow one
+    included, except the 10 checks against Mesa's mipmap picture, missing from the package (made
+    on the Pi 3 under Linux, not copied before the card moved; `build.sh` takes a copy with
+    `REF=`). `rtt` crashed the A1200 (SmartCrash, line-F at a wild PC): two `struct vc4p` (165 KB
+    each) on a 200 KB stack; now static.
+  - **VC4's raster stores ignore the address's low 4 bits** (`vc4_draw rasteroff`: a base 4, 8,
+    12 bytes past 16 stores at the base rounded down). An application's `AllocBitMap` gave
+    0x08f298b4 and the window mode's render bitmaps 0x...7cc, 0x...53c (fast RAM, after
+    the allocator's header): the first clears wrote 4 bytes over that header and the program
+    crashed freeing the bitmap (twice, "software failure"). The VC4 backend now stores such a
+    frame (or one outside the GPU's memory) into a buffer of the context's in the bitmap's layout
+    and copies it in after the render, under the lock; screens are on 16 bytes and drawn into
+    directly.
+  - **The library:** the smoke test passes (its renderer and semaphore checks made card-aware:
+    "VideoCore IV V3D 2.1 (PiStorm)", "VC4 submit"); **`m1_clear`, every mode: 58 of 58** (own
+    window 1.6 ms a clear and swap, application window 1.3, application bitmap 0.5, fullscreen
+    0.6, screen window 0.6).
+- **The packages (2026-11-05),** run by `tests/a1200/p5_run.sh` (the sync-logging library, the
+  programs compiled on the PC through the bridge: a stand-in `libs/v3dglslc` of a few bytes,
+  since the library asks a compiler only when it finds one's file and the real one, 19 MB, is
+  slow over Wi-Fi; `OGLES2Cache:` a drawer on the station's disk for the run, so the compiled
+  files do not fill `T:`, the RAM disk, which the packages' memory checks count):
+  - `m1-5`: 59 PASS, none FAIL, as on the Pi 4.
+  - `m2-4`: 148 PASS, none FAIL, after: `GL_OES_element_index_uint` listed (16-bit indices
+    while a draw spans 65536 vertices; the CPU's split of wider ones left); **`UBO0_ADDR` plus
+    the recipe's offset** (Mesa's reloc adds it: indirectly indexed uniforms such as skinning's
+    `bone[i]` read from the buffer's start before); the debug link log's check card-aware (VC4's
+    binary has a triangles fragment variant, others by key); the built-in clear program loaded
+    with the device (it stays while the library does; loaded at a context's first masked clear
+    it counted as that context's memory); the front end's "no fragment shader variant for
+    primitive" not logged on VC4 (its draws choose their own variants by key). Each program is
+    compiled on the PC in 0.1 to 1 s a request (`.vc4p`, then `.vc4k` as draws add keys).
+    **`ERRSTAT` VCMRE (bit 13, 0x2000)**, the render side's twin of VCMBE, after 8 of the draw
+    test's renders, the pictures right: watched (not failed, as VCMBE).
+  - `m5-1`: 257 PASS, none FAIL, after: **a mid-frame flush when a job nears the end of its
+    blocks** (`VC4_CL_BLOCKS`, 16 of state and of binning list: m4_stress's frame of 100,000
+    draws ran out and was dropped; now 20,746 draws/s, the picture right; the Pi 4's lists grow
+    instead); **RGBA4 and RGB5_A1 renderbuffers stored as RGBA8 on VC4** (its tile buffer
+    stores RGBA8888 or RGB565 only; GL allows the precision; the size queries answer from the
+    format).
+  - `m7-6`: 36 of 36.
+  - The station on Wi-Fi: a 19 MB `PUT` (m6-6's `compiler/v3dglslc`) stalled `amictld` until
+    the A1200 was reset; `p5_run.sh` puts the stand-in over every compiler in a package. Twice
+    more the link itself dropped during an upload (`wifipi.device`: the Amiga's screen still said
+    Online, no ARP answer, "unable to connect" until a restart). amictl since (the shared
+    repository, `tools/amictl`): the server drops a client silent or stalled for 120 s
+    (`SO_RCVTIMEO`; it had only the send timeout), the client gives up after 15 s with one
+    "STATION DOWN" line and status 4, a `PUT`'s time limit grows with its size, and `runpkg`
+    waits in 15 s steps printing a line a minute; `p5_run.sh` stops a batch at status 4 and
+    ignores result directories older than its run. (The server serves one connection at a time:
+    a second client during a `runpkg` times out, so nothing polls it meanwhile.)
+    **The station moved to amigent** (github.com/akustikrausch/amigent, MIT; at the developer's
+    request a fork in `C:\- CPP\amigent`): amigentd's command channels each run in a process of
+    their own (up to four; a fifth pushes out the idlest), new files are written under a temporary
+    name and renamed, EXEC has a time limit. The fork: port 6502 (amigactld 6501, TLS 6503: off
+    amictl's 6800 to 6803), builds with bebbo's gcc as well as vbcc (gcc's build without TLS),
+    READ_AT (amictl's GETFROM), BREAK (ABORT), REBOOT, the ALLOW and LOG options, and
+    `amigent-ctl`, amictl's command line on it (files with CRC-32 skips and an optional rate,
+    run, start, abort, tail, env, shot, keys and mouse, up, reboot, restart, runpkg with a
+    heartbeat from a second channel and a lock against a second run of a package). It runs from
+    `Stuff:amigent/`, started after each boot (not in `S:User-Startup`). `tests/a1200/p5_run.sh`
+    drives it: the bridge's `v3dglslc-remote` detached (`Run >NIL:`, stopped by `Break` on its CLI)
+    so it holds no channel; one batch at a time (a lock). **The cause of the drops: a weak Wi-Fi
+    signal at the A1200** (fixed at the access point, 2026-11-05); `tests/a1200/p5_netprobe.py`
+    (each step of a package alone, the link checked after each) cleared m2-5's 14 programs.
+    Then the drops came only when the Amiga sent megabytes (m2-5's results, 4.6 MB): with 32 KB
+    reads or whole files the link went, rate or not; in 8 KB reads it held at 50, 150 and
+    400 KB/s (4.6 MB in 16 s, no ping lost): `amigent-ctl` reads and writes in 8 KB pieces
+    (`AMIGENT_PIECE`), `p5_run.sh` at 400 KB/s (`AMIGENT_RATE`).
+  - **The regression set on the Pi 3 card, 2026-11-05 22:25** (amigent, today's fixes): m1-5
+    59/0, m2-4 148/0, m5-1 257/0, m6-8 121/0, m7-2 66/0, m7-3 105/0, m7-6 36/0 (as the Pi 4);
+    m6-6 385/6 (half floats with negative values, 3 checks run twice); m6-10 207/3 (4x MSAA:
+    depth and stencil across a mid-frame flush); m7-4 119/10 and m7-5 135/27 (`EXT_draw_buffers`,
+    `EXT_color_buffer_half_float`: their library passes are left); m2-5's 14 pictures against
+    the Pi 4's: Stencil_Test 0 pixels off by more than 8 (67,200 before the write-mask fix),
+    ParticleSystem 3 and Orientation 16 (point sprites: 26,591 and 3,374 before the point-size
+    fix), MipMap2D 2,296 (VC4's LOD rounding where levels change), the rest edges (under 110).
+    Fixed for it: a stencil write mask of 0 (VC4's full-mask word 0 means none: KEEP then), and
+    points' variants with the per-vertex size (the search took the one without, which drops the
+    shader's gl_PointSize).
+  - `m6-8` 121 of 121, `m7-2` 66 of 66, as on the Pi 4.
+  - `m6-6` (the extensions) 367 PASS 24 FAIL at first, after the fixes 379 and 12 (6 distinct,
+    each run twice): **every variant with a patch 0019 uniform (types 25 to 29) was refused at
+    load** (`program_vc4.c`'s last known type was 24) and its draws took the closest variant;
+    **the variant search ignored a sampler's wraps** (bytes 9 to 11: only CLAMP and BORDER changed
+    vc4's code before patch 0019; now wrap 6, mirror clamp, must agree) **and the vertex key's
+    `clip_halfz`** (patch 0020: m7-3's `GL_ZERO_TO_ONE` 4 failures, now passing); **a base level
+    above 0 with a non-mipmap filter read level 0**: the TMU takes the explicit LOD only with a mip
+    filter, so it is NEAREST_MIP_NEAREST (LINEAR_MIP_NEAREST) then; `ARB_texture_rectangle` listed
+    (drawn right already); `glPolygonMode` emulated (a triangle draw's vertices as points, or its
+    edges as a line list made on the CPU; face culling cannot come first, so a culled face's edges
+    are drawn: a deviation); the tests' anisotropy (4) and rectangle size (2048) card-aware.
+    `vc4_draw smallmip` (4x4 to 32x32, every level to 1x1, LT and T) found the TMU's level
+    addresses equal to `vc4_texture_layout`'s. Left: float textures with negative values (-1
+    reads 0 or less: S16F's lookup or filter clamps them, to be checked on the card), the error
+    after a float `glGenerateMipmap`.
+  - `m6-10` 206 PASS 4 FAIL: depth and stencil across a mid-frame flush with 4x MSAA (3: the
+    full-resolution tile store and load, left), and the first context's memory (the built-in
+    clear, below).
+  - `m7-3` 104 PASS 1 FAIL after the fixes; `m7-4` 118 PASS 11 FAIL and `m7-5` 134 PASS 28
+    FAIL: `EXT_draw_buffers` (10 each) and `EXT_color_buffer_half_float` (17), whose library
+    passes are left (§10), and the memory check.
+  - **The built-in clear program and the memory checks:** loaded at a context's first clear of
+    part of a frame, kept, and its variants for a partial colour mask or a four-float position
+    compiled at run time and kept: the packages counted them against that context (18 to 33 KB).
+    Its keys now hold every colour mask with the depth and stencil tests off and both position
+    sizes (`tools/clear_vc4/keys.c`: 24,248 bytes, from 9,768), and it is freed with the last
+    context.
 - **GPU reachability:** `ogles2_device_gpu_reachable` (DEVELOPMENT_PLAN §7.3) checks the RAM
   ranges on both; `vc4core` turns a 68k address into a bus address through the alias.
 - **The test station:** `tools/amictl` as now; the same `tests/a1200/` packages on both cards, run
-  with `runpkg`.
+  with `runpkg`. **Found 2026-11-05, first boot with the Pi 3 card:** the A1200 is not on the
+  network (no ping at `192.168.1.128`, no new host on the LAN). Its Roadshow interface is Emu68's
+  `genet.device`, the Pi 4's Ethernet; the Pi 3's Ethernet sits behind its USB hub, for which
+  Emu68 has no driver. The developer set up Emu68's `wifipi.device` (the Pi 3's Wi-Fi) as
+  Roadshow's interface on this card: the A1200 answers at the same address (ping 50 to 100 ms
+  against about 1 ms on the Pi 4's Ethernet; uploads correspondingly slower), so the station
+  and `runpkg` work on both cards.
 - The Pi Zero 2 W (RP3A0, the same VC4) is used on PiStorm too: once the Pi 3 works it may run
   unchanged (verify, not planned).
 
@@ -1377,6 +1505,9 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    the CPU without a log line each time. To verify at the first run with the Pi 3 card: that Emu68 maps
    the peripherals at 0xF2000000 there too (the front end's clock reads the system timer at a
    fixed address), the winding bit (the V3D backend's rule), the point coordinates' origin.
-   Next in P5: the first run on the A1200 with the Pi 3 card, the package `p5-1` (§7: Emu68's facts,
-   vc4core under AmigaOS, the library's first clears; then the test packages); meanwhile the GPU
-   paths of glGenerateMipmap and glCopyTex*.
+   **P5 run 1 done (2026-11-05, §7):** Emu68's facts, vc4core's cases and the library's clears
+   in every display mode on the A1200 with the Pi 3 card (two crashes found and fixed: a stack
+   overflow in `vc4_draw`, and VC4's stores ignoring an address's low 4 bits). Next in P5: the
+   M1 to M7 packages on the Pi 3 card; Mesa's mipmap picture for `vc4_draw` (the Pi 3 under
+   Linux again); the Pi 4 card's regression for the shared changes (the display's log line, the
+   smoke test); meanwhile the GPU paths of glGenerateMipmap and glCopyTex*.

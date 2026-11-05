@@ -363,7 +363,9 @@ static void draw_arrays(struct OGLES2Context *ctx, struct OGLES2Program *p, GLen
             ogles2_log("glDrawArrays: the program has no shader for this primitive; nothing drawn");
             return;
         }
-        if (d->missed != im && (fs->is_points != (fsmode == GL_POINTS) ||
+        /* (VC4, device 21, chooses its own variants by key, compiling the
+         * missing ones: ogles2/vc4/draw_vc4.c; these are not the ones drawn) */
+        if (ogles2_backend->device != 21 && d->missed != im && (fs->is_points != (fsmode == GL_POINTS) ||
                                 fs->is_lines != (fsmode == GL_LINES || fsmode == GL_LINE_LOOP ||
                                                  fsmode == GL_LINE_STRIP))) {
             d->missed = im; /* plan 7.8: the closest variant is used; logged once per program */

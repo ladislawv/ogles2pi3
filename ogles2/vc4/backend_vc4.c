@@ -32,6 +32,8 @@
 static const struct OGLES2Caps caps = {
     /* the front end's own and the native ones (§2.1); the emulated ones as
      * they are written */
+    "GL_OES_element_index_uint " /* 16-bit indices while a draw spans 65536 (the CPU's split: left) */
+    "GL_ARB_texture_rectangle " /* native: QUNIFORM_TEXRECT_SCALE (P5 run 1: drawn right, not listed) */
     "GL_OES_mapbuffer GL_EXT_discard_framebuffer GL_EXT_read_format_bgra GL_OES_get_program_binary "
     "GL_EXT_debug_marker GL_OES_required_internalformat GL_OES_rgb8_rgba8 "
     "GL_OES_draw_elements_base_vertex GL_OES_compressed_ETC1_RGB8_texture GL_OES_packed_depth_stencil "
@@ -97,6 +99,9 @@ BOOL ogles2_vc4_present(void)
 {
     return vc4_os_present() ? TRUE : FALSE;
 }
+
+static void builtin_drop(void);
+static ULONG live_contexts; /* the built-in image goes with the last (context_free) */
 
 static BOOL dev_open(void)
 {
@@ -206,6 +211,7 @@ static struct V3DContext *context_new(UWORD w, UWORD h, int depth_bits, BOOL msa
      * call cleans all of it on Emu68, about 41 us): vc4core's own flushes,
      * one a list block, are left out */
     c->job[0].caller_flushes = c->job[1].caller_flushes = 1;
+    live_contexts++;
     return (struct V3DContext *)c; /* the front end's handle; this backend's object */
 }
 
@@ -238,7 +244,13 @@ static void context_free(struct V3DContext *v)
     if (c->zs.size)
         vc4_mem_free(&c->zs);
     vc4_pools_free(&c->pools);
+    if (c->shadow.size)
+        vc4_mem_free(&c->shadow);
     FreeVec(c);
+    if (live_contexts && --live_contexts == 0)
+        builtin_drop();
+    /* the front end's blocks (textures, programs, buffers): as the Pi 4's line */
+    ogles2_log("device: context freed, %lu bytes of GPU memory still in use", bytes_in_use);
 }
 
 /* ---- not written yet: refused (the front end's CPU paths run instead) ---- */
@@ -250,8 +262,10 @@ static int tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWO
 static const UBYTE *internal_program(int which, ULONG *len) { (void)which; *len = 0; return 0; }
 
 /* ---- the built-in image: tools/clear_vc4's program, loaded at its first
- * use (its code in GPU memory, kept while the library is), with its sources
- * for the variants of clear states it does not hold (ogles2_image_keyed) ---- */
+ * use (its code in GPU memory), kept while a context is (freed with the
+ * last: P5 run 1, the packages' memory checks counted it, 28 KB, against
+ * the first context that cleared part of a frame), with its sources for the
+ * variants of clear states it does not hold (ogles2_image_keyed) ---- */
 
 static struct OGLES2Image *builtin;
 static BOOL builtin_failed;
@@ -281,6 +295,15 @@ static const struct OGLES2Image *builtin_image(void)
         }
     }
     return builtin;
+}
+
+/* The last context is gone: no job runs its code. */
+static void builtin_drop(void)
+{
+    if (builtin)
+        ogles2_image_free(builtin, 0);
+    builtin = 0;
+    builtin_failed = FALSE;
 }
 
 const struct OGLES2Backend ogles2_backend_vc4 = {

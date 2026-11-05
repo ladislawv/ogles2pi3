@@ -85,6 +85,16 @@ struct vc4_ctx
     /* depth and stencil kept across a mid-frame flush (job_keep_zs) */
     struct vc4_mem zs;
     UWORD zs_w, zs_h;
+    /* A display bitmap the stores cannot take (not on 16 bytes, or outside
+     * the GPU's memory: an application's AllocBitMap, the window mode's
+     * render bitmap, P5 run 1): the frame is stored into this buffer of the
+     * bitmap's layout and copied into the bitmap after its render, under
+     * the lock (job_vc4.c). copy_to: the bitmap, 0 for a direct store. */
+    struct vc4_mem shadow;
+    ULONG copy_to[VC4_SLOTS], copy_len[VC4_SLOTS];
+    BOOL told_shadow;
+    UBYTE told_target, t_clear, t_load, t_store, t_clear_s; /* job_build's, logged at job_end (P5) */
+    ULONG t_clear_z;
     /* the draw's */
     struct vc4_draw *draw;
 };

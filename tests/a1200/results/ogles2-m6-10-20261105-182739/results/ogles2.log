@@ -1,0 +1,235 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 display: render bitmap at 0x092A1594, 1024 bytes a row: in memory the GPU reaches
+    10 display: application bitmap, 256x128, BGRA
+    11 aglCreateContext2: context 0x083050BC, 256x128
+    12 compiler: Stuff:amictld/work/ogles2-m6-10/libs/v3dglslc, 78 bytes, id 34E713EE
+    13 compiler: shader compiled in 100 ms
+    14 compiler: shader compiled in 80 ms
+    15 compiler: program compiled in 800 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p
+    16 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+    17 compiler: shader compiled in 80 ms
+    18 compiler: shader compiled in 80 ms
+    19 compiler: program compiled in 1620 ms, OGLES2Cache:1656c863a995438bf1702079.vc4p
+    20 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+    21 compiler: program compiled in 860 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    22 draw: program b5dddc8cd309fdea4d334b4b: 4 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    23 job: the display's bitmap (0x092A1594) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    24 aglDestroyContext: context 0x083050BC: freeing
+    25 device: context freed, 4096 bytes of GPU memory still in use
+    26 aglDestroyContext: context 0x083050BC (1 frames, 0 dropped, 0 binning blocks added)
+    27 timing: 1 jobs, each on average: 876387 us of CPU work before its flush, 48 us waiting for binning, 549 us for the render
+    28 timing: and in each flush 951 us building the render list, 59 us for the CPU cache before the GPU, 228 us after
+    29 display: render bitmap at 0x092A1594, 1024 bytes a row: in memory the GPU reaches
+    30 display: application bitmap, 256x128, BGRA
+    31 aglCreateContext2: context 0x083050BC, 256x128
+    32 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+    33 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+    34 draw: program b5dddc8cd309fdea4d334b4b: 4 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    35 compiler: program compiled in 420 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    36 draw: program b5dddc8cd309fdea4d334b4b: 5 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    37 job: the display's bitmap (0x092A1594) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    38 compiler: program compiled in 460 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    39 draw: program b5dddc8cd309fdea4d334b4b: 6 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    40 compiler: program compiled in 260 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    41 draw: program b5dddc8cd309fdea4d334b4b: 7 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    42 compiler: program compiled in 300 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    43 draw: program b5dddc8cd309fdea4d334b4b: 8 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    44 compiler: program compiled in 160 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    45 draw: program 1656c863a995438bf1702079: 4 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    46 aglDestroyContext: context 0x083050BC: freeing
+    47 device: context freed, 4096 bytes of GPU memory still in use
+    48 aglDestroyContext: context 0x083050BC (10 frames, 0 dropped, 0 binning blocks added)
+    49 timing: 10 jobs, each on average: 166859 us of CPU work before its flush, 30 us waiting for binning, 418 us for the render
+    50 timing: and in each flush 172 us building the render list, 67 us for the CPU cache before the GPU, 66 us after
+    51 close (count 0)
+    52 open (count 1)
+    53 display: render bitmap at 0x0976725C, 1280 bytes a row: in memory the GPU reaches
+    54 display: application bitmap, 320x240, BGRA
+    55 aglCreateContext2: context 0x083050BC, 320x240
+    56 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+    57 draw: program b5dddc8cd309fdea4d334b4b: 8 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    58 job: the display's bitmap (0x0976725C) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    59 compiler: program compiled in 220 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    60 draw: program b5dddc8cd309fdea4d334b4b: 9 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    61 compiler: program compiled in 1840 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    62 draw: program b5dddc8cd309fdea4d334b4b: 10 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    63 compiler: program compiled in 1360 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    64 draw: program b5dddc8cd309fdea4d334b4b: 11 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    65 compiler: program compiled in 480 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    66 draw: program b5dddc8cd309fdea4d334b4b: 12 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    67 compiler: program compiled in 760 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+    68 draw: program b5dddc8cd309fdea4d334b4b: 15 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+    69 compiler: program compiled in 1660 ms, OGLES2Cache:e8234044d8ebaae6b81cfddb.vc4k
+    70 draw: program e8234044d8ebaae6b81cfddb: 6 variants for other draws, compiled (OGLES2Cache:e8234044d8ebaae6b81cfddb.vc4k)
+    71 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    72 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    73 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    74 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    75 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    76 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    77 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    78 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    79 aglDestroyContext: context 0x083050BC: freeing
+    80 device: context freed, 8192 bytes of GPU memory still in use
+    81 aglDestroyContext: context 0x083050BC (118 frames, 0 dropped, 0 binning blocks added)
+    82 timing: 118 jobs, each on average: 54281 us of CPU work before its flush, 50 us waiting for binning, 875 us for the render
+    83 timing: and in each flush 96 us building the render list, 64 us for the CPU cache before the GPU, 79 us after
+    84 timing: 118 swaps, 56194 us from one to the next on average, 3 us of it presenting
+    85 timing: per frame 1 draws, 39991 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+    86 close (count 0)
+    87 open (count 1)
+    88 display: render bitmap at 0x092A1594, 1024 bytes a row: in memory the GPU reaches
+    89 display: application bitmap, 256x128, BGRA
+    90 aglCreateContext2: context 0x083050BC, 256x128
+    91 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+    92 compiler: shader compiled in 60 ms
+    93 compiler: program compiled in 120 ms, OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4p
+    94 glLinkProgram: OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4p (3 variants, 464 bytes of code)
+    95 draw: program 1656c863a995438bf1702079: 4 variants for other draws (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    96 compiler: program compiled in 1340 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+    97 draw: program 1656c863a995438bf1702079: 5 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+    98 job: the display's bitmap (0x092A1594) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    99 compiler: program compiled in 300 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   100 draw: program 1656c863a995438bf1702079: 6 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   101 compiler: program compiled in 1180 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   102 draw: program 1656c863a995438bf1702079: 7 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   103 compiler: program compiled in 380 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   104 draw: program 1656c863a995438bf1702079: 8 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   105 compiler: program compiled in 220 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   106 draw: program 1656c863a995438bf1702079: 9 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   107 compiler: program compiled in 220 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   108 draw: program 1656c863a995438bf1702079: 10 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   109 compiler: program compiled in 260 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   110 draw: program 1656c863a995438bf1702079: 11 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   111 texture 1 sampled while incomplete or not stored: it reads black (logged once a texture)
+   112 compiler: program compiled in 140 ms, OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k
+   113 draw: program fefb2ddbea600443ecbddbd7: 4 variants for other draws, compiled (OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k)
+   114 texture 1 changed after a draw used it in the same frame: renamed (logged once)
+   115 compiler: program compiled in 520 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   116 draw: program 1656c863a995438bf1702079: 12 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   117 aglDestroyContext: context 0x083050BC: freeing
+   118 device: context freed, 8192 bytes of GPU memory still in use
+   119 aglDestroyContext: context 0x083050BC (29 frames, 0 dropped, 0 binning blocks added)
+   120 timing: 29 jobs, each on average: 163588 us of CPU work before its flush, 29 us waiting for binning, 410 us for the render
+   121 timing: and in each flush 137 us building the render list, 76 us for the CPU cache before the GPU, 73 us after
+   122 timing: 27 swaps, 131896 us from one to the next on average, 3 us of it presenting
+   123 timing: per frame 1 draws, 175536 us in them; in all 0 ms in glBuffer(Sub)Data, 4 ms in glTex(Sub)Image2D
+   124 close (count 0)
+   125 open (count 1)
+   126 display: render bitmap at 0x092A1594, 1024 bytes a row: in memory the GPU reaches
+   127 display: application bitmap, 256x128, BGRA
+   128 aglCreateContext2: context 0x082FDD24, 256x128
+   129 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   130 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+   131 framebuffer 1 is not complete (0x8CD7): nothing drawn or read (logged once)
+   132 draw: program 1656c863a995438bf1702079: 12 variants for other draws (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   133 job: the display's bitmap (0x092A1594) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   134 draw: program b5dddc8cd309fdea4d334b4b: 15 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   135 compiler: program compiled in 1280 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   136 draw: program b5dddc8cd309fdea4d334b4b: 16 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   137 compiler: program compiled in 720 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   138 draw: program b5dddc8cd309fdea4d334b4b: 18 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   139 compiler: program compiled in 480 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   140 draw: program b5dddc8cd309fdea4d334b4b: 19 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   141 compiler: program compiled in 560 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   142 draw: program b5dddc8cd309fdea4d334b4b: 21 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   143 glCopyTexSubImage2D: no program for copies on the GPU (none for this GPU): the CPU copies
+   144 framebuffer 1: tile pools of its own for 512x512
+   145 aglDestroyContext: context 0x082FDD24: freeing
+   146 device: context freed, 8192 bytes of GPU memory still in use
+   147 aglDestroyContext: context 0x082FDD24 (102 frames, 0 dropped, 0 binning blocks added)
+   148 timing: 102 jobs, each on average: 30240 us of CPU work before its flush, 29 us waiting for binning, 372 us for the render
+   149 timing: and in each flush 95 us building the render list, 54 us for the CPU cache before the GPU, 28 us after
+   150 timing: 43 swaps, 76622 us from one to the next on average, 4 us of it presenting
+   151 timing: per frame 2 draws, 71224 us in them; in all 0 ms in glBuffer(Sub)Data, 8 ms in glTex(Sub)Image2D
+   152 close (count 0)
+   153 open (count 1)
+   154 display: render bitmap at 0x0976725C, 1280 bytes a row: in memory the GPU reaches
+   155 display: application bitmap, 320x240, BGRA
+   156 aglCreateContext2: context 0x083050BC, 320x240
+   157 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   158 draw: program b5dddc8cd309fdea4d334b4b: 21 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   159 job: the display's bitmap (0x0976725C) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   160 compiler: program compiled in 760 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   161 draw: program b5dddc8cd309fdea4d334b4b: 22 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   162 compiler: program compiled in 520 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   163 draw: program b5dddc8cd309fdea4d334b4b: 23 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   164 compiler: program compiled in 1580 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   165 draw: program b5dddc8cd309fdea4d334b4b: 24 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   166 compiler: program compiled in 2060 ms, OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k
+   167 draw: program b5dddc8cd309fdea4d334b4b: 25 variants for other draws, compiled (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   168 compiler: program compiled in 180 ms, OGLES2Cache:e8234044d8ebaae6b81cfddb.vc4k
+   169 draw: program e8234044d8ebaae6b81cfddb: 7 variants for other draws, compiled (OGLES2Cache:e8234044d8ebaae6b81cfddb.vc4k)
+   170 compiler: program compiled in 340 ms, OGLES2Cache:e8234044d8ebaae6b81cfddb.vc4k
+   171 draw: program e8234044d8ebaae6b81cfddb: 8 variants for other draws, compiled (OGLES2Cache:e8234044d8ebaae6b81cfddb.vc4k)
+   172 compiler: program compiled in 220 ms, OGLES2Cache:e8234044d8ebaae6b81cfddb.vc4k
+   173 draw: program e8234044d8ebaae6b81cfddb: 10 variants for other draws, compiled (OGLES2Cache:e8234044d8ebaae6b81cfddb.vc4k)
+   174 aglDestroyContext: context 0x083050BC: freeing
+   175 device: context freed, 8192 bytes of GPU memory still in use
+   176 aglDestroyContext: context 0x083050BC (118 frames, 0 dropped, 0 binning blocks added)
+   177 timing: 118 jobs, each on average: 49109 us of CPU work before its flush, 45 us waiting for binning, 801 us for the render
+   178 timing: and in each flush 145 us building the render list, 59 us for the CPU cache before the GPU, 64 us after
+   179 timing: 118 swaps, 50720 us from one to the next on average, 2 us of it presenting
+   180 timing: per frame 1 draws, 42346 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D
+   181 close (count 0)
+   182 open (count 1)
+   183 display: render bitmap at 0x092A1594, 1024 bytes a row: in memory the GPU reaches
+   184 display: application bitmap, 256x128, BGRA
+   185 aglCreateContext2: context 0x083050BC, 256x128
+   186 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+   187 glLinkProgram: OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4p (3 variants, 464 bytes of code)
+   188 draw: program 1656c863a995438bf1702079: 12 variants for other draws (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   189 job: the display's bitmap (0x092A1594) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   190 compiler: program compiled in 840 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   191 draw: program 1656c863a995438bf1702079: 13 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   192 compiler: program compiled in 180 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   193 draw: program 1656c863a995438bf1702079: 14 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   194 compiler: program compiled in 260 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   195 draw: program 1656c863a995438bf1702079: 15 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   196 compiler: program compiled in 320 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   197 draw: program 1656c863a995438bf1702079: 16 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   198 compiler: program compiled in 260 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   199 draw: program 1656c863a995438bf1702079: 17 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   200 compiler: program compiled in 220 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   201 draw: program 1656c863a995438bf1702079: 18 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   202 texture 1 sampled while incomplete or not stored: it reads black (logged once a texture)
+   203 draw: program fefb2ddbea600443ecbddbd7: 4 variants for other draws (OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k)
+   204 compiler: program compiled in 320 ms, OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k
+   205 draw: program fefb2ddbea600443ecbddbd7: 5 variants for other draws, compiled (OGLES2Cache:fefb2ddbea600443ecbddbd7.vc4k)
+   206 texture 1 changed after a draw used it in the same frame: renamed (logged once)
+   207 compiler: program compiled in 1960 ms, OGLES2Cache:1656c863a995438bf1702079.vc4k
+   208 draw: program 1656c863a995438bf1702079: 19 variants for other draws, compiled (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   209 aglDestroyContext: context 0x083050BC: freeing
+   210 device: context freed, 8192 bytes of GPU memory still in use
+   211 aglDestroyContext: context 0x083050BC (29 frames, 0 dropped, 0 binning blocks added)
+   212 timing: 29 jobs, each on average: 155788 us of CPU work before its flush, 30 us waiting for binning, 460 us for the render
+   213 timing: and in each flush 136 us building the render list, 65 us for the CPU cache before the GPU, 67 us after
+   214 timing: 27 swaps, 175511 us from one to the next on average, 3 us of it presenting
+   215 timing: per frame 1 draws, 167124 us in them; in all 0 ms in glBuffer(Sub)Data, 5 ms in glTex(Sub)Image2D
+   216 close (count 0)
+   217 open (count 1)
+   218 display: render bitmap at 0x092A1594, 1024 bytes a row: in memory the GPU reaches
+   219 display: application bitmap, 256x128, BGRA
+   220 aglCreateContext2: context 0x0830C314, 256x128
+   221 glLinkProgram: OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4p (3 variants, 736 bytes of code)
+   222 glLinkProgram: OGLES2Cache:1656c863a995438bf1702079.vc4p (3 variants, 384 bytes of code)
+   223 framebuffer 1 is not complete (0x8CD7): nothing drawn or read (logged once)
+   224 draw: program 1656c863a995438bf1702079: 19 variants for other draws (OGLES2Cache:1656c863a995438bf1702079.vc4k)
+   225 job: the display's bitmap (0x092A1594) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+   226 draw: program b5dddc8cd309fdea4d334b4b: 25 variants for other draws (OGLES2Cache:b5dddc8cd309fdea4d334b4b.vc4k)
+   227 glCopyTexSubImage2D: no program for copies on the GPU (none for this GPU): the CPU copies
+   228 framebuffer 1: tile pools of its own for 512x512
+   229 aglDestroyContext: context 0x0830C314: freeing
+   230 device: context freed, 8192 bytes of GPU memory still in use
+   231 aglDestroyContext: context 0x0830C314 (102 frames, 0 dropped, 0 binning blocks added)
+   232 timing: 102 jobs, each on average: 571 us of CPU work before its flush, 29 us waiting for binning, 351 us for the render
+   233 timing: and in each flush 91 us building the render list, 49 us for the CPU cache before the GPU, 33 us after
+   234 timing: 43 swaps, 4341 us from one to the next on average, 3 us of it presenting
+   235 timing: per frame 2 draws, 934 us in them; in all 0 ms in glBuffer(Sub)Data, 6 ms in glTex(Sub)Image2D

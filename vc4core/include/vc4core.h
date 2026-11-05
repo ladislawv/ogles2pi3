@@ -190,6 +190,8 @@ struct vc4_target
                             * the RGBA64 texture type's texels): 64x32 tiles; not with msaa
                             * (EXT_color_buffer_half_float, PI3_PLAN §2.1) */
     struct vc4_surface color, zs;
+    uint32_t color_load_bus; /* 0: the colour is loaded from color.bus; else from here (the
+                              * same tiling and format: a copy, vc4_draw peekscreen) */
     uint8_t load;          /* VC4_COLOR | VC4_ZS: loaded at each tile's start */
     uint8_t store;         /* and stored at its end */
     uint8_t clear;         /* cleared (the clear values below), instead of loaded */

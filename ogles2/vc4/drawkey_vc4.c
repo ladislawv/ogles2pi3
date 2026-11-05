@@ -100,6 +100,13 @@ static ULONG stencil_bits(const struct OGLES2State *s, int f, ULONG wm)
     ULONG b = 0;
     if (wm != 0xff)
         b |= wm << 28;
+    /* A write mask of 0 writes nothing: KEEP throughout. Its full-mask word
+     * is 0, which the key takes for "no full masks", and the 2-bit field's 0
+     * is mask 0x1 (P5 run 1: the corpus's Stencil_Test, glStencilMask(0)
+     * with INVERT left over, flipped bit 0 between its passes) */
+    if (!(s->stencil_write_mask[f] & 0xff))
+        return b | 1UL << 25 | 1UL << 22 | 1UL << 19 | (ULONG)(s->stencil_func[f] - GL_NEVER) << 16 |
+               (s->stencil_value_mask[f] & 0xff);
     return b | stencil_op(s->stencil_zfail[f]) << 25 | stencil_op(s->stencil_zpass[f]) << 22 |
            stencil_op(s->stencil_fail[f]) << 19 | (ULONG)(s->stencil_func[f] - GL_NEVER) << 16 |
            (s->stencil_value_mask[f] & 0xff);

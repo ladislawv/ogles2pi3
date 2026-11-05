@@ -246,17 +246,24 @@ static void test_aniso(void)
     GLfloat f = 0, m = 0;
     GLint i = 0;
     char msg[160];
+    /* the Pi 4 reports 16; the Pi 3 (VideoCore IV) 4, its lookups emulated
+     * in the shader (PI3_PLAN §2.1) */
+    const char *r = (const char *)glGetString(GL_RENDERER);
+    GLint want = r && !strncmp(r, "VideoCore IV", 12) ? 4 : 16;
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m);
     glGetTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, &f);
-    sprintf(msg, "max anisotropy %.1f (16), the texture's %.1f (1)", (double)m, (double)f);
-    check(m == 16.0f && f == 1.0f, msg);
+    /* (tenths: this printf has no %f) */
+    sprintf(msg, "max anisotropy %ld/10 (%ld), the texture's %ld/10 (1)", (long)(m * 10.0f), (long)want,
+            (long)(f * 10.0f));
+    check(m == (GLfloat)want && f == 1.0f, msg);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 0.5f);
     check(glGetError() == GL_INVALID_VALUE, "anisotropy 0.5: GL_INVALID_VALUE");
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 64.0f);
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, &i);
-    check(i == 16, "anisotropy 64: clamped to 16");
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
-    check(lod_draw() == 0xFF0000, "drawn with anisotropy 16: level 0, red");
+    sprintf(msg, "anisotropy 64: clamped to %ld (%ld)", (long)i, (long)want);
+    check(i == want, msg);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (GLfloat)want);
+    check(lod_draw() == 0xFF0000, "drawn with the most anisotropy: level 0, red");
     glDeleteTextures(1, &t);
 }
 
@@ -620,15 +627,29 @@ static void test_float(void)
     /* glGenerateMipmap on floats: 4x4 of 0.5 drawn small (level 1 or 2) */
     {
         GLfloat q[64];
+        GLenum e, first = GL_NO_ERROR;
+        const char *where = "";
         for (k = 0; k < 64; k++)
             q[k] = 0.5f;
+        /* (which call raised an error: the Pi 3's first run had one here) */
+        if ((e = glGetError()) != GL_NO_ERROR)
+            first = e, where = " before";
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_FLOAT, q);
+        if ((e = glGetError()) != GL_NO_ERROR && first == GL_NO_ERROR)
+            first = e, where = " at glTexImage2D";
         glGenerateMipmap(GL_TEXTURE_2D);
+        if ((e = glGetError()) != GL_NO_ERROR && first == GL_NO_ERROR)
+            first = e, where = " at glGenerateMipmap";
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, 2.0f);
+        if ((e = glGetError()) != GL_NO_ERROR && first == GL_NO_ERROR)
+            first = e, where = " at glTexParameter";
         a = scaled(l, 1, 1, 1, 1, W / 2, H / 2);
-        sprintf(msg, "glGenerateMipmap on floats, level 2 sampled: %06lx (808080)", a);
-        check(rgb_near(a, 128, 128, 128, 1) && glGetError() == GL_NO_ERROR, msg);
+        if ((e = glGetError()) != GL_NO_ERROR && first == GL_NO_ERROR)
+            first = e, where = " at the draw";
+        sprintf(msg, "glGenerateMipmap on floats, level 2 sampled: %06lx (808080), error 0x%04x%s", a,
+                (unsigned)first, where);
+        check(rgb_near(a, 128, 128, 128, 1) && first == GL_NO_ERROR, msg);
     }
     glDeleteTextures(1, &l);
     /* Half floats: 3.0, 1000 and -1 again; and linear filtering, which they have */
@@ -865,7 +886,11 @@ static void test_rect(void)
     glGetIntegerv(GL_MAX_RECTANGLE_TEXTURE_SIZE, &mx);
     sprintf(msg, "a rectangle texture: min filter 0x%04x (2601 LINEAR), wrap 0x%04x (812f), bound %d, max size %d",
             v[0], v[1], b, mx);
-    check(v[0] == GL_LINEAR && v[1] == GL_CLAMP_TO_EDGE && b == (GLint)t && mx == 4096, msg);
+    {   /* the Pi 4's 4096, the Pi 3's (VideoCore IV) 2048: its texture limit */
+        const char *r = (const char *)glGetString(GL_RENDERER);
+        GLint want = r && !strncmp(r, "VideoCore IV", 12) ? 2048 : 4096;
+        check(v[0] == GL_LINEAR && v[1] == GL_CLAMP_TO_EDGE && b == (GLint)t && mx == want, msg);
+    }
     glTexImage2D(GL_TEXTURE_RECTANGLE, 0, GL_RGBA, 4, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex);
     glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

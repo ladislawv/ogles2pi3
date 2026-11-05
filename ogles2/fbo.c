@@ -611,7 +611,12 @@ void ogles2_glRenderbufferStorage(struct OGLES2Context *ctx, GLenum target, GLen
     if (width && height && ctx->v3d) {
         if (is_color(internalformat)) {
             GLenum f = internalformat == GL_RGB565 || internalformat == GL_RGB8_OES ? GL_RGB : GL_RGBA;
-            GLenum ty = internalformat == GL_RGBA4    ? GL_UNSIGNED_SHORT_4_4_4_4
+            /* VC4 (device 21) stores colour as RGBA8888 or RGB565 only: its
+             * RGBA4 and RGB5_A1 renderbuffers are RGBA8 (more precision, as
+             * GL allows; the size queries still answer from the format) */
+            BOOL wide = ogles2_backend->device == 21 && (internalformat == GL_RGBA4 || internalformat == GL_RGB5_A1);
+            GLenum ty = wide                          ? GL_UNSIGNED_BYTE
+                      : internalformat == GL_RGBA4    ? GL_UNSIGNED_SHORT_4_4_4_4
                       : internalformat == GL_RGB5_A1  ? GL_UNSIGNED_SHORT_5_5_5_1
                       : internalformat == GL_RGB565   ? GL_UNSIGNED_SHORT_5_6_5
                       : is_half(internalformat)       ? GL_HALF_FLOAT_OES

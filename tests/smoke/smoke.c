@@ -17,6 +17,7 @@
 
 static int failures;
 static int allow_no_gpu;
+static int vc4; /* the Pi 3 card: VideoCore IV (GL_RENDERER) */
 
 static void check(int ok, const char *what)
 {
@@ -69,9 +70,11 @@ static int session(int verbose)
         if (allow_no_gpu)
             printf("     (NOGPU: GL_RENDERER identity not checked)\n");
         else
-            check(prefix(glGetString(GL_RENDERER), "V3D 4.2.") &&
-                  strstr((const char *)glGetString(GL_RENDERER), "QPUs") != 0,
-                  "GL_RENDERER reports the V3D identity, QPU count and VPM size");
+            check((prefix(glGetString(GL_RENDERER), "V3D 4.2.") &&
+                   strstr((const char *)glGetString(GL_RENDERER), "QPUs") != 0) ||
+                      prefix(glGetString(GL_RENDERER), "VideoCore IV V3D 2."),
+                  "GL_RENDERER reports the V3D identity (the Pi 4's: its QPU count and VPM size too)");
+        vc4 = prefix(glGetString(GL_RENDERER), "VideoCore IV");
         check(prefix(glGetString(GL_VERSION), "OpenGL ES 2.0"), "GL_VERSION starts \"OpenGL ES 2.0\"");
         check(prefix(glGetString(GL_SHADING_LANGUAGE_VERSION), "OpenGL ES GLSL ES 1.00"),
               "GL_SHADING_LANGUAGE_VERSION starts \"OpenGL ES GLSL ES 1.00\"");
@@ -129,9 +132,9 @@ int main(int argc, char **argv)
     {
         struct SignalSemaphore *s;
         Forbid();
-        s = FindSemaphore((STRPTR) "V3D 4.2 submit");
+        s = FindSemaphore((STRPTR)(vc4 ? "VC4 submit" : "V3D 4.2 submit"));
         Permit();
-        check(s != 0, "public semaphore \"V3D 4.2 submit\" exists");
+        check(s != 0, vc4 ? "public semaphore \"VC4 submit\" exists" : "public semaphore \"V3D 4.2 submit\" exists");
         if (s) {
             check(AttemptSemaphore(s) != 0, "submission lock is free between jobs");
             ReleaseSemaphore(s);

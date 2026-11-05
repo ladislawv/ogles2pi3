@@ -55,6 +55,13 @@
 #include <fcntl.h>
 #include <stdio.h>
 #ifdef __amigaos__
+#include <cybergraphx/cybergraphics.h>
+#include <intuition/screens.h>
+#include <proto/cybergraphics.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+struct IntuitionBase *IntuitionBase;
+struct Library *CyberGfxBase;
 #define NULL_DEVICE "NIL:"
 #else
 #define NULL_DEVICE "/dev/null"
@@ -198,7 +205,7 @@ static int run(const struct vc4p_draw *d)
 static void case_triangle(void)
 {
     static const float tri[] = {-0.75f, -0.75f, 0.75f, -0.5f, -0.25f, 0.75f};
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     printf("triangle (S1's triangle.vert + triangle.frag)\n");
     if (load(&p, "triangle-triangle.vc4p", &d) < 0) {
@@ -222,7 +229,7 @@ static void case_texture(void)
     static const float uv[] = {0, 0, 1, 0, 0, 1, 1, 1};
     static uint8_t texels[16 * 16 * 4];
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     int x, y;
     printf("texture (S1's texture.vert + texture.frag, 16x16 LT)\n");
@@ -382,7 +389,7 @@ static int load_flat(struct vc4p *p, const char *file)
 
 static void case_depth(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int k, ok = 1;
     printf("depth (three triangles, LESS)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(1) < 0) {
@@ -405,7 +412,7 @@ static void case_clipz(void)
     static const float col[4] = {1, 1, 1, 1};
     static const float front[9] = {-1, -1, -0.1f, 1, -1, -0.1f, 0, 1, -0.1f};
     float tri[3][9];
-    struct vc4p p;
+    static struct vc4p p;
     int k, i, ok = 1;
     printf("clipz (the depth case through ZERO_TO_ONE's z, a triangle before the near plane clipped)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(1) < 0) {
@@ -426,7 +433,7 @@ static void case_clipz(void)
 
 static void case_blend(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int ok;
     printf("blend (SRC_ALPHA, ONE_MINUS_SRC_ALPHA)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(0) < 0) {
@@ -441,7 +448,7 @@ static void case_blend(void)
 
 static void case_indices(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int ok;
     printf("indices (16-bit, a triangle list)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(0) < 0) {
@@ -457,7 +464,7 @@ static void case_indices(void)
 static void case_indices8(void)
 {
     static uint8_t idx8[9];
-    struct vc4p p;
+    static struct vc4p p;
     int k, ok;
     printf("indices8 (8-bit, a triangle list)\n");
     for (k = 0; k < 9; k++)
@@ -476,7 +483,7 @@ static void case_indices8(void)
 /* scissor: the blend case's quad inside the scissor box (the clip window). */
 static void case_scissor(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int ok;
     printf("scissor (the clip window)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(0) < 0) {
@@ -555,7 +562,7 @@ static int clear_rect(struct vc4p *p, const int *box, int depth, const float *co
 
 static void case_pclear(void)
 {
-    struct vc4p cp, p;
+    static struct vc4p cp, p;
     int ok;
     printf("pclear (clears of part of the frame: the built-in clear program in the clip window)\n");
     if (load_flat(&cp, "clear-clear.vc4p") < 0 || load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(1) < 0) {
@@ -587,7 +594,7 @@ static void case_mipmap(void)
 {
     static uint8_t lv[MIP_SIZE * MIP_SIZE * 4];
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     int l, i, q, ok;
     printf("mipmap (a 32x32 texture's six levels, NEAREST_MIPMAP_NEAREST, four quad sizes)\n");
@@ -618,6 +625,80 @@ static void case_mipmap(void)
         ok = vc4p_emit(&job, &d, W, H) == 0;
     }
     end_case("mipmap", ok);
+    vc4p_free(&p);
+}
+
+/* smallmip (P5 run 1: m6_ext's 4x4 texture read level 2 for level 1): a
+ * texture of S x S (4, 8, 16, 32) with every level down to 1x1 in our
+ * layout (vc4_texture_layout), each level its colour, drawn as quads of S,
+ * S/2, ... 1 pixels (LOD 0, 1, ...: the TMU's own choice, no emulation),
+ * NEAREST_MIPMAP_NEAREST; which level's colour each quad shows. */
+static void case_smallmip(void)
+{
+    static const int sizes[4] = {4, 8, 16, 32};
+    static uint8_t lv[32 * 32 * 4];
+    static float pos[MIP_LEVELS][8];
+    static struct vc4p p;
+    struct vc4_texture_layout lay;
+    struct vc4p_draw d;
+    int k;
+    printf("smallmip (S x S textures, every level to 1x1, drawn at each LOD by quad size)\n");
+    if (load_flat(&p, "texture-texture.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    for (k = 0; k < 4; k++) {
+        int S = sizes[k], n = 1, l, i, x0 = 2, ok, got[MIP_LEVELS], right = 1;
+        int px[MIP_LEVELS];
+        while ((S >> (n - 1)) > 1)
+            n++;
+        vc4_texture_layout(&lay, (uint32_t)S, (uint32_t)S, 4, (uint32_t)n, 1);
+        vc4_mem_fill(&tex, 0, lay.size, 0);
+        for (l = 0; l < n; l++) {
+            for (i = 0; i < (int)(lay.level[l].width * lay.level[l].height); i++)
+                memcpy(lv + 4 * i, mip_col[l], 4);
+            vc4_texture_store(tex.cpu, &lay, (uint32_t)l, 0, lv, lay.level[l].width * 4);
+        }
+        ok = begin_case(0) == 0;
+        for (l = 0; l < n && ok; l++) {
+            int sz = S >> l;
+            float a = -1.0f + 2.0f * (float)x0 / W, b = -1.0f + 2.0f * (float)(x0 + sz) / W;
+            float c = -1.0f + 2.0f * 2.0f / H, e = -1.0f + 2.0f * (float)(2 + sz) / H;
+            pos[l][0] = a, pos[l][1] = c, pos[l][2] = b, pos[l][3] = c;
+            pos[l][4] = a, pos[l][5] = e, pos[l][6] = b, pos[l][7] = e;
+            px[l] = x0 + sz / 2;
+            x0 += sz + 2;
+            ok = two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R8G8B8A8_UNORM, pos[l], 8, 8, mip_uv, 8, 8,
+                            sizeof mip_uv, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+            if (!ok)
+                break;
+            d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_RGBA8888, (uint32_t)(n - 1), 0);
+            d.tex[0][1] = vc4_tex_p1(VC4_TEX_RGBA8888, (uint32_t)S, (uint32_t)S, VC4_MAG_NEAREST,
+                                     VC4_MIN_NEAR_MIP_NEAR, VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+            ok = vc4p_emit(&job, &d, W, H) == 0;
+        }
+        if (!ok || vc4_job_run(&job, 1000000) < 0) {
+            check(0, "the job ran");
+            continue;
+        }
+        printf("  %dx%d (level 0 %s; levels at", S, S, lay.level[0].tiling == VC4_TILING_LT ? "LT" : "T");
+        for (l = 0; l < n; l++)
+            printf(" +0x%x", lay.level[l].offset);
+        printf("): LOD -> level read:");
+        for (l = 0; l < n; l++) {
+            int r, g, bb, m;
+            pixel(px[l], 2 + ((S >> l) / 2), &r, &g, &bb);
+            got[l] = -1;
+            for (m = 0; m < MIP_LEVELS; m++)
+                if (r == mip_col[m][0] && g == mip_col[m][1] && bb == mip_col[m][2])
+                    got[l] = m;
+            printf(" %d->%d", l, got[l]);
+            if (got[l] != l)
+                right = 0;
+        }
+        printf("\n");
+        check(right, "every LOD reads its own level");
+    }
     vc4p_free(&p);
 }
 
@@ -663,7 +744,7 @@ static uint16_t half_of(float f)
 static uint32_t half_planes(struct vc4_texture_layout *lay, uint32_t w, uint32_t h, uint32_t levels,
                             const uint16_t *halves)
 {
-    static uint16_t plane[128 * 128];
+    static uint8_t plane[128 * 128 * 2]; /* little-endian, as the GPU reads them */
     uint32_t stride, k, l, i, at = 0;
     vc4_texture_layout(lay, w, h, 2, levels, 1);
     stride = (lay->size + 4095) & ~4095u;
@@ -672,9 +753,11 @@ static uint32_t half_planes(struct vc4_texture_layout *lay, uint32_t w, uint32_t
     for (l = 0; l < levels; l++) {
         uint32_t n = lay->level[l].width * lay->level[l].height;
         for (k = 0; k < 4; k++) {
-            for (i = 0; i < n; i++)
-                plane[i] = halves[(at + i) * 4 + k];
-            vc4_texture_store(tex.cpu + k * stride, lay, l, 0, (const uint8_t *)plane, lay->level[l].width * 2);
+            for (i = 0; i < n; i++) {
+                plane[2 * i] = (uint8_t)halves[(at + i) * 4 + k];
+                plane[2 * i + 1] = (uint8_t)(halves[(at + i) * 4 + k] >> 8);
+            }
+            vc4_texture_store(tex.cpu + k * stride, lay, l, 0, plane, lay->level[l].width * 2);
         }
         at += n;
     }
@@ -691,7 +774,7 @@ static void case_texhalf(void)
 {
     static uint16_t halves[16 * 16 * 4];
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     uint32_t stride;
     int x, y, c, ok;
@@ -725,7 +808,7 @@ static void case_halfmip(void)
 {
     static uint16_t halves[(32 * 32 + 16 * 16 + 8 * 8 + 4 * 4 + 2 * 2 + 1) * 4];
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     uint32_t stride, at = 0, i;
     int l, q, c, ok = 1;
@@ -842,7 +925,7 @@ static const struct mipemu mipemus[] = {
 static void mipemu_case(const struct mipemu *m)
 {
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     const struct vc4p_variant *fs;
     int q, ok = 1;
@@ -899,7 +982,7 @@ static void case_anisoquad(void)
     };
     static const int x0[2] = {16, 72}, want[2] = {2, 0};
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     const struct vc4p_variant *fs[2];
     int q, x, y, ok = 1;
@@ -956,7 +1039,7 @@ static void case_mirror(void)
     static const float uv[] = {-1, -1, 1, -1, -1, 1, 1, 1};
     static uint8_t texels[16 * 16 * 4];
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     int x, y, ok;
     long bad = 0;
@@ -1022,7 +1105,7 @@ static int begin_target(const struct vc4_target *t);
 static void case_depthtex(void)
 {
     struct vc4_texture_layout lay;
-    struct vc4p p, tp;
+    static struct vc4p p, tp;
     struct vc4_target t;
     struct vc4p_draw d;
     int k, ok;
@@ -1068,7 +1151,7 @@ static void case_depthtex(void)
 
 static void case_lines(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int ok;
     printf("lines (three, width 1)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(0) < 0) {
@@ -1082,7 +1165,7 @@ static void case_lines(void)
 
 static void case_points(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int ok;
     printf("points (five, 8 pixels)\n");
     if (load_flat(&p, "point-flat.vc4p") < 0 || begin_case(0) < 0) {
@@ -1098,7 +1181,7 @@ static void case_points(void)
  * the stencil is 1 (EQUAL, KEEP); the tile buffer's stencil cleared to 0. */
 static void case_stencil(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int ok;
     printf("stencil (ALWAYS/REPLACE, then EQUAL 1)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(1) < 0) {
@@ -1113,6 +1196,68 @@ static void case_stencil(void)
     ok = ok && flat(&p, 0, 0, 0, sten_col[1], sten_quad, 4, VC4_PRIM_TRIANGLE_STRIP, 0, 4) == 0;
     stencil_word = 0;
     end_case("stencil", ok);
+    vc4p_free(&p);
+}
+
+/* stencilz (P5 run 1: the corpus's Stencil_Test came out wrong): depth
+ * cleared to 0.75 and stencil to 1, as the sample's; quad A (right, depth
+ * 0.95) GREATER ref 3 mask 3, z-fail DECR (the depth test fails: 0); quad C
+ * (left, depth 0.75) LESS ref 7 mask 3, fail REPLACE (the stencil test
+ * fails: 7); then the whole frame green where the stencil is 0, red where
+ * 7. A green, C red, the rest the clear colour. */
+static void case_stencilz(void)
+{
+    static const float qa[12] = {0.25f, -0.5f, 0.9f, 0.75f, -0.5f, 0.9f, 0.25f, 0.5f, 0.9f, 0.75f, 0.5f, 0.9f};
+    static const float qc[12] = {-0.75f, -0.5f, 0.5f, -0.25f, -0.5f, 0.5f, -0.75f, 0.5f, 0.5f, -0.25f, 0.5f, 0.5f};
+    static const float all[12] = {-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0};
+    static const float green[4] = {0, 1, 0, 1}, red[4] = {1, 0, 0, 1}, grey[4] = {0.5f, 0.5f, 0.5f, 1};
+    static struct vc4p p;
+    struct vc4_target t;
+    int ok, r, g, b, ra, ga, ba, rc, gc, bc;
+    printf("stencilz (Stencil_Test's first two: z-fail DECR, fail REPLACE, then EQUAL passes)\n");
+    if (load_flat(&p, "flat-flat.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    memset(&t, 0, sizeof t);
+    t.width = (uint16_t)fb_w;
+    t.height = H;
+    t.color.bus = fb.bus;
+    t.color.tiling = VC4_TILING_RASTER;
+    t.color.format = VC4_COLOR_RGBA8888;
+    t.store = VC4_COLOR;
+    t.clear = VC4_COLOR | VC4_ZS;
+    t.clear_color = 0xff400000u;
+    t.clear_z = 0xbfffffu; /* 0.75 */
+    t.clear_s = 1;
+    vc4_mem_fill(&fb, 0, W * H * 4, 0x55555555u);
+    ok = vc4_job_begin(&job, &t, &pools) == 0;
+    stencil_word = vc4p_stencil_word(0x0204 /* GL_GREATER */, 3, 3, VC4P_STENCIL_KEEP, VC4P_STENCIL_DECR,
+                                     VC4P_STENCIL_KEEP, 0xff);
+    ok = ok && flat(&p, 0, 1, 0, grey, qa, 4, VC4_PRIM_TRIANGLE_STRIP, 0, 4) == 0;
+    stencil_word = vc4p_stencil_word(0x0201 /* GL_LESS */, 7, 3, VC4P_STENCIL_REPLACE, VC4P_STENCIL_DECR,
+                                     VC4P_STENCIL_DECR, 0xff);
+    ok = ok && flat(&p, 0, 1, 0, grey, qc, 4, VC4_PRIM_TRIANGLE_STRIP, 0, 4) == 0;
+    stencil_word = vc4p_stencil_word(0x0202 /* GL_EQUAL */, 0, 0xff, VC4P_STENCIL_KEEP, VC4P_STENCIL_KEEP,
+                                     VC4P_STENCIL_KEEP, 0xff);
+    ok = ok && flat(&p, 0, 0, 0, green, all, 4, VC4_PRIM_TRIANGLE_STRIP, 0, 4) == 0;
+    stencil_word = vc4p_stencil_word(0x0202 /* GL_EQUAL */, 7, 0xff, VC4P_STENCIL_KEEP, VC4P_STENCIL_KEEP,
+                                     VC4P_STENCIL_KEEP, 0xff);
+    ok = ok && flat(&p, 0, 0, 0, red, all, 4, VC4_PRIM_TRIANGLE_STRIP, 0, 4) == 0;
+    stencil_word = 0;
+    if (!ok || vc4_job_run(&job, 1000000) < 0) {
+        check(0, "the job ran");
+        vc4p_free(&p);
+        return;
+    }
+    pixel(W * 3 / 4, H / 2, &ra, &ga, &ba);
+    pixel(W / 4, H / 2, &rc, &gc, &bc);
+    pixel(W / 2, H / 8, &r, &g, &b);
+    printf("  A (z-fail DECR) %02x%02x%02x, C (fail REPLACE) %02x%02x%02x, elsewhere %02x%02x%02x; ERRSTAT %08x\n",
+           ra, ga, ba, rc, gc, bc, r, g, b, job.errstat);
+    check(ra == 0 && ga == 255 && ba == 0, "quad A green: the depth test failed, z-fail DECR made 1 0");
+    check(rc == 255 && gc == 0 && bc == 0, "quad C red: the stencil test failed, REPLACE made 7");
+    check(r == 0 && g == 0 && b == 0x40, "elsewhere the clear colour: the stencil stayed 1");
     vc4p_free(&p);
 }
 
@@ -1156,7 +1301,7 @@ static int two_inputs(struct vc4p *p, uint32_t attr1_format, uint32_t tex0_forma
  * the vertex shader: its own variant). */
 static void case_attrib(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     int ok;
     printf("attrib (colours as normalized unsigned bytes)\n");
@@ -1201,7 +1346,7 @@ static void tex_case(const struct texfmt *t)
 {
     static uint8_t texels[16 * 16 * 4];
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     int etc = t->type == VC4_TEX_ETC1;
     uint32_t sw = etc ? t->w / 4 : t->w, sh = etc ? t->h / 4 : t->h; /* stored: texels or blocks */
@@ -1245,7 +1390,7 @@ static void tex_case(const struct texfmt *t)
  * without dithering, as Mesa's), its own fragment variants. */
 static void case_rgb565(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int ok;
     printf("rgb565 (the blend case into an RGB565 frame)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0) {
@@ -1268,7 +1413,7 @@ static void case_cube(void)
     static float cv[36 * 6];
     static uint8_t face[8 * 8 * 4];
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     int f, k, ok;
     printf("cube (an 8x8 cube map, a face a quad)\n");
@@ -1299,7 +1444,7 @@ static void case_cube(void)
  * the rows' padding (columns 130, 131) is reported. */
 static void case_padded(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int k, ok, x, y;
     long wrong = 0, pad_written = 0;
     printf("padded (the depth case in a 130-pixel-wide raster frame, rows of 132)\n");
@@ -1339,7 +1484,7 @@ static void case_padded(void)
  * blending that reads the destination writes per sample). */
 static void case_msaa(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int k, ok = 1;
     printf("msaa (the depth case, 4x)\n");
     if (load_flat(&p, "flat-flat.vc4p") < 0) {
@@ -1369,11 +1514,127 @@ static int begin_target(const struct vc4_target *t)
     return vc4_job_begin(&job, t, &pools);
 }
 
+/* rasteroff: a clear-only job stored as a 64x32 raster frame at a base
+ * address 0, 4, 8 and 12 bytes past a 16-byte boundary in rtt (an
+ * application's bitmap may start anywhere: AllocBitMap gave 0x...b4, P5 run
+ * 1), guard words around it; where the clear colour landed. */
+static void case_rasteroff(void)
+{
+    const uint32_t fw = 64, fh = 32, base = 4096, bytes = fw * fh * 4, clear = 0xff2040c0u;
+    uint32_t off;
+    printf("rasteroff (a clear stored at a raster base 0, 4, 8, 12 bytes past 16)\n");
+    for (off = 0; off < 16; off += 4) {
+        struct vc4_target t;
+        uint32_t i, first = ~0u, last = 0, n = 0;
+        memset(&t, 0, sizeof t);
+        t.width = (uint16_t)fw;
+        t.height = (uint16_t)fh;
+        t.color.bus = rtt.bus + base + off;
+        t.color.tiling = VC4_TILING_RASTER;
+        t.color.format = VC4_COLOR_RGBA8888;
+        t.store = VC4_COLOR;
+        t.clear = VC4_COLOR;
+        t.clear_color = clear;
+        vc4_mem_fill(&rtt, 0, base * 2 + bytes, 0x55555555u);
+        if (begin_target(&t) < 0 || vc4_job_run(&job, 1000000) < 0) {
+            check(0, "the job ran");
+            continue;
+        }
+        for (i = 0; i < base * 2 + bytes; i += 4)
+            if (vc4_get32(rtt.cpu + i) == clear) {
+                if (first == ~0u)
+                    first = i;
+                last = i;
+                n++;
+            }
+        printf("  base +%u: %u words the clear colour, from +%ld to +%ld (bytes from the base asked for)%s\n", off, n,
+               first == ~0u ? 0L : (long)first - (long)(base + off), first == ~0u ? 0L : (long)last - (long)(base + off),
+               job.errstat != 0x1000u ? " ERRSTAT not clean" : "");
+        /* the hardware's rule, found here (P5 run 1): the address's low 4
+         * bits are ignored, the frame lands at the base rounded down */
+        check(n == fw * fh && first == base, off ? "stored at the base rounded down to 16 bytes" : "stored where asked");
+    }
+}
+
+/* peekscreen (AmigaOS): can the GPU reach the RTG driver's memory? The
+ * Workbench screen's bitmap lies outside the device tree's RAM (Emu68 on the
+ * Pi 3: 0x395e9000, the firmware's framebuffer, P5 run 1). Only read: its
+ * first 4 KB loaded into the tile buffer as a 64x16 raster frame (rows of
+ * 256 bytes, one after the other) and stored into rtt, then compared with
+ * what the CPU reads there. Nothing is written outside rtt. */
+static void case_peekscreen(void)
+{
+#ifdef __amigaos__
+    const uint32_t fw = 64, fh = 16, bytes = fw * fh * 4;
+    struct Screen *scr;
+    APTR lock;
+    ULONG base = 0, bprow = 0, pixfmt = 0;
+    struct vc4_target t;
+    uint32_t i, same = 0, junk = 0;
+    printf("peekscreen (the GPU reads the Workbench screen's first 4 KB)\n");
+    IntuitionBase = (struct IntuitionBase *)OpenLibrary((CONST_STRPTR) "intuition.library", 39);
+    CyberGfxBase = OpenLibrary((CONST_STRPTR) "cybergraphics.library", 40);
+    if (!IntuitionBase || !CyberGfxBase || !(scr = LockPubScreen(0))) {
+        check(0, "intuition, cybergraphics and the Workbench screen");
+        goto out;
+    }
+    lock = LockBitMapTags(scr->RastPort.BitMap, LBMI_BASEADDRESS, (ULONG)&base, LBMI_BYTESPERROW, (ULONG)&bprow,
+                          LBMI_PIXFMT, (ULONG)&pixfmt, TAG_DONE);
+    if (lock)
+        UnLockBitMap(lock);
+    UnlockPubScreen(0, scr);
+    printf("  screen bitmap at 0x%08lx, %lu bytes a row, pixel format %lu: bus 0x%08lx; the device tree's RAM %s\n",
+           (unsigned long)base, (unsigned long)bprow, (unsigned long)pixfmt, (unsigned long)vc4_os_bus((void *)base),
+           vc4_os_gpu_reachable(base, bytes) ? "holds it" : "does not hold it");
+    if (!lock || !base || (base & 15)) {
+        check(0, "a screen bitmap at a 16-byte boundary");
+        goto out;
+    }
+    memset(&t, 0, sizeof t);
+    t.width = (uint16_t)fw;
+    t.height = (uint16_t)fh;
+    t.color.bus = rtt.bus;
+    t.color.tiling = VC4_TILING_RASTER;
+    t.color.format = VC4_COLOR_RGBA8888;
+    t.color_load_bus = vc4_os_bus((void *)base);
+    t.load = VC4_COLOR;
+    t.store = VC4_COLOR;
+    t.clear = VC4_ZS;
+    vc4_mem_fill(&rtt, 0, bytes, 0x55555555u);
+    if (begin_target(&t) < 0 || vc4_job_run(&job, 1000000) < 0) {
+        check(0, "the job ran");
+        goto out;
+    }
+    for (i = 0; i < bytes; i += 4) {
+        uint32_t cpu = *(volatile uint32_t *)(base + i), gpu = *(volatile uint32_t *)(rtt.cpu + i);
+        if (cpu == gpu)
+            same++;
+        if (gpu == 0x55555555u)
+            junk++;
+    }
+    printf("  %lu of %lu words the same as the CPU reads, %lu left unwritten; ERRSTAT %08lx\n", (unsigned long)same,
+           (unsigned long)(bytes / 4), (unsigned long)junk, (unsigned long)job.errstat);
+    printf("  first words: CPU %08lx %08lx, GPU %08lx %08lx\n", (unsigned long)*(volatile uint32_t *)base,
+           (unsigned long)*(volatile uint32_t *)(base + 4), (unsigned long)*(volatile uint32_t *)rtt.cpu,
+           (unsigned long)*(volatile uint32_t *)(rtt.cpu + 4));
+    check(same == bytes / 4, "the GPU reads the screen's memory at that bus address");
+out:
+    if (CyberGfxBase)
+        CloseLibrary(CyberGfxBase);
+    if (IntuitionBase)
+        CloseLibrary((struct Library *)IntuitionBase);
+    CyberGfxBase = 0;
+    IntuitionBase = 0;
+#else
+    printf("peekscreen: AmigaOS only\n");
+#endif
+}
+
 /* jobs: the depth case's first triangle in one job (colour and depth
  * stored), the other two in a second that loads both. */
 static void case_jobs(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4_target t;
     int k, ok;
     printf("jobs (the depth case in two jobs: colour (raster) and depth (T) stored, then loaded)\n");
@@ -1416,7 +1677,7 @@ static void case_rtt(void)
     static const float full_pos[4 * 2] = {-1, -1, 1, -1, -1, 1, 1, 1};
     static const float full_uv[4 * 2] = {0, 0, 1, 0, 0, 1, 1, 1};
     struct vc4_texture_layout lay;
-    struct vc4p p, tp;
+    static struct vc4p p, tp;
     struct vc4_target t;
     struct vc4p_draw d;
     int k, ok;
@@ -1475,7 +1736,7 @@ static void hdr_case(const char *name, int blend)
     static const float full_uv[4 * 2] = {0, 0, 1, 0, 0, 1, 1, 1};
     struct vc4_texture_layout lay, play;
     uint32_t plane_stride = 0;
-    struct vc4p p, tp;
+    static struct vc4p p, tp;
     struct vc4_target t;
     struct vc4p_draw d;
     int k, ok;
@@ -1608,7 +1869,7 @@ static long compare_inverted(void)
 
 static void case_drawbuf(void)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int k, pass, ok = 1;
     printf("drawbuf (gl_FragData[0] and [1] in two passes over the depth case's draws)\n");
     if (load_flat(&p, "flat-mrt.vc4p") < 0) {
@@ -1655,7 +1916,7 @@ static void case_genmip(void)
     static const float full_uv[4 * 2] = {0, 0, 1, 0, 0, 1, 1, 1};
     static uint8_t lv0[MIP_SIZE * MIP_SIZE * 4];
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4p_draw d;
     struct vc4_target t;
     const struct vc4p_variant *fs;
@@ -1754,7 +2015,7 @@ static void case_copytex(void)
     static const float full_pos[4 * 2] = {-1, -1, 1, -1, -1, 1, 1, 1};
     static const float sub_uv[4 * 2] = {0.25f, 0.25f, 0.75f, 0.25f, 0.25f, 0.75f, 0.75f, 0.75f};
     struct vc4_texture_layout src, dst;
-    struct vc4p p, tp;
+    static struct vc4p p, tp;
     struct vc4_target t;
     struct vc4p_draw d;
     uint32_t x, y;
@@ -1833,7 +2094,7 @@ static void case_hdrrange(void)
     static const float tri[9] = {-0.5f, -0.5f, 0, 0.5f, -0.5f, 0, 0, 0.5f, 0};
     static const uint16_t want[4] = {0x4000, 0xb800, 0x3400, 0x3c00};
     struct vc4_texture_layout lay;
-    struct vc4p p;
+    static struct vc4p p;
     struct vc4_target t;
     uint16_t hv[4];
     uint32_t o;
@@ -1932,7 +2193,7 @@ static void case_speed(void)
     struct vc4_job sj;
     struct vc4_mem sfb, stex;
     struct vc4_target t;
-    struct vc4p p, tp;
+    static struct vc4p p, tp;
     struct vc4_texture_layout lay;
     uint8_t *texels;
     uint32_t tw[3], i;
@@ -2045,7 +2306,7 @@ static void case_overflow(void)
     static unsigned short idx[3 * 160 * 1024 / 2 * 2];
     static uint8_t once[W * H * 4];
     const uint32_t per_draw = 3 * 1024 * 160; /* 160 times round the ring: 163,840 triangles */
-    struct vc4p p;
+    static struct vc4p p;
     int k, pass, ok = 1;
     uint32_t i, ovf;
     long diff = 0;
@@ -2110,7 +2371,7 @@ static const char *const all_cases[] = {"triangle", "texture", "depth",  "blend"
                                         "cube",     "padded",  "msaa",    "jobs",    "rtt",    "overflow",
                                         "pclear",   "depthtex", "mipmap",  "texhalf", "halfmip", "mirror",  "mipemu",
                                         "anisoquad", "clipz",  "hdr",     "hdrblend", "hdrrange",
-                                        "drawbuf",  "genmip",   "copytex"};
+                                        "drawbuf",  "genmip",   "copytex", "rasteroff", "smallmip", "stencilz"};
 #define NCASES (int)(sizeof all_cases / sizeof all_cases[0])
 
 /* One case by name; the jobs it ran (0: unknown). */
@@ -2198,6 +2459,16 @@ static int run_case(const char *name)
     } else if (!strcmp(name, "rtt")) {
         case_rtt();
         return 2;
+    } else if (!strcmp(name, "stencilz")) {
+        case_stencilz();
+    } else if (!strcmp(name, "smallmip")) {
+        case_smallmip();
+        return 4;
+    } else if (!strcmp(name, "peekscreen")) {
+        case_peekscreen();
+    } else if (!strcmp(name, "rasteroff")) {
+        case_rasteroff();
+        return 4;
     } else if (!strcmp(name, "speed")) {
         case_speed();
     } else if (!strcmp(name, "overflow")) {
@@ -2216,7 +2487,7 @@ static int run_case(const char *name)
  * mid-job leaves (PI3_PLAN §2 "Power", the lost tiles). */
 static void abort_job(const char *mode)
 {
-    struct vc4p p;
+    static struct vc4p p;
     int k, ok = 1;
     if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(1) < 0)
         return;
