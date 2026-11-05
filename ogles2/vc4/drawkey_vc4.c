@@ -42,8 +42,10 @@ const struct vc4_tex_format *ogles2_vc4_storage(const struct OGLES2Texture *t)
     if (class_of(f, ty) == CLASS_DEPTH16 || class_of(f, ty) == CLASS_DEPTH24)
         return vc4_tex_format(f == GL_DEPTH_STENCIL_OES ? GL_DEPTH_STENCIL_OES : GL_DEPTH_COMPONENT,
                               f == GL_DEPTH_STENCIL_OES ? GL_UNSIGNED_INT_24_8_OES : GL_UNSIGNED_INT);
+    if (class_of(f, ty) == CLASS_BLOCKS)
+        return vc4_tex_format(GL_RGBA, GL_UNSIGNED_BYTE); /* S3TC: decoded at upload (texture_vc4.c) */
     if (class_of(f, ty) != CLASS_RGBA8)
-        return 0; /* float, S3TC: not stored on VC4 yet */
+        return 0; /* float: not stored on VC4 yet */
     if (f == GL_ETC1_RGB8_OES)
         return vc4_tex_format(GL_RGB, GL_UNSIGNED_BYTE); /* decoded by texture.c */
     if (f == GL_BGRA_EXT)

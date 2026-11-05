@@ -1292,7 +1292,10 @@ Everything that can run here runs here first (the developer, 2026-11-03).
      (BGRA and ETC1 arrive converted: stored as RGBA8 and RGB8), the miptree in tiling.c's layout,
      whole levels by `vc4_texture_store`, boxes texel by texel, loads back after a job drew into
      one, renaming, a level as a render target (RGBA8888, BGR565), the TMU's words P0, P1, P2
-     for the uniform stream; float and S3TC textures not stored (left). **Depth textures
+     for the uniform stream; float textures not stored (left). **S3TC (2026-11-05)**: the
+     blocks decoded on the CPU as they are stored (`ogles2/vc4/s3tc.c`, our own decoder: equal to
+     Mesa's texel for texel on 20,000 random blocks of each of DXT1 RGB, DXT1 RGBA, DXT3 and DXT5,
+     `tests/pi3/s3tc`), into RGBA8; the four S3TC/DXT names offered. **Depth textures
      (2026-11-05)**, as Mesa's vc4 has them: Z24S8 words read as RGBA8888 that the shader scales
      (the key's X8Z24 for `DEPTH_COMPONENT` of either type, S8_UINT_Z24 for `DEPTH_STENCIL`,
      sampled as luminance: `-s texd24,texds,texd16` in the compiler, the key builder equal to

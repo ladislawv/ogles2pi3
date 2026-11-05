@@ -49,7 +49,7 @@ LIB_SRC   := ogles2/library.c ogles2/log.c ogles2/context.c ogles2/device.c ogle
              ogles2/buffer.c ogles2/compiler.c ogles2/etc1.c ogles2/fbo.c ogles2/copy.c ogles2/share.c \
              ogles2/debug.c ogles2/vc4keys.c ogles2/v3d/backend_v3d.c ogles2/v3d/job_v3d.c ogles2/v3d/draw_v3d.c ogles2/v3d/texture_v3d.c ogles2/v3d/fbo_v3d.c ogles2/v3d/device_v3d.c ogles2/v3d/v3dp_v3d.c ogles2/v3d/program_v3d.c \
              ogles2/vc4/backend_vc4.c ogles2/vc4/key_vc4.c ogles2/vc4/program_vc4.c ogles2/vc4/job_vc4.c \
-             ogles2/vc4/draw_vc4.c ogles2/vc4/texture_vc4.c ogles2/vc4/fbo_vc4.c ogles2/vc4/drawkey_vc4.c
+             ogles2/vc4/draw_vc4.c ogles2/vc4/texture_vc4.c ogles2/vc4/fbo_vc4.c ogles2/vc4/drawkey_vc4.c ogles2/vc4/s3tc.c
 # Library files that use v3dcore directly
 V3D_USERS := device job draw v3dp texture buffer fbo share v3d/backend_v3d v3d/job_v3d v3d/draw_v3d v3d/texture_v3d v3d/fbo_v3d v3d/device_v3d
 GEN_LIB   := $(B)/gen/ogles2/dispatch_table.c $(B)/gen/ogles2/stubs.c

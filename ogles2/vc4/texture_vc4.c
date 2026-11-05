@@ -16,8 +16,10 @@
  * depth word a texel: 16 bits, or 24 bits over the stencil byte) are Z24S8
  * words, the depth in the top 24 bits, as the tile buffer stores them (a
  * job draws into one: tex_zs_surface) and the shader reads them (Mesa's);
- * sampled nearest (filtering would mix the word's bytes). Float and S3TC
- * textures are not stored (left, §2.1).
+ * sampled nearest (filtering would mix the word's bytes). S3TC levels (their
+ * RAM copies hold the blocks) are decoded as they are stored (s3tc.c, Mesa's
+ * texels) into RGBA8: VC4's TMU has no BC types. Float textures are not
+ * stored (left, §2.1).
  *
  * MIT licence (LICENSE).
  */
@@ -31,6 +33,7 @@
 #include "vc4_os.h"
 #include "v3d_types.h"
 #include "key_vc4.h"
+#include "s3tc.h"
 #include "backend_vc4.h"
 
 /* The GPU copy (the front end's t->gpu, its type opaque here). */
@@ -167,22 +170,63 @@ void ogles2_vc4_tex_free(struct OGLES2Texture *t)
     t->gpu = 0;
 }
 
-/* A box of level l of face k from the RAM copy src (w texels a row). */
+static void store_box(struct vc4_tex *g, int cls, int k, int l, const UBYTE *src, int x, int y, int w, int h);
+
+/* An S3TC box's blocks (rows of ceil(w/4) blocks) decoded into w x h RGBA8
+ * texels; NULL out of memory. */
+static UBYTE *decode_blocks(GLenum format, const UBYTE *src, int w, int h)
+{
+    int type = format == GL_COMPRESSED_RGB_S3TC_DXT1_EXT    ? VC4_S3TC_DXT1_RGB
+             : format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT   ? VC4_S3TC_DXT1_RGBA
+             : format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT   ? VC4_S3TC_DXT3 : VC4_S3TC_DXT5;
+    ULONG bb = dxt_block_bytes(format), bw = blocks4((ULONG)w), bx, by;
+    UBYTE *rgba = AllocVec((ULONG)w * (ULONG)h * 4 + 4, MEMF_ANY), texels[16][4];
+    int i, j;
+    if (!rgba)
+        return 0;
+    for (by = 0; by < blocks4((ULONG)h); by++)
+        for (bx = 0; bx < bw; bx++) {
+            vc4_s3tc_block(src + (by * bw + bx) * bb, type, texels);
+            for (j = 0; j < 4; j++)
+                for (i = 0; i < 4; i++) {
+                    ULONG px = bx * 4 + (ULONG)i, py = by * 4 + (ULONG)j;
+                    if (px < (ULONG)w && py < (ULONG)h)
+                        memcpy(rgba + (py * (ULONG)w + px) * 4, texels[j * 4 + i], 4);
+                }
+        }
+    return rgba;
+}
+
+/* A box of level l of face k from the RAM copy src (w texels a row; S3TC:
+ * the box on block bounds, src its blocks). */
 void ogles2_vc4_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w, int h)
 {
     struct vc4_tex *g = VT(t);
+    if (!g || l >= (int)g->lay.levels || w <= 0 || h <= 0)
+        return;
+    if (g->cls == CLASS_BLOCKS) {
+        UBYTE *rgba = decode_blocks(t->f[k].format[l], src, w, h);
+        if (rgba) {
+            store_box(g, CLASS_RGBA8, k, l, rgba, x, y, w, h);
+            FreeVec(rgba);
+        }
+        return;
+    }
+    store_box(g, g->cls, k, l, src, x, y, w, h);
+}
+
+static void store_box(struct vc4_tex *g, int cls, int k, int l, const UBYTE *src, int x, int y, int w, int h)
+{
     const struct vc4_level *lv;
     ULONG cpp, row;
     UBYTE *packed, *base;
     int i, j;
-    if (!g || l >= (int)g->lay.levels || w <= 0 || h <= 0)
-        return;
     cpp = g->lay.cpp;
     row = (ULONG)w * cpp;
     if (!(packed = AllocVec(row * (ULONG)h + 4, MEMF_ANY)))
         return;
     for (j = 0; j < h; j++)
-        pack(g->f, g->cls, src + (ULONG)j * (ULONG)w * 4, packed + (ULONG)j * row, (ULONG)w);
+        pack(g->f, cls, src + (ULONG)j * (ULONG)w * 4, packed + (ULONG)j * row, (ULONG)w);
     lv = &g->lay.level[l];
     base = face_base(g, k);
     if (x == 0 && y == 0 && (ULONG)w == lv->width && (ULONG)h == lv->height) {

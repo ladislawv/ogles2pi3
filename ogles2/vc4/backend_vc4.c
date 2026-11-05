@@ -36,7 +36,8 @@ static const struct OGLES2Caps caps = {
     "GL_EXT_debug_marker GL_OES_required_internalformat GL_OES_rgb8_rgba8 "
     "GL_OES_draw_elements_base_vertex GL_OES_compressed_ETC1_RGB8_texture GL_OES_packed_depth_stencil "
     "GL_EXT_blend_minmax GL_EXT_texture_format_BGRA8888 GL_OES_texture_npot GL_OES_fbo_render_mipmap "
-    "GL_OES_standard_derivatives GL_OES_depth_texture",
+    "GL_OES_standard_derivatives GL_OES_depth_texture GL_EXT_texture_compression_dxt1 "
+    "GL_EXT_texture_compression_s3tc GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5",
     2048,  /* textures (vc4_screen.c) */
     2048,  /* viewport and renderbuffers: Mesa's on the Pi 3 (§2 "Render targets") */
     1,     /* draw buffers: one colour buffer (EXT_draw_buffers comes emulated, §2.1) */
