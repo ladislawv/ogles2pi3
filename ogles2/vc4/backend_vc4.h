@@ -10,6 +10,7 @@
 #include <exec/types.h>
 #include <GLES2/gl2.h>
 #include "vc4core.h"
+#include "key_vc4.h"
 
 struct OGLES2Variant;
 struct ogles2_rd;
@@ -125,9 +126,20 @@ BOOL ogles2_vc4_tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *
 /* A draw's sampler: the texture unit's texture of its kind (OGLES2_TEX_*),
  * complete or the fallback, its configuration words P0, P1, P2, its
  * storage for the key (FALSE: none at all). */
-struct vc4_tex_format;
 BOOL ogles2_vc4_sampler(struct OGLES2Context *ctx, int unit, int kind, ULONG p[3],
                         const struct vc4_tex_format **f, GLenum *wrap_s, GLenum *wrap_t, ULONG *first);
+
+/* drawkey_vc4.c: VC4's storage of a texture (its level 0's format and
+ * type; 0: none yet); the stencil test's uniform words, two-sidedness and
+ * whether the third word is needed; a draw's key records (key_vc4.h) for a
+ * target of colour class color_class (0 RGBA8, 1 BGRA8, 2 RGB565) and the
+ * samplers' entries per stage. */
+const struct vc4_tex_format *ogles2_vc4_storage(const struct OGLES2Texture *t);
+struct OGLES2State;
+struct OGLES2Program;
+void ogles2_vc4_stencil_words(const struct OGLES2State *s, ULONG w[3], BOOL *twoside, BOOL *full);
+void ogles2_vc4_draw_keys(struct OGLES2Context *ctx, const struct OGLES2Program *p, GLenum mode, UBYTE color_class,
+                          const struct vc4_key_sampler key[2][16], const UBYTE n[2], int psize, UBYTE *kfs, UBYTE *kvs);
 
 /* fbo_vc4.c */
 BOOL ogles2_vc4_rb_zs_storage(GLenum format, UWORD w, UWORD h, struct v3d_mem *mem, ULONG *base, ULONG *ub,

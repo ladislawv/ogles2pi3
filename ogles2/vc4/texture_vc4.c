@@ -41,21 +41,6 @@ struct vc4_tex
 
 static BOOL told_format;
 
-/* The storage of level 0's format and type; 0: none on VC4. */
-static const struct vc4_tex_format *storage(const struct OGLES2Texture *t)
-{
-    GLenum f = t->f[0].format[0], ty = t->f[0].type[0];
-    const struct vc4_tex_format *s;
-    if (class_of(f, ty) != CLASS_RGBA8)
-        return 0;
-    if (f == GL_ETC1_RGB8_OES)
-        return vc4_tex_format(GL_RGB, GL_UNSIGNED_BYTE); /* decoded by texture.c */
-    if (f == GL_BGRA_EXT)
-        return vc4_tex_format(GL_RGBA, GL_UNSIGNED_BYTE); /* converted by texture.c */
-    s = vc4_tex_format(f, ty);
-    return s ? s : vc4_tex_format(GL_RGBA, GL_UNSIGNED_BYTE);
-}
-
 static void le16(UBYTE *d, ULONG v)
 {
     d[0] = (UBYTE)v;
@@ -222,7 +207,7 @@ BOOL ogles2_vc4_tex_upload(struct OGLES2Texture *t)
     ogles2_vc4_tex_free(t);
     if (!base_ok(t))
         return TRUE; /* nothing to sample yet (a cube map: until all faces agree) */
-    if (!(f = storage(t))) {
+    if (!(f = ogles2_vc4_storage(t))) {
         if (!told_format) {
             told_format = TRUE;
             ogles2_log("texture %ld: format 0x%04lx, type 0x%04lx: not stored on VC4 yet (it reads black; "

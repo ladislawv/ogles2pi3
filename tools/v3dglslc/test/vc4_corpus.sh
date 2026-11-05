@@ -2,7 +2,11 @@
 # Compiles every shader pair v42_unchanged.sh uses for the Raspberry Pi 3's
 # VC4 (v3dglslc -g 21 -o, docs/PI3_PLAN.md P4) and reports per program:
 # written (with its variants) or failed, and why (the driver's message).
-#   usage: vc4_corpus.sh      -> $OUT/vc4corpus/<set>/*.vc4p, *.log
+# KEYS=<dir>: the key manifests, probe R's files from runs on the Pi 4
+# (T:ogles2-vc4keys/<hash>.keys, ogles2/vc4/drawkey_vc4.c): a program with
+# a file there is compiled again with its keys (-k), its variants for those
+# draws in the file too.
+#   usage: [KEYS=dir] vc4_corpus.sh      -> $OUT/vc4corpus/<set>/*.vc4p, *.log
 set -u
 OUT=${OUT:-$HOME/ogles2-build-pi3/v3dglslc}
 B=${B:-$HOME/ogles2-build-pi3/m68k}
@@ -19,6 +23,15 @@ one() { # set dir vs fs
     mkdir -p "$W/$set"
     log=$W/$set/${vs%.*}-${fs%.*}.log
     (cd "$dir" && "$V3DGLSLC" -g 21 -o "$W/$set" "$vs" "$fs" > "$log" 2>&1)
+    if [ -n "${KEYS:-}" ] && [ -f "$W/$set/${vs%.*}-${fs%.*}.vc4p" ]; then
+        # the program's hash (its file name's 24 digits): its manifest
+        local h
+        h=$(python3 "$REPO/v3dp/v3dp_dump.py" "$W/$set/${vs%.*}-${fs%.*}.vc4p" | sed -n 's/^PROGRAM hash \([0-9a-f]\{24\}\).*/\1/p')
+        if [ -n "$h" ] && [ -f "$KEYS/$h.keys" ]; then
+            (cd "$dir" && "$V3DGLSLC" -g 21 -k "$KEYS/$h.keys" -o "$W/$set" "$vs" "$fs" > "$log" 2>&1)
+            echo "  ($set ${vs%.*}-${fs%.*}: with $KEYS/$h.keys)"
+        fi
+    fi
     if [ -f "$W/$set/${vs%.*}-${fs%.*}.vc4p" ]; then
         ok=$((ok + 1))
         printf "  %-10s %-34s %s\n" "$set" "${vs%.*}-${fs%.*}" "$(grep -c '^vc4-variant' "$log") variants"

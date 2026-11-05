@@ -592,6 +592,9 @@ struct OGLES2Context
 #define OGLES2_PROBE_CPU_COPY 1024UL /* K: glCopyTex* through the CPU, not drawn by the GPU (copy.c) */
 /* The Pi 3 port's measurement (docs/PI3_PLAN.md §4.2, P2): */
 #define OGLES2_PROBE_VC4KEYS 2048UL /* V: log the distinct VC4 shader keys each program's draws need (vc4keys.c) */
+#define OGLES2_PROBE_VC4RECORDS 4096UL /* R: write each program's VC4 key records to T:ogles2-vc4keys/ for the
+                                        * offline corpus (ogles2/vc4/drawkey_vc4.c) */
+void ogles2_vc4_record_draw(struct OGLES2Context *ctx, struct OGLES2Program *p, GLenum mode, int psize);
 
 void ogles2_state_init(struct OGLES2Context *ctx);
 BOOL ogles2_state_dither(struct OGLES2Context *ctx); /* GL_DITHER enabled */

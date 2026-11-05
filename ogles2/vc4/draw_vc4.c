@@ -124,69 +124,6 @@ static BOOL sampler_states(struct OGLES2Context *ctx, struct OGLES2Program *p, s
     return TRUE;
 }
 
-static const unsigned short target_format[3] = {VC4K_R8G8B8A8_UNORM, VC4K_B8G8R8A8_UNORM, VC4K_B5G6R5_UNORM};
-
-/* Mesa's stencil words (vc4_state.c, tlb_stencil_setup_*): front, back,
- * the write masks when a face's is not 1, 3, 15 or 255. */
-static ULONG stencil_wm_bits(GLuint m)
-{
-    m &= 0xff;
-    return m == 0x1 ? 0 : m == 0x3 ? 1 : m == 0xf ? 2 : m == 0xff ? 3 : 0xff;
-}
-
-static ULONG stencil_op(GLenum op)
-{
-    switch (op) {
-    case GL_ZERO: return 0;
-    case GL_REPLACE: return 2;
-    case GL_INCR: return 3;
-    case GL_DECR: return 4;
-    case GL_INVERT: return 5;
-    case GL_INCR_WRAP: return 6;
-    case GL_DECR_WRAP: return 7;
-    default: return 1; /* GL_KEEP */
-    }
-}
-
-static ULONG stencil_bits(const struct OGLES2State *s, int f, ULONG wm)
-{
-    ULONG b = 0;
-    if (wm != 0xff)
-        b |= wm << 28;
-    return b | stencil_op(s->stencil_zfail[f]) << 25 | stencil_op(s->stencil_zpass[f]) << 22 |
-           stencil_op(s->stencil_fail[f]) << 19 | (ULONG)(s->stencil_func[f] - GL_NEVER) << 16 |
-           (s->stencil_value_mask[f] & 0xff);
-}
-
-/* The stencil uniforms (the reference filled in), and whether the back face
- * differs (the key's two-sided flag) and the third word is needed. */
-static void stencil_words(const struct OGLES2State *s, ULONG w[3], BOOL *twoside, BOOL *full)
-{
-    ULONG fwm = stencil_wm_bits(s->stencil_write_mask[0]), bwm;
-    BOOL back = s->stencil_func[1] != s->stencil_func[0] || s->stencil_fail[1] != s->stencil_fail[0] ||
-                s->stencil_zfail[1] != s->stencil_zfail[0] || s->stencil_zpass[1] != s->stencil_zpass[0] ||
-                s->stencil_ref[1] != s->stencil_ref[0] ||
-                (s->stencil_value_mask[1] & 0xff) != (s->stencil_value_mask[0] & 0xff) ||
-                (s->stencil_write_mask[1] & 0xff) != (s->stencil_write_mask[0] & 0xff);
-    GLuint back_mask = s->stencil_write_mask[0];
-    bwm = fwm;
-    w[0] = stencil_bits(s, 0, fwm) | ((ULONG)s->stencil_ref[0] & 0xff) << 8;
-    w[1] = 0;
-    w[2] = 0;
-    if (back) {
-        bwm = stencil_wm_bits(s->stencil_write_mask[1]);
-        back_mask = s->stencil_write_mask[1];
-        w[0] |= 1UL << 30;
-        w[1] = stencil_bits(s, 1, bwm) | 2UL << 30 | ((ULONG)s->stencil_ref[1] & 0xff) << 8;
-    } else {
-        w[0] |= 3UL << 30;
-    }
-    if (fwm == 0xff || bwm == 0xff)
-        w[2] = (s->stencil_write_mask[0] & 0xff) | (back_mask & 0xff) << 8;
-    *twoside = back;
-    *full = w[2] != 0;
-}
-
 /* ---- uniform streams ---- */
 
 struct draw_info
@@ -544,16 +481,14 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     const struct OGLES2Elements *el = dc->el;
     struct vc4_draw *d;
     struct samplers sm;
-    struct vc4_fs_state fss;
-    struct vc4_vs_state vss;
     struct draw_info di;
     struct attr_src src[16];
     const struct OGLES2Variant *cs, *vs, *fs;
     struct chosen ch;
     UBYTE kfs[VC4_KEY_FS_BYTES], kvs[VC4_KEY_VS_BYTES];
     ULONG code[3], unif[3], rec;
-    GLenum mode = dc->mode, fsmode;
-    BOOL twoside = FALSE, full = FALSE, points;
+    GLenum mode = dc->mode;
+    BOOL twoside = FALSE, full = FALSE, points = mode == GL_POINTS;
     int nslots = p->nslots == 0xff ? 0 : p->nslots, i, k;
     struct vc4_cl *cl = &c->job[c->build].bcl;
 
@@ -563,55 +498,16 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
         goto nomem;
     memset(&sm, 0, sizeof(sm));
     memset(&di, 0, sizeof(di));
-    memset(&fss, 0, sizeof(fss));
-    memset(&vss, 0, sizeof(vss));
     if (!sampler_states(ctx, p, &sm))
         goto nomem;
     mark(ctx, 2);
 
-    /* the fragment key */
-    fsmode = mode >= GL_TRIANGLES && s->polygon_mode != GL_FILL ? (s->polygon_mode == GL_POINT ? GL_POINTS : GL_LINES)
-                                                                 : mode;
-    points = mode == GL_POINTS;
-    fss.color_format = target_format[c->color_format];
-    fss.prim = fsmode == GL_POINTS ? 2 : (fsmode == GL_LINES || fsmode == GL_LINE_LOOP || fsmode == GL_LINE_STRIP) ? 1 : 0;
-    fss.depth_test = (s->caps & OGLES2_CAP_DEPTH_TEST) && ctx->fb_depth_bits;
-    fss.stencil_test = (s->caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits;
-    if (fss.stencil_test) {
-        stencil_words(s, di.stencil, &twoside, &full);
-        fss.stencil_twoside = (unsigned char)twoside;
-        fss.stencil_full_writemasks = (unsigned char)full;
-    }
-    fss.point_coord_upper_left = (unsigned char)y_down(ctx);
-    fss.msaa = ctx->job_msaa ? 1 : 0;
-    fss.sample_coverage = (s->caps & OGLES2_CAP_SAMPLE_COVERAGE) ? 1 : 0;
-    fss.alpha_to_coverage = (s->caps & OGLES2_CAP_SAMPLE_ALPHA_TO_COVERAGE) ? 1 : 0;
-    fss.blend = (s->caps & OGLES2_CAP_BLEND) ? 1 : 0;
-    fss.eq_rgb = s->blend_eq_rgb;
-    fss.eq_alpha = s->blend_eq_alpha;
-    fss.src_rgb = s->blend_src_rgb;
-    fss.dst_rgb = s->blend_dst_rgb;
-    fss.src_alpha = s->blend_src_alpha;
-    fss.dst_alpha = s->blend_dst_alpha;
-    fss.colormask = (unsigned char)((s->color_mask[0] ? 1 : 0) | (s->color_mask[1] ? 2 : 0) |
-                                    (s->color_mask[2] ? 4 : 0) | (s->color_mask[3] ? 8 : 0));
-    fss.nsamplers = sm.n[1];
-    for (k = 0; k < sm.n[1]; k++)
-        fss.samp[k] = sm.key[1][k];
-    /* the vertex key */
-    vss.nattrs = (unsigned char)(nslots < 8 ? nslots : 8);
-    for (i = 0; i < vss.nattrs; i++) {
-        GLuint g = p->slot_attrib[i];
-        const struct OGLES2Array *a = g < OGLES2_MAX_VERTEX_ATTRIBS ? &ctx->array[g] : 0;
-        vss.attr_format[i] = (unsigned short)(a && a->enabled ? vc4_attr_format(a->type, a->size, a->normalized)
-                                                              : VC4K_R32G32B32A32_FLOAT);
-    }
-    vss.per_vertex_point_size = (unsigned char)points;
-    vss.nsamplers = sm.n[0];
-    for (k = 0; k < sm.n[0]; k++)
-        vss.samp[k] = sm.key[0][k];
-    vc4_key_fs(kfs, &fss, 1);
-    vc4_key_vs(kvs, &vss, 1);
+    /* the keys (drawkey_vc4.c); gl_PointSize's flag: points (the variant
+     * search tries both) */
+    if ((s->caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits)
+        ogles2_vc4_stencil_words(s, di.stencil, &twoside, &full);
+    ogles2_vc4_draw_keys(ctx, p, mode, c->color_format,
+                         (const struct vc4_key_sampler(*)[OGLES2_MAX_STAGE_SAMPLERS])sm.key, sm.n, points, kfs, kvs);
     choose(ctx, d, dc, kfs, kvs, points, &ch);
     cs = ch.v[0];
     vs = ch.v[1];

@@ -115,6 +115,8 @@ struct OGLES2Context *ogles2_aglCreateContext2(ULONG *errcode, struct TagItem *t
                     ctx->probe |= OGLES2_PROBE_CPU_COPY;
                 else if (*p == 'V')
                     ctx->probe |= OGLES2_PROBE_VC4KEYS;
+                else if (*p == 'R')
+                    ctx->probe |= OGLES2_PROBE_VC4RECORDS;
             }
             ogles2_log("aglCreateContext2: probes \"%s\" (ENV:OGLES2/Probe)", var);
             if ((ctx->probe & OGLES2_PROBE_ADDR) &&

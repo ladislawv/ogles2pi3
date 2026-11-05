@@ -438,6 +438,8 @@ static void draw_arrays(struct OGLES2Context *ctx, struct OGLES2Program *p, GLen
     }
     if (ctx->probe & OGLES2_PROBE_VC4KEYS)
         vc4keys_glue(ctx, p, mode, fsmode, vs, nslots);
+    if (ctx->probe & OGLES2_PROBE_VC4RECORDS) /* gl_PointSize: as the Pi 4's variant writes it */
+        ogles2_vc4_record_draw(ctx, p, mode, mode == GL_POINTS && vs->writes_psiz);
 }
 
 /* The vertex input slot of column k of an attribute (a matrix's columns are

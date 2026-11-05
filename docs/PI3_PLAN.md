@@ -1195,7 +1195,13 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    compiled for VC4 as a whole is done (36 of 36, §4.3, with the draw-buffers variants of patch
    0016); variants compile from given keys (`-k`, patch 0017, §4.2); the request's device field
    and S2 with both drivers are done, S1 and S2 identical (§4.5); the key builder of the VC4
-   backend is done and equal to Mesa's (§4.2). Left: the key manifests of the offline corpus, the
+   backend is done and equal to Mesa's (§4.2). **The key manifests' path is done (2026-11-05)**: probe R
+   (`ENV:OGLES2/Probe` R, `ogles2/vc4/drawkey_vc4.c`) writes each program's distinct key pairs, as the
+   VC4 backend builds them (one key builder for the backend's draw and the probe), to
+   `T:ogles2-vc4keys/<hash>.keys` on either card; `vc4_corpus.sh` with `KEYS=<dir>` compiles a
+   program with its file (`-k`; checked on the PC: 36 of 36 written, a program with a manifest
+   3 variants alone and 17 with it). Left: the manifests themselves (runs of the corpus's
+   programs on the Pi 4 with probe R: the A1200), the
    version-2 server path and S2's time and memory on the A1200 with the Pi 3 (P5), and patch
    0017 and the others checked for big-endian differences there (the comparisons so far ran
    on vamos, which is big-endian: they cover it).
