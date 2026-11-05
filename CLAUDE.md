@@ -31,6 +31,10 @@ repositories: git in WSL needs credentials (CONTRIBUTING.md, "Access").
 - Never commit `tools/amictl/station.local` (the test station's token) or screenshots.
 - Tests on the A1200 run through `tools/amictl` (`runpkg` a package from
   `tests/a1200/<name>`); visible tests show each state about a second; benchmarks run short.
+  With the Pi 3 card they run through the amigent fork (`C:\- CPP\amigent`, private
+  `ladislawv/amigent`, port 6502): `bash tests/a1200/p5_run.sh <package>...` with the compile
+  bridge running in WSL (CONTRIBUTING.md, "The Pi 3 card and the amigent station").
+- Never commit the amigent key (`~/.config/amigent/key-*`, `Stuff:amigent/amigent.key`).
 - Before rebooting the Amiga or changing its system files, ask the user.
 - Do not modify sources outside this repository (the Quake III trees are clones made by
   `ports/ioq3/sources.sh`; changes to them are patches in `ports/ioq3*/patches/`).
@@ -48,3 +52,9 @@ repositories: git in WSL needs credentials (CONTRIBUTING.md, "Access").
   The station cannot answer the installer's questions: `Execute Install-ogles2 ALL`.
 - Quake III keeps settings in `home/baseq3/q3config.cfg` between runs: delete it for a clean
   comparison. A timedemo's sound is garbled by nature (it runs faster than real time).
+- The Pi 3 card's station (amigentd): one batch at a time (four command channels, a fifth
+  pushes one out); a run killed on the PC keeps running on the Amiga (`amigent-ctl abort` or
+  reboot); transfers in 8 KB pieces (larger ones dropped the Wi-Fi link); a run started with a
+  plain `&` in a tool call outlives it: start batches as background tasks and watch their log.
+- Shell heredocs eat backslashes (`\a`, `\n` in Python strings, Windows paths): edit files with
+  the editor, or write scripts to a file first.

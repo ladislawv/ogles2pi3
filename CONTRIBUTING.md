@@ -21,6 +21,11 @@ is built by `release/build_release.sh`. What is left (publishing the release; th
 station's large-reply stall, postponed) is in §13's "Next" list.
 [`CLAUDE.md`](CLAUDE.md) has the short version for an AI agent.
 
+This repository (`ogles2pi3`) adds the Raspberry Pi 3 (VideoCore IV) beside the Pi 4: its plan
+and status are [`docs/PI3_PLAN.md`](docs/PI3_PLAN.md), §10 ending with the work queue (P5, the
+VC4 backend on the A1200, is under way: the regression packages and Quake III run on the Pi 3
+card). Testing with the Pi 3 card: "The Pi 3 card and the amigent station" below.
+
 ## Setting up a build machine
 
 Ubuntu 24.04, natively or in WSL on Windows. The repository can live anywhere (also on a
@@ -158,6 +163,45 @@ The bridge uses port 6803 on the station: `ogles3`'s, which may run beside it, u
 Any other package can use the bridge the same way: `bash tests/a1200/bridge.sh start <package>`
 before `amictl runpkg`, `bash tests/a1200/bridge.sh stop <job>` after (on the Pi 3 card every
 program needs its VC4 variants compiled).
+
+### The Pi 3 card and the amigent station
+
+The Pi 3 (VideoCore IV) work in this repository (`ogles2pi3`) is tested on the same A1200 with
+the Pi 3 card in the PiStorm; [`docs/PI3_PLAN.md`](docs/PI3_PLAN.md) §10 has where it stands
+and the work queue. Swapping the card means rebooting the Amiga. With the Pi 3 card:
+
+- **Network:** the Pi 3's Ethernet sits behind its USB hub, which Emu68 has no driver for, so
+  the A1200 is on Wi-Fi (Emu68's `wifipi.device` in Roadshow), same address. A weak signal
+  drops the link; so did the Amiga sending in large blocks: transfers go in 8 KB pieces
+  (below). After a drop the screen may still say Online: a reset brings it back.
+- **The station is amigent**, a fork of
+  [akustikrausch/amigent](https://github.com/akustikrausch/amigent) in the private
+  [ladislawv/amigent](https://github.com/ladislawv/amigent) (checked out in `C:\- CPP\amigent`,
+  `upstream` the original): `amigentd` on port 6502, its command channels each in a process of
+  their own, and `amigent-ctl`, amictl's command line on it (`amigent-ctl --help`). Set up:
+  `python -m venv .venv` and `.venv/Scripts/pip install -e .` in the fork; `amiga/amigentd.c`
+  builds with bebbo's gcc (`m68k-amigaos-gcc -std=gnu99 -O2 -mcpu=68020 -noixemul ... -lamiga`,
+  no TLS) as well as vbcc. On the Amiga it lives in `Stuff:amigent/` (`amigentd`, a key file,
+  `amigent.allow` with the PC's address, `amigent.log`) and starts from `S:User-Startup` (its
+  block after amictld's). The PC's copy of the key: `~/.config/amigent/key-<address>`. Its
+  docs: the fork's `docs/PROTOCOL.md` (ports, the `ALLOW` and `LOG` options, commands 40 to 42).
+- **Running packages:** `bash tests/a1200/p5_run.sh <package>...` (Git Bash; the compile bridge,
+  `tools/compile_bridge/compile_bridge.py`, running in WSL). It builds each package with the
+  sync-logging library, puts a stand-in in place of every `v3dglslc` (the programs are compiled
+  on the PC through `v3dglslc-remote`, started detached from `Stuff:amigent/bridge/`), assigns
+  `OGLES2Cache:` to a drawer on the Amiga's disk, and runs `amigent-ctl runpkg` (only changed
+  files uploaded; a line a minute while the script runs; results into `tests/a1200/results/`).
+  `ARGS="KEY=VALUE ..."` passes script arguments (Quake III's whole timedemo: `ARGS="FRAMES=0"
+  bash tests/a1200/p5_run.sh m6-5`), `TIMEOUT` the script's limit; `AMIGENT_RATE` (KB/s, 400)
+  and `AMIGENT_PIECE` (KB, 8) shape transfers. `tests/a1200/p5_netprobe.py <package>` runs a
+  package's steps one at a time and checks the link after each.
+- **Traps:** amigentd has four command channels and a fifth pushes out the idlest: run one batch
+  at a time (`p5_run.sh` takes a lock, `tests/a1200/out/p5_run.lock`) and keep long jobs
+  detached. Killing the PC side of a run does not stop its command on the Amiga: two copies of a
+  package's script in one drawer mixed their results and once looped until a reboot; use
+  `amigent-ctl abort`, or reboot (`amigent-ctl reboot`), and `runpkg` refuses while the
+  package's `runpkg.lock` is there. A killed run can also leave its `libs/` added to `LIBS:`
+  (check `Assign LIBS: EXISTS`). amictld still starts at boot and is the fallback.
 
 ### Probes
 

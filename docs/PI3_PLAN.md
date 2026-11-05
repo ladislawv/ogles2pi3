@@ -1507,7 +1507,37 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    fixed address), the winding bit (the V3D backend's rule), the point coordinates' origin.
    **P5 run 1 done (2026-11-05, §7):** Emu68's facts, vc4core's cases and the library's clears
    in every display mode on the A1200 with the Pi 3 card (two crashes found and fixed: a stack
-   overflow in `vc4_draw`, and VC4's stores ignoring an address's low 4 bits). Next in P5: the
-   M1 to M7 packages on the Pi 3 card; Mesa's mipmap picture for `vc4_draw` (the Pi 3 under
-   Linux again); the Pi 4 card's regression for the shared changes (the display's log line, the
-   smoke test); meanwhile the GPU paths of glGenerateMipmap and glCopyTex*.
+   overflow in `vc4_draw`, and VC4's stores ignoring an address's low 4 bits).
+5. **Where P5 stands (2026-11-05, end of day; commit after 0ead642)** and the work queue for
+   whoever continues. On the A1200 with the Pi 3 card the library runs real programs:
+   m1-5, m2-4, m5-1, m6-8, m7-2, m7-3 and m7-6 pass as on the Pi 4; m2-5's 14 pictures match the
+   Pi 4's within a few pixels (MipMap2D's level changes aside); **Quake III with ioquake3's GLES2
+   renderer renders correctly, 24.2 fps over the "four" demo** (1,260 frames in 52.1 s, none
+   dropped; the Pi 4 card 89.7): per frame 42 ms of CPU work before the job, 20 ms of it in
+   116 draws (about 175 us a draw), the GPU 0.4 ms binning and 0.16 ms rendering, so the Pi 3 is
+   CPU-bound (the 68k under Emu68 on the Pi 3's A53, and the VC4 draw path), measured with the
+   sync-logging library (`tests/a1200/results/ogles2-m6-5-20261105-224557`). The station is
+   amigent (§7 "The packages", CONTRIBUTING.md "The Pi 3 card"). In this order:
+   1. `EXT_draw_buffers`' passes in `job_vc4.c` (§2.1: one binning list per colour attachment,
+      each draw recorded into every list with that attachment's fragment variant; the GPU side
+      checked on Linux, `vc4_draw drawbuf`): m7-4 and m7-5, 10 failures each.
+   2. Half-float render targets (`EXT_color_buffer_half_float`: the 64-bit tile buffer done in
+      vc4core, `hdr` cases; the library's targets, renderbuffers and texture levels, and the CPU's
+      split into S16F planes before sampling): m7-5, 17 failures.
+   3. The VC4 draw path's CPU cost (Quake III above): cache what a draw shares with the one
+      before (keys, uniform streams, shader records, attribute copies of unchanged arrays).
+   4. The remaining packages on the Pi 3 card: SDL2 and SDL3 (m6-3, m6-4), Quake III through
+      gl4es (m6-2), glmark2 (m6-7), dEQP-GLES2 (m7-1, `p2_deqp.sh` with the bridge), the rest of
+      m7 and the older m1, m3 and m4 packages; then the Pi 4 card's regression for today's
+      shared changes (`draw.c`, `fbo.c`, `display.c`, the card-aware tests: `p2_checks.sh`,
+      expected as on 2026-11-05 morning).
+   5. Smaller: 4x MSAA's depth and stencil across a mid-frame flush (the full-resolution tile
+      store and load: m6-10, 3 failures); half floats with negative values (m6-6, 3 checks run
+      twice: S16F's lookup or filter seems to clamp them; a `vc4_draw` case into a half-float
+      target to settle it); 32-bit indices spanning more than 65,536 vertices (the CPU's split);
+      ERRSTAT VCMRE (bit 13) seen in some renders with right pictures; Mesa's mipmap picture for
+      `vc4_draw` (the Pi 3 under Linux again); the GPU paths of glGenerateMipmap and glCopyTex*.
+   6. S2 on the Pi 3 card: the 19 MB `v3dglslc` on the A1200 (its time and memory, the
+      version-2 server path), now that transfers hold (8 KB pieces).
+   Then P6 (dEQP-GLES2 and the benchmarks on both cards, against Mesa vc4's baseline) and P7
+   (into `ogles2`, one release for both cards).

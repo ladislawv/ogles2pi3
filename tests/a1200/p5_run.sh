@@ -90,7 +90,8 @@ for t in "$@"; do
     need run -t 30 "Assign OGLES2Cache: \"$CACHE\"" > /dev/null
     stamp=$(date +%Y%m%d-%H%M%S)
     echo "$(date +%T) $t: uploading and running"
-    ctl runpkg "$PKG" -t ${TIMEOUT:-1200} -w "$WORK" -r "$RES" 2>&1 |
+    # ARGS: the Run-* script's KEY=VALUE words (m6-5's FRAMES=0: the whole timedemo)
+    ctl runpkg "$PKG" -t ${TIMEOUT:-1200} -w "$WORK" -r "$RES" ${ARGS:+-a "$ARGS"} 2>&1 |
         grep --line-buffered -E '^[0-9:]{8} |rc=|^results:|STATION DOWN|WARNING' | sed -u "s/^/   $t: /"
     rc=${PIPESTATUS[0]}
     stop_remote
