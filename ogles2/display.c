@@ -118,6 +118,9 @@ static BOOL probe_bitmap(struct OGLES2Display *d)
                    "needs 32-bit BGRA or RGBA", pixfmt, bprow, (ULONG)d->width);
         return FALSE;
     }
+    /* Kept: VC4's first job sizes its frame by the row before any lock
+     * (ogles2/vc4/job_vc4.c); each lock reads it again. */
+    d->bprow = bprow;
     return TRUE;
 }
 

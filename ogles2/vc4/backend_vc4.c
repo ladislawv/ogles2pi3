@@ -237,7 +237,8 @@ static void context_free(struct V3DContext *v)
 
 static BOOL tex_can_generate(const struct OGLES2Texture *t, int n) { (void)t; (void)n; return FALSE; }
 static int tex_generate(struct OGLES2Texture *t, int n) { (void)t; (void)n; return GL_INVALID_OPERATION; }
-static int tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra) { (void)t; (void)src; (void)stride; (void)w; (void)h; (void)bgra; return GL_INVALID_OPERATION; }
+/* -3 (texture.c: "not now"): the CPU copies, without the TFU's log line each time */
+static int tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra) { (void)t; (void)src; (void)stride; (void)w; (void)h; (void)bgra; return -3; }
 static const UBYTE *internal_program(int which, ULONG *len) { (void)which; *len = 0; return 0; }
 
 /* ---- the built-in image: tools/clear_vc4's program, loaded at its first

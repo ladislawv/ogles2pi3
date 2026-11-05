@@ -1274,7 +1274,12 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    - refused still: glGenerateMipmap and glCopyTex* on the GPU (the front end's CPU paths
      run), the internal programs.
    vc4core's cases on the Pi 3 still all pass after the split (500-round soak, 13,100 jobs).
-   The library is 301,740 bytes. To verify at the first run with the Pi 3 card: that Emu68 maps
+   The library is 301,740 bytes. A review pass found and fixed two things before any run: a
+   framebuffer object's target format for the keys is looked up with its surfaces at the job's
+   start (job.c's target has none yet: an RGB565 texture would have drawn with the RGBA8 keys),
+   and the display keeps the row length its probe read (the first job sizes its frame by it
+   before any lock: a padded row would have dropped the first frame); glCopyTex* falls back to
+   the CPU without a log line each time. To verify at the first run with the Pi 3 card: that Emu68 maps
    the peripherals at 0xF2000000 there too (the front end's clock reads the system timer at a
    fixed address), the winding bit (the V3D backend's rule), the point coordinates' origin.
    Next in P5: the first run on the A1200 with the Pi 3 card (Emu68's facts, §7; then the test

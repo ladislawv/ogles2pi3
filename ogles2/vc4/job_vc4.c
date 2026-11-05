@@ -141,9 +141,14 @@ void ogles2_vc4_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *
                 pools = &c->fbo_pools;
             }
         }
+        /* the target's format for the draws' keys: job.c's target has no
+         * surfaces yet, so they are looked up here (the flush does again) */
         c->color_format = 0;
-        if (tg && (tg->colors & 1))
-            c->color_format = tg->color[0].format == VC4_COLOR_RGBA8888 ? 0 : 2;
+        if (tg) {
+            struct OGLES2Target full;
+            if (ogles2_fbo_target(ctx, ctx->draw_fb, TRUE, &full) && (full.colors & 1))
+                c->color_format = full.color[0].format == VC4_COLOR_BGR565 ? 2 : 0;
+        }
     } else {
         /* the bitmap's row as last locked (the binning needs the tile count
          * before the lock; job_build checks it) */
