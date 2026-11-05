@@ -50,6 +50,13 @@ static const float sten_tri[3 * 3] = {-0.8f, -0.7f, 0, 0.7f, -0.5f, 0, -0.1f, 0.
 static const float sten_quad[4 * 3] = {-0.9f, -0.9f, 0, 0.9f, -0.9f, 0, -0.9f, 0.9f, 0, 0.9f, 0.9f, 0};
 static const float sten_col[2][4] = {{1, 0, 0, 1}, {0, 1, 0.5f, 1}};
 
+/* pclear: clears of part of the frame (the scissor box: x, y, w, h, y
+ * up): box 0's colour cleared to pclr_col, box 1's depth to 0; then the
+ * blend case's quad (z 0) drawn in depth_col[1] with LESS, so not in box 1.
+ * ogles2 draws such clears as rectangles (VC4: tools/clear_vc4's program). */
+static const int pclr_box[2][4] = {{10, 10, 60, 40}, {50, 40, 50, 60}};
+static const float pclr_col[4] = {1, 0.6f, 0, 1};
+
 /* attrib (color.vert, color.frag): a triangle, its colours unsigned bytes,
  * normalized (attribute 1), smooth shaded. */
 static const float attr_pos[3 * 3] = {-0.8f, -0.8f, 0, 0.8f, -0.6f, 0, 0.0f, 0.85f, 0};

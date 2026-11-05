@@ -32,6 +32,11 @@ mkdir -p "$OUT/vc4p"
 "$V" -g 21 -s points -o "$OUT/vc4p" point.vert flat.frag > /dev/null 2>&1 || echo "v3dglslc failed on point"
 "$V" -g 21 -b pos,col -s ubyte1 -o "$OUT/vc4p" color.vert color.frag > /dev/null 2>&1 || echo "v3dglslc failed on color"
 "$V" -g 21 -b pos,dir -o "$OUT/vc4p" cube.vert cube.frag > /dev/null 2>&1 || echo "v3dglslc failed on cube")
+# the VC4 backend's built-in clear program with its keys (tools/clear_vc4), for pclear
+gcc -O2 "-I$REPO/ogles2/vc4" "-I$REPO/vc4core/include" -o "$OUT/clear_keys" "$REPO/tools/clear_vc4/keys.c" \
+    "$REPO/ogles2/vc4/key_vc4.c" && "$OUT/clear_keys" "$OUT/clear.keys" > /dev/null
+(cd "$REPO/tools/clear_vc4" &&
+"$V" -g 21 -k "$OUT/clear.keys" -o "$OUT/vc4p" clear.vert clear.frag > /dev/null 2>&1 || echo "v3dglslc failed on clear")
 echo "compiled: $(ls "$OUT/vc4p" | tr '
 ' ' ')"
 if [ "${1:-}" = m68k ]; then

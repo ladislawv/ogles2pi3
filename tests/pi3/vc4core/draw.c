@@ -416,6 +416,86 @@ static void case_scissor(void)
     vc4p_free(&p);
 }
 
+/* pclear: clears of part of the frame as the VC4 backend draws them: a
+ * rectangle with its built-in clear program (tools/clear_vc4, compiled with
+ * its keys for the usual clear states) in the clip window; the colour one
+ * with the variant for colour written and no depth test, the depth one with
+ * colour masked and the depth test on (ALWAYS, writing z); then the depth
+ * case's LESS against what they left. */
+static const struct vc4p_variant *clear_fs(const struct vc4p *p, int depth, int colormask)
+{
+    int k;
+    for (k = 0; k < p->nvariants; k++) {
+        const struct vc4p_variant *v = &p->v[k];
+        if (v->stage == VC4P_STAGE_FS && v->color_format == VC4P_FORMAT_R8G8B8A8_UNORM &&
+            v->depth_enabled == depth && !v->stencil_enabled && v->colormask == colormask && !v->is_points &&
+            !v->is_lines && !v->blend_enable)
+            return v;
+    }
+    return 0;
+}
+
+static int clear_rect(struct vc4p *p, const int *box, int depth, const float *col, float z)
+{
+    static float pos[12], c[4];
+    struct vc4p_draw d;
+    uint32_t m[16];
+    int k;
+    for (k = 0; k < 16; k++)
+        m[k] = bits(k % 5 ? 0.0f : 1.0f); /* identity */
+    vc4p_set(p, "u_matrix", m, 16);
+    for (k = 0; k < 4; k++) {
+        pos[3 * k] = k & 1 ? 1.0f : -1.0f;
+        pos[3 * k + 1] = k & 2 ? 1.0f : -1.0f;
+        pos[3 * k + 2] = z;
+        c[k] = col ? col[k] : 0.0f;
+    }
+    memset(&d, 0, sizeof d);
+    d.prog = p;
+    d.fs = clear_fs(p, depth, col ? 15 : 0);
+    /* the vertex variant writing the inputs fs reads: none when the colour
+     * is masked (its key's fs_inputs, as the library pairs them) */
+    d.vs = d.fs ? vc4p_find_attr_for(p, 0, VC4P_FORMAT_R32G32B32_FLOAT, d.fs) : 0;
+    d.cs = vc4p_find_attr(p, VC4P_STAGE_CS, 0, VC4P_FORMAT_R32G32B32_FLOAT);
+    if (!d.fs || !d.vs || !d.cs) {
+        printf("  the clear program has no variant for depth %d, colour %s\n", depth, col ? "written" : "masked");
+        return -1;
+    }
+    d.vp_w = W;
+    d.vp_h = H;
+    d.depth_far = 1.0f;
+    d.cfg.enable_forward_facing_primitive = 1;
+    d.cfg.enable_reverse_facing_primitive = 1;
+    d.cfg.depth_test_function = VC4_COMPARE_FUNC_ALWAYS;
+    d.cfg.z_updates_enable = depth ? 1 : 0;
+    d.cfg.early_z_updates_enable = 1;
+    d.nattrs = 2;
+    d.attr[0].data = pos, d.attr[0].bytes = 12, d.attr[0].stride = 12, d.attr[0].size = sizeof pos;
+    d.attr[1].data = c, d.attr[1].bytes = 16, d.attr[1].stride = 0, d.attr[1].size = sizeof c;
+    d.mode = VC4_PRIM_TRIANGLE_STRIP;
+    d.count = 4;
+    for (k = 0; k < 4; k++)
+        d.clip[k] = (uint16_t)box[k];
+    return vc4p_emit(&job, &d, W, H);
+}
+
+static void case_pclear(void)
+{
+    struct vc4p cp, p;
+    int ok;
+    printf("pclear (clears of part of the frame: the built-in clear program in the clip window)\n");
+    if (load_flat(&cp, "clear-clear.vc4p") < 0 || load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(1) < 0) {
+        failures++;
+        return;
+    }
+    ok = clear_rect(&cp, pclr_box[0], 0, pclr_col, 0.0f) == 0 &&
+         clear_rect(&cp, pclr_box[1], 1, 0, -1.0f /* depth 0 */) == 0 &&
+         flat(&p, 0, 1, 0, depth_col[1], blend_quad, 4, VC4_PRIM_TRIANGLE_STRIP, 0, 4) == 0;
+    end_case("pclear", ok);
+    vc4p_free(&cp);
+    vc4p_free(&p);
+}
+
 static void case_lines(void)
 {
     struct vc4p p;
@@ -1042,7 +1122,8 @@ static void case_overflow(void)
 
 static const char *const all_cases[] = {"triangle", "texture", "depth",  "blend", "indices", "indices8",
                                         "scissor",  "lines",    "points",  "stencil", "attrib", "textures", "rgb565",
-                                        "cube",     "padded",  "msaa",    "jobs",    "rtt",    "overflow"};
+                                        "cube",     "padded",  "msaa",    "jobs",    "rtt",    "overflow",
+                                        "pclear"};
 #define NCASES (int)(sizeof all_cases / sizeof all_cases[0])
 
 /* One case by name; the jobs it ran (0: unknown). */
@@ -1063,6 +1144,8 @@ static int run_case(const char *name)
         case_indices8();
     else if (!strcmp(name, "scissor"))
         case_scissor();
+    else if (!strcmp(name, "pclear"))
+        case_pclear();
     else if (!strcmp(name, "lines"))
         case_lines();
     else if (!strcmp(name, "points"))

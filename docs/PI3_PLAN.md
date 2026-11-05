@@ -1192,8 +1192,14 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 4. P3: `vc4core` on Linux (§3.1): the core, its texture layouts and the tests' program loader
    done; §6.3's list against Mesa's pictures done but for the items below; the long soak (§3.1)
    and `ERRSTAT`'s one error (`VCMBE` when the binner runs out of memory) done; first GPU-only
-   numbers (§3.1). Left: the speed runs again with the heatsink, clears of part of a frame (a
-   draw), the emulations'
+   numbers (§3.1); **clears of part of a frame done (2026-11-05)**: the `pclear` case draws
+   them as the VC4 backend does (its built-in clear program, `tools/clear_vc4`, a rectangle in
+   the clip window: colour written without the depth test, then depth with the colour masked and
+   the test ALWAYS), then the depth case's LESS against them: Mesa's picture (its scissored
+   glClears) pixel for pixel; found on the way that a colour-masked clear's vertex variant writes
+   no varyings, so a vertex variant must be paired with its fragment one by the inputs (as the
+   library does; the tests' loader now too). All cases and a 300-round soak (8,160 jobs) clean.
+   Left: the speed runs again with the heatsink, the emulations'
    GPU side (§2.1: RGBA64 half floats, the shader's texture tricks), the GPU lock (`lock.c`),
    and the cause of the not-reset core's lost tiles. Then P5 (the VC4 backend); begun
    2026-11-05 with what the PC and the Pi 3 can test: `vc4core/os_amiga.c` (written, compiles

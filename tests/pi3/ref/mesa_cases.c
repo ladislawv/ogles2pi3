@@ -220,6 +220,22 @@ int main(int argc, char **argv)
     save("stencil");
 
     begin();
+    glDisable(GL_STENCIL_TEST);
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(pclr_box[0][0], pclr_box[0][1], pclr_box[0][2], pclr_box[0][3]);
+    glClearColor(pclr_col[0], pclr_col[1], pclr_col[2], pclr_col[3]);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glScissor(pclr_box[1][0], pclr_box[1][1], pclr_box[1][2], pclr_box[1][3]);
+    glClearDepthf(0.0f);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glDisable(GL_SCISSOR_TEST);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    draw(flat, depth_col[1], blend_quad, GL_TRIANGLE_STRIP, 4);
+    glDisable(GL_DEPTH_TEST);
+    save("pclear");
+
+    begin();
     glUseProgram(color);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, attr_pos);
     glEnableVertexAttribArray(0);

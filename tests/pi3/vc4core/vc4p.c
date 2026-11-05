@@ -71,11 +71,13 @@ static void str(char *dst, const uint8_t *strings, uint32_t len, uint32_t off)
 }
 
 /* The fs_inputs list: a count, two bytes each, padded to 4. */
-static void inputs(struct rd *r)
+/* A list of fragment inputs (slot, swizzle pairs): its count. */
+static uint32_t inputs(struct rd *r)
 {
     uint32_t n = u32(r);
     skip(r, 2 * n);
     skip(r, (4 - (2 * n) % 4) % 4);
+    return n;
 }
 
 static int variant(struct vc4p *p, struct rd *r)
@@ -112,7 +114,7 @@ static int variant(struct vc4p *p, struct rd *r)
         v->is_coord = (uint8_t)u8(r);
         v->per_vertex_point_size = (uint8_t)u8(r);
         skip(r, 2);
-        inputs(r);
+        v->nfs_inputs = inputs(r); /* the fragment inputs it writes */
     }
     v->fs_threaded = (uint8_t)u8(r);
     v->num_inputs = (uint8_t)u8(r);
@@ -123,7 +125,10 @@ static int variant(struct vc4p *p, struct rd *r)
     skip(r, 3);
     v->color_inputs = u32(r);
     v->num_texture_samples = u32(r);
-    inputs(r);
+    if (v->stage == VC4P_STAGE_FS)
+        v->nfs_inputs = inputs(r); /* the inputs it reads */
+    else
+        inputs(r);
     v->nrecipe = u32(r);
     if (v->nrecipe > 256)
         return -1;
@@ -272,6 +277,19 @@ const struct vc4p_variant *vc4p_find_attr(const struct vc4p *p, uint32_t stage, 
     for (k = 0; k < p->nvariants; k++) {
         const struct vc4p_variant *v = &p->v[k];
         if (v->stage == stage && !v->per_vertex_point_size && slot < 8 && v->attr_formats[slot] == format)
+            return v;
+    }
+    return 0;
+}
+
+const struct vc4p_variant *vc4p_find_attr_for(const struct vc4p *p, uint32_t slot, uint32_t format,
+                                              const struct vc4p_variant *fs)
+{
+    int k;
+    for (k = 0; k < p->nvariants; k++) {
+        const struct vc4p_variant *v = &p->v[k];
+        if (v->stage == VC4P_STAGE_VS && !v->per_vertex_point_size && slot < 8 && v->attr_formats[slot] == format &&
+            v->nfs_inputs == fs->nfs_inputs)
             return v;
     }
     return 0;

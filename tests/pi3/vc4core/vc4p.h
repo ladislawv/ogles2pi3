@@ -30,6 +30,7 @@ struct vc4p_variant
     /* prog data */
     uint8_t fs_threaded, num_inputs, vattrs_live, disable_early_z;
     uint8_t vattr_offsets[9];
+    uint32_t nfs_inputs;                  /* fragment inputs: read (fragment), written (vertex key) */
     uint32_t color_inputs, num_texture_samples;
     /* recipe and code */
     uint32_t nrecipe;
@@ -90,6 +91,10 @@ const struct vc4p_variant *vc4p_find(const struct vc4p *p, uint32_t stage, int p
  * stencil test) whose sampler unit has format. */
 const struct vc4p_variant *vc4p_find_attr(const struct vc4p *p, uint32_t stage, uint32_t slot, uint32_t format);
 const struct vc4p_variant *vc4p_find_tex(const struct vc4p *p, uint32_t unit, uint32_t format);
+/* The vertex variant as vc4p_find_attr, also writing as many fragment inputs
+ * as fs reads (Mesa pairs them by the inputs; enough for the tests). */
+const struct vc4p_variant *vc4p_find_attr_for(const struct vc4p *p, uint32_t slot, uint32_t format,
+                                              const struct vc4p_variant *fs);
 /* The fragment variant for a primitive class (0 triangles, 1 lines, 2
  * points) with the depth test, blending and the stencil test on or off. */
 const struct vc4p_variant *vc4p_find_fs(const struct vc4p *p, int prim, int depth, int blend, int stencil);
