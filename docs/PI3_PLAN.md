@@ -1222,7 +1222,11 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    the Pi 4 card (PD7 decided: option 1): steps 1 to 8 done (§5.1, §5.3); **the acceptance done
    (2026-11-05)**: the packages, the speed and dEQP-GLES2's must-pass list all as 1.3.3 and
    October (§5.1; dEQP's last groups compiled on the PC through the bridge and watched by
-   `deqp_watch.py`). **P2 is finished.**
+   `deqp_watch.py`). **P2 is finished.** Checked again on the library of 2026-11-05 (bf27a90:
+   the VC4 emulations, P2's PTYPE): every package as on 2026-11-04 (m5-1 255, m7-6 36 of 36,
+   m2-5 14 pictures identical, m1-5 59, m2-4 146, m6-6 389, m6-8 121, m6-10 210, m7-2 66,
+   m7-3 105, m7-4 129, m7-5 162 PASS, none FAIL), gears within 1 %, Quake III 89.7 fps
+   (`tests/a1200/results/p2-checks-20261105-*.txt`).
 3. P4: the limits are settled (§4.1: `-L`, the VC4 backend's caps take them); the corpus
    compiled for VC4 as a whole is done (36 of 36, §4.3, with the draw-buffers variants of patch
    0016); variants compile from given keys (`-k`, patch 0017, §4.2); the request's device field
@@ -1232,8 +1236,14 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    VC4 backend builds them (one key builder for the backend's draw and the probe), to
    `T:ogles2-vc4keys/<hash>.keys` on either card; `vc4_corpus.sh` with `KEYS=<dir>` compiles a
    program with its file (`-k`; checked on the PC: 36 of 36 written, a program with a manifest
-   3 variants alone and 17 with it). Left: the manifests themselves (runs of the corpus's
-   programs on the Pi 4 with probe R: the A1200), the
+   3 variants alone and 17 with it). **The manifests themselves (2026-11-05)**, from runs on
+   the A1200 with the Pi 4 card and probe R (`tests/a1200/p2_vc4keys.sh`'s packages with
+   today's library: the corpus m2-5, SDL2's and SDL3's tests, Quake III with both renderers):
+   47 files (`tests/a1200/results/vc4keys-20261105-1341/`, a record per draw state: a fragment
+   key and its vertex key, 596 bytes); `vc4_corpus.sh` with them finds the manifests of all 18
+   corpus programs, each then compiled with 6 or 9 variants (3 without); the other 29 are SDL's
+   and Quake III's programs, outside the corpus script (the release's examples and Boing 2026
+   ran in no probe package). Left: the
    version-2 server path and S2's time and memory on the A1200 with the Pi 3 (P5), and patch
    0017 and the others checked for big-endian differences there (the comparisons so far ran
    on vamos, which is big-endian: they cover it).
