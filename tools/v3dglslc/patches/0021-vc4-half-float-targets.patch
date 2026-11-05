@@ -1,0 +1,174 @@
+ogles2: half-float render targets on VC4 (docs/PI3_PLAN.md §2.1,
+EXT_color_buffer_half_float): the tile buffer's 64-bit colour mode, whose
+pixels are RGBA16F and are stored as such (the RGBA64 texture type's texels,
+patch 0018). A fragment key with color_format R16G16B16A16_FLOAT writes two
+TLB words a pixel, RG then BA, each two halves (VideoCore IV guide, "Color
+Read and Write"), through the per-sample colour writes (TLB_COLOR_MS acts as
+TLB_COLOR_ALL without MSAA; two writes instead of four); blending reads the
+two words back, unpacks the halves and blends in floats, unclamped
+(vc4_do_blending_f clamps the source only for the other targets), the
+colour mask per channel. No logic op, no MSAA. ntq_emit_alu handles
+unpack_half_2x16 (the 16a/16b float unpack) and pack_half_2x16_split
+(regfile A's 16a/16b float pack, qir_PACK_16_F). Mesa's own state never
+sets the key (its screen has no such render target); v3dglslc compiles it
+from keys (-k, patch 0017). Applies after 0020.
+
+--- a/src/gallium/drivers/vc4/vc4_nir_lower_blend.c
++++ b/src/gallium/drivers/vc4/vc4_nir_lower_blend.c
+@@ -255,9 +255,13 @@
+                 return;
+         }
+ 
+-        /* Clamp the src color to [0, 1].  Dest is already clamped. */
+-        for (int i = 0; i < 4; i++)
+-                src_color[i] = nir_fsat(b, src_color[i]);
++        /* Clamp the src color to [0, 1].  Dest is already clamped.
++         * ogles2 (patch 0021): not for a half-float target, which keeps
++         * floats unclamped (EXT_color_buffer_half_float). */
++        if (c->fs_key->color_format != PIPE_FORMAT_R16G16B16A16_FLOAT) {
++                for (int i = 0; i < 4; i++)
++                        src_color[i] = nir_fsat(b, src_color[i]);
++        }
+ 
+         nir_def *src_blend[4], *dst_blend[4];
+         for (int i = 0; i < 4; i++) {
+@@ -501,6 +505,42 @@
+                        nir_iand_imm(b, packed_dst_color, ~colormask));
+ }
+ 
++/* ogles2 (docs/PI3_PLAN.md §2.1, EXT_color_buffer_half_float, patch 0021):
++ * a half-float target is the tile buffer's 64-bit colour mode (RGBA16F
++ * pixels, stored as such: the RGBA64 texture type), read and written as two
++ * words a pixel, RG then BA, each two halves (VideoCore IV guide, "Color
++ * Read and Write"). The blend is done in floats, unclamped, the colour mask
++ * per channel; the two words go out as the per-sample colour writes do
++ * (TLB_COLOR_MS, which acts as TLB_COLOR_ALL without MSAA). No logic op, no
++ * MSAA. */
++static nir_def *
++vc4_nir_hdr_pipeline(struct vc4_compile *c, nir_builder *b, nir_def *src)
++{
++        nir_def *src_color[4], *out[4];
++        for (unsigned i = 0; i < 4; i++)
++                src_color[i] = nir_channel_or_undef(b, src, i);
++
++        if (blend_depends_on_dst_color(c)) {
++                nir_def *rg = nir_unpack_half_2x16(b, vc4_nir_get_dst_color(b, 0));
++                nir_def *ba = nir_unpack_half_2x16(b, vc4_nir_get_dst_color(b, 1));
++                nir_def *dst_color[4] = {
++                        nir_channel(b, rg, 0), nir_channel(b, rg, 1),
++                        nir_channel(b, ba, 0), nir_channel(b, ba, 1),
++                };
++                vc4_do_blending_f(c, b, out, src_color, dst_color);
++                for (int i = 0; i < 4; i++) {
++                        if (!(c->fs_key->blend.colormask & (1 << i)))
++                                out[i] = dst_color[i];
++                }
++        } else {
++                for (int i = 0; i < 4; i++)
++                        out[i] = src_color[i];
++        }
++
++        return nir_vec2(b, nir_pack_half_2x16_split(b, out[0], out[1]),
++                        nir_pack_half_2x16_split(b, out[2], out[3]));
++}
++
+ static void
+ vc4_nir_store_sample_mask(struct vc4_compile *c, nir_builder *b,
+                           nir_def *val)
+@@ -543,7 +583,10 @@
+          * then output the per-sample color using TLB_COLOR_MS.
+          */
+         nir_def *blend_output;
+-        if (c->fs_key->msaa && blend_depends_on_dst_color(c)) {
++        if (c->fs_key->color_format == PIPE_FORMAT_R16G16B16A16_FLOAT) {
++                c->msaa_per_sample_output = true;
++                blend_output = vc4_nir_hdr_pipeline(c, b, frag_color);
++        } else if (c->fs_key->msaa && blend_depends_on_dst_color(c)) {
+                 c->msaa_per_sample_output = true;
+ 
+                 nir_def *samples[4];
+--- a/src/gallium/drivers/vc4/vc4_program.c
++++ b/src/gallium/drivers/vc4/vc4_program.c
+@@ -1238,6 +1238,30 @@
+                 return;
+         }
+ 
++        /* ogles2 (patch 0021): the half-float target's words (and any
++         * other use of these): the QPU's 16a/16b float unpack and pack. */
++        if (instr->op == nir_op_unpack_half_2x16) {
++                struct qreg src = ntq_get_src(c, instr->src[0].src,
++                                              instr->src[0].swizzle[0]);
++                for (int i = 0; i < instr->def.num_components; i++) {
++                        ntq_store_def(c, &instr->def, i,
++                                      qir_UNPACK_16_F(c, src, i));
++                }
++                return;
++        }
++
++        if (instr->op == nir_op_pack_half_2x16_split) {
++                struct qreg result = qir_get_temp(c);
++                for (int i = 0; i < 2; i++) {
++                        qir_PACK_16_F(c, result,
++                                      ntq_get_src(c, instr->src[i].src,
++                                                  instr->src[i].swizzle[0]),
++                                      i);
++                }
++                ntq_store_def(c, &instr->def, 0, qir_MOV(c, result));
++                return;
++        }
++
+         if (instr->op == nir_op_unpack_unorm_4x8) {
+                 struct qreg src = ntq_get_src(c, instr->src[0].src,
+                                               instr->src[0].swizzle[0]);
+@@ -1498,7 +1522,11 @@
+                 qir_MOV_dest(c, qir_reg(QFILE_TLB_COLOR_WRITE, 0),
+                              color)->cond = discard_cond;
+         } else {
+-                for (int i = 0; i < VC4_MAX_SAMPLES; i++) {
++                /* ogles2 (patch 0021): a half-float target's two words, RG
++                 * then BA */
++                int n = c->fs_key->color_format == PIPE_FORMAT_R16G16B16A16_FLOAT ?
++                        2 : VC4_MAX_SAMPLES;
++                for (int i = 0; i < n; i++) {
+                         qir_MOV_dest(c, qir_reg(QFILE_TLB_COLOR_WRITE_MS, 0),
+                                      c->sample_colors[i])->cond = discard_cond;
+                 }
+@@ -1942,12 +1970,16 @@
+                  * output that's not lowered to being a store of a single 32
+                  * bit value.
+                  */
+-                if (c->stage == QSTAGE_FRAG && instr->num_components == 4) {
++                if (c->stage == QSTAGE_FRAG &&
++                    (instr->num_components == 4 ||
++                     (instr->num_components == 2 &&
++                      c->fs_key->color_format == PIPE_FORMAT_R16G16B16A16_FLOAT))) {
+                         /* ogles2 (patch 0016): another draw buffer's
+-                         * gl_FragData, not this variant's colour. */
++                         * gl_FragData, not this variant's colour. Patch
++                         * 0021: a half-float target's two words. */
+                         if (offset != c->output_color_index)
+                                 break;
+-                        for (int i = 0; i < 4; i++) {
++                        for (int i = 0; i < instr->num_components; i++) {
+                                 c->sample_colors[i] =
+                                         qir_MOV(c, ntq_get_src(c, instr->src[0],
+                                                                i));
+--- a/src/gallium/drivers/vc4/vc4_qir.h
++++ b/src/gallium/drivers/vc4/vc4_qir.h
+@@ -787,6 +787,16 @@
+         qir_emit_nondef(c, qir_inst(QOP_MMOV, dest, val, c->undef));
+ }
+ 
++/* ogles2 (patch 0021): val as a half float into half chan (0 low, 1 high)
++ * of dest, regfile A's 16a/16b float pack. */
++static inline void
++qir_PACK_16_F(struct vc4_compile *c, struct qreg dest, struct qreg val, int chan)
++{
++        assert(!dest.pack);
++        dest.pack = QPU_PACK_A_16A + chan;
++        qir_emit_nondef(c, qir_inst(QOP_FMOV, dest, val, c->undef));
++}
++
+ static inline struct qreg
+ qir_PACK_8888_F(struct vc4_compile *c, struct qreg val)
+ {

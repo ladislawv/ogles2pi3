@@ -17,18 +17,21 @@ for t in triangle texture draw; do
     # wider (and possibly unaligned) stores gcc makes of adjacent byte stores
     # fault (vc4core.h: aligned 1-, 2- and 4-byte stores only); so do the
     # vector stores of byte runs the vectoriser makes.
-    aarch64-linux-gnu-gcc-14 "${FLAGS[@]}" -fno-store-merging -fno-tree-vectorize -fno-tree-slp-vectorize -static -o "$OUT/vc4_$t" "$HERE/$t.c" "${EXTRA[@]}" "${CORE[@]}" "$REPO/vc4core/os_linux.c"
+    aarch64-linux-gnu-gcc-14 "${FLAGS[@]}" -fno-store-merging -fno-tree-vectorize -fno-tree-slp-vectorize -static -o "$OUT/vc4_$t" "$HERE/$t.c" "${EXTRA[@]}" "${CORE[@]}" "$REPO/vc4core/os_linux.c" -lm
     echo "built: $OUT/vc4_$t"
 done
 # The programs draw.c loads, compiled on the PC (S1) as the Pi 3's.
 V=${V:-$HOME/ogles2-build-pi3/v3dglslc/host/v3dglslc}
 mkdir -p "$OUT/vc4p"
+# the emulation cases' keys (emu_keys.c: the VC4 backend's key builder)
+gcc -O2 "-I$REPO/ogles2/vc4" "-I$REPO/vc4core/include" -o "$OUT/emu_keys" "$HERE/emu_keys.c"     "$REPO/ogles2/vc4/key_vc4.c" && "$OUT/emu_keys" "$OUT/emu.keys" "$OUT/flat_emu.keys" "$OUT/mrt.keys" > /dev/null
 (cd "$REPO/tests/pi3/ref/shaders" &&
 "$V" -g 21 -o "$OUT/vc4p" triangle.vert triangle.frag > /dev/null 2>&1 || echo "v3dglslc failed on triangle"
 # the cases of ../ref/cases.h: their states too (-s), the second input at
 # location 1 as mesa_cases.c binds it (-b)
-"$V" -g 21 -b pos,uv -s tex565,texlum,tex4444,tex5551,texla,etc1,texd24,texds,texd16 -o "$OUT/vc4p" texture.vert texture.frag > /dev/null 2>&1 || echo "v3dglslc failed on texture"
-"$V" -g 21 -s depth,blend,lines,stencil,rt565 -o "$OUT/vc4p" flat.vert flat.frag > /dev/null 2>&1 || echo "v3dglslc failed on flat"
+"$V" -g 21 -b pos,uv -s tex565,texlum,tex4444,tex5551,texla,etc1,texd24,texds,texd16 -k "$OUT/emu.keys" -o "$OUT/vc4p" texture.vert texture.frag > /dev/null 2>&1 || echo "v3dglslc failed on texture"
+"$V" -g 21 -s depth,blend,lines,stencil,rt565 -k "$OUT/flat_emu.keys" -o "$OUT/vc4p" flat.vert flat.frag > /dev/null 2>&1 || echo "v3dglslc failed on flat"
+"$V" -g 21 -k "$OUT/mrt.keys" -o "$OUT/vc4p" flat.vert mrt.frag > /dev/null 2>&1 || echo "v3dglslc failed on mrt"
 "$V" -g 21 -s points -o "$OUT/vc4p" point.vert flat.frag > /dev/null 2>&1 || echo "v3dglslc failed on point"
 "$V" -g 21 -b pos,col -s ubyte1 -o "$OUT/vc4p" color.vert color.frag > /dev/null 2>&1 || echo "v3dglslc failed on color"
 "$V" -g 21 -b pos,dir -o "$OUT/vc4p" cube.vert cube.frag > /dev/null 2>&1 || echo "v3dglslc failed on cube")

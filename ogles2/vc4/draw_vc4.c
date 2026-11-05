@@ -89,8 +89,9 @@ static BOOL y_down(const struct OGLES2Context *ctx)
 struct samplers
 {
     struct vc4_key_sampler key[2][OGLES2_MAX_STAGE_SAMPLERS];
-    ULONG p[2][OGLES2_MAX_STAGE_SAMPLERS][3];
+    ULONG p[2][OGLES2_MAX_STAGE_SAMPLERS][4]; /* P0, P1, P2; the S16F planes' stride (patch 0018) */
     ULONG first[2][OGLES2_MAX_STAGE_SAMPLERS];
+    GLfloat emu[2][OGLES2_MAX_STAGE_SAMPLERS][5]; /* patch 0019's uniforms (ogles2_vc4_sampler) */
     UBYTE n[2];
 };
 
@@ -113,8 +114,8 @@ static BOOL sampler_states(struct OGLES2Context *ctx, struct OGLES2Program *p, s
                 if (un->sampler[st] >= OGLES2_MAX_STAGE_SAMPLERS || idx >= OGLES2_MAX_STAGE_SAMPLERS)
                     break;
                 ks = &sm->key[st][idx];
-                if (!ogles2_vc4_sampler(ctx, unit_of(p, u, e), ogles2_sampler_kind(un->type), sm->p[st][idx], &ks->f,
-                                        &ks->wrap_s, &ks->wrap_t, &sm->first[st][idx]))
+                if (!ogles2_vc4_sampler(ctx, unit_of(p, u, e), ogles2_sampler_kind(un->type), sm->p[st][idx], ks,
+                                        &sm->first[st][idx], sm->emu[st][idx]))
                     return FALSE;
                 if (idx + 1 > sm->n[st])
                     sm->n[st] = (UBYTE)(idx + 1);
@@ -158,9 +159,13 @@ static ULONG write_uniforms(struct OGLES2Context *ctx, struct vc4_ctx *c, const 
         case VC4_U_VIEWPORT_Y_SCALE: w = fbits(di->vp_ys); break;
         case VC4_U_VIEWPORT_Z_OFFSET: w = fbits(di->vp_zo); break;
         case VC4_U_VIEWPORT_Z_SCALE: w = fbits(di->vp_zs); break;
-        case VC4_U_TEXTURE_CONFIG_P0: w = di->sm->p[si][x][0]; break;
+        case VC4_U_TEXTURE_CONFIG_P0: /* patch 0018: a plane in bits 16 and up */
+            w = di->sm->p[si][x][0] + ((d >> 16) & 3) * di->sm->p[si][x][3];
+            break;
         case VC4_U_TEXTURE_CONFIG_P1: w = di->sm->p[si][x][1]; break;
-        case VC4_U_TEXTURE_CONFIG_P2: w = di->sm->p[si][x][2]; break;
+        case VC4_U_TEXTURE_CONFIG_P2: /* BSLOD: an explicit LOD (Mesa's: the recipe's bit 16) */
+            w = di->sm->p[si][x][2] | ((d >> 16) & 1);
+            break;
         case VC4_U_TEXTURE_FIRST_LEVEL: w = fbits((GLfloat)di->sm->first[si][x]); break;
         case VC4_U_UBO0_ADDR: w = di->ubo[si]; break;
         case VC4_U_BLEND_CONST_COLOR_X:
@@ -194,7 +199,16 @@ static ULONG write_uniforms(struct OGLES2Context *ctx, struct vc4_ctx *c, const 
             break;
         }
         case VC4_U_UNIFORMS_ADDRESS: w = bus; break;
-        default: w = 0; break; /* MSAA textures, UBO 1, rectangle scales, border colour: not in GLES2 */
+        case VC4_U_TEXRECT_SCALE_X: w = fbits(1.0f / di->sm->emu[si][x][3]); break;
+        case VC4_U_TEXRECT_SCALE_Y: w = fbits(1.0f / di->sm->emu[si][x][4]); break;
+        case VC4_U_TEXTURE_LOD_BIAS:
+        case VC4_U_TEXTURE_MIN_LOD:
+        case VC4_U_TEXTURE_MAX_LOD:
+        case VC4_U_TEXTURE_WIDTH:
+        case VC4_U_TEXTURE_HEIGHT:
+            w = fbits(di->sm->emu[si][x][v->rtype[k] - VC4_U_TEXTURE_LOD_BIAS]);
+            break;
+        default: w = 0; break; /* MSAA textures, UBO 1, border colour: not in GLES2 */
         }
         vc4_put32(u + 4 * k, w);
     }

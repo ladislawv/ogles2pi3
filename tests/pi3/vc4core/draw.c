@@ -12,13 +12,35 @@
  *   rgb565 (an RGB565 frame), cube, msaa (4x, against Mesa's 4x pbuffer),
  *   padded (a 130-pixel-wide frame: the depth picture in its left part):
  *             tests/pi3/ref/cases.h, against mesa_cases.c's pictures
+ *   texhalf, halfmip the texture (mipmap) case's texels as half floats in
+ *             four S16F planes (patch 0018): Mesa's RGBA8 pictures of them
+ *   mirror, mipemu (lodbias, minlod, maxlod, baselevel, lodboth, maxlevel,
+ *   forcefirst, aniso), anisoquad: patch 0019's texture parameters
+ *             (MIRROR_CLAMP_TO_EDGE against texels worked out here; the LOD
+ *             cases against Mesa's mipmap picture with the levels GL picks)
+ *   clipz     the depth case through EXT_clip_control's ZERO_TO_ONE (patch
+ *             0020): Mesa's depth picture
+ *   genmip    a 32x32 texture's levels drawn on the GPU from the level
+ *             above (glGenerateMipmap's GPU path): the box filter within 2
+ *   copytex   a T-format image's rectangle drawn into a texture
+ *             (glCopyTexSubImage2D's GPU path): each texel its source's
+ *   drawbuf   EXT_draw_buffers' passes (patch 0016): gl_FragData[0], then
+ *             [1], over the depth case's draws: Mesa's depth picture, and
+ *             it with the colours inverted
+ *   hdrrange  a half-float target keeps 2.0 and -0.5
+ *   hdr, hdrblend the depth (blend) case into a 64-bit colour (RGBA16F)
+ *             image (patch 0021), drawn from it as an RGBA64 texture: Mesa's
+ *             depth (blend) picture
  *   jobs, rtt the depth case in two jobs (stores and loads), and through a
  *             T-format image drawn as a texture: Mesa's depth picture
  *   overflow  the binner's overflow memory (--passes=N draws of 163,840
  *             triangles)
  *   speed     GPU-only numbers on a 1024x768 frame (named only: not in the
  *             default list or a soak's)
- *   sudo ./vc4_draw --dir=VC4P_DIR --refdir=PPM_DIR [--soak=ROUNDS [--loud]] [--passes=N] [CASE...]
+ *   sudo ./vc4_draw --dir=VC4P_DIR --refdir=PPM_DIR [--soak=ROUNDS [--loud]] [--passes=N]
+ *                   [--keep [--abort=bin|render]] [CASE...]
+ * --keep: a powered core taken as it is (no power cycle), left enabled at
+ * the end; --abort: a job stopped mid-way first (the lost tiles, §2 "Power").
  * Also built for AmigaOS (the Makefile's tests/vc4_draw, with os_amiga.c):
  * the Pi 3 card's bring-up under Emu68, the same cases and pictures.
  * The .vc4p files are named as v3dglslc -o names them
@@ -28,6 +50,7 @@
  */
 #include "vc4p.h"
 #include "vc4_os.h"
+#include "vc4_regs.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -36,6 +59,7 @@
 #else
 #define NULL_DEVICE "/dev/null"
 #endif
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -248,6 +272,9 @@ static uint32_t stencil_word; /* the stencil cases': nonzero, the stencil test o
 static int msaa_on;           /* the msaa case's: 4x MSAA target, the rasteriser oversampling */
 static const uint8_t *flat_indices8; /* the indices8 case's: 8-bit indices instead */
 static const int *flat_clip;         /* the scissor case's box */
+static int flat_halfz;               /* the clipz case's: the vertex variants keyed clip_halfz */
+static uint32_t flat_rt;             /* the hdr cases': the fragment variants for this target format */
+static int flat_db = -1;             /* the drawbuf case's: the fragment variant for gl_FragData[flat_db] */
 
 static int flat(struct vc4p *p, int prim, int depth, int blend, const float *col, const float *v, uint32_t nv,
                 uint32_t mode, const unsigned short *idx, uint32_t count)
@@ -262,10 +289,12 @@ static int flat(struct vc4p *p, int prim, int depth, int blend, const float *col
     d.prog = p;
     /* vc4's key: the depth "enabled" with the stencil test too (vc4_program.c) */
     d.fs = vc4p_find_fs_rt(p, prim, depth || stencil_word, blend, stencil_word != 0,
-                           fb565 ? VC4P_FORMAT_B5G6R5_UNORM : VC4P_FORMAT_R8G8B8A8_UNORM);
+                           fb565 ? VC4P_FORMAT_B5G6R5_UNORM : flat_rt ? flat_rt : VC4P_FORMAT_R8G8B8A8_UNORM);
+    if (flat_db >= 0)
+        d.fs = vc4p_find_fs_db(p, depth, (uint8_t)flat_db);
     d.stencil[0] = stencil_word;
-    d.vs = vc4p_find(p, VC4P_STAGE_VS, prim == 2);
-    d.cs = vc4p_find(p, VC4P_STAGE_CS, prim == 2);
+    d.vs = flat_halfz ? vc4p_find_halfz(p, VC4P_STAGE_VS) : vc4p_find(p, VC4P_STAGE_VS, prim == 2);
+    d.cs = flat_halfz ? vc4p_find_halfz(p, VC4P_STAGE_CS) : vc4p_find(p, VC4P_STAGE_CS, prim == 2);
     if (!d.fs || !d.vs || !d.cs) {
         printf("  no variant for primitive class %d, depth %d, blend %d (compiled with -s?)\n", prim, depth, blend);
         return -1;
@@ -362,6 +391,35 @@ static void case_depth(void)
     }
     for (k = 0; k < 3 && ok; k++)
         ok = flat(&p, 0, 1, 0, depth_col[k], depth_tri[k], 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+    end_case("depth", ok);
+    vc4p_free(&p);
+}
+
+/* clipz (EXT_clip_control's ZERO_TO_ONE, patch 0020): the depth case with
+ * each z given in 0..1 ((z + 1) / 2) to the vertex variants keyed
+ * clip_halfz, which take it back to -w..w: Mesa's depth picture, pixel for
+ * pixel (the same window depths). A fourth triangle at z -0.1 (in front of
+ * the near plane in that mode) is clipped away: it must not show. */
+static void case_clipz(void)
+{
+    static const float col[4] = {1, 1, 1, 1};
+    static const float front[9] = {-1, -1, -0.1f, 1, -1, -0.1f, 0, 1, -0.1f};
+    float tri[3][9];
+    struct vc4p p;
+    int k, i, ok = 1;
+    printf("clipz (the depth case through ZERO_TO_ONE's z, a triangle before the near plane clipped)\n");
+    if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(1) < 0) {
+        failures++;
+        return;
+    }
+    for (k = 0; k < 3; k++)
+        for (i = 0; i < 9; i++)
+            tri[k][i] = i % 3 == 2 ? (depth_tri[k][i] + 1.0f) * 0.5f : depth_tri[k][i];
+    flat_halfz = 1;
+    for (k = 0; k < 3 && ok; k++)
+        ok = flat(&p, 0, 1, 0, depth_col[k], tri[k], 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+    ok = ok && flat(&p, 0, 1, 0, col, front, 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+    flat_halfz = 0;
     end_case("depth", ok);
     vc4p_free(&p);
 }
@@ -560,6 +618,401 @@ static void case_mipmap(void)
         ok = vc4p_emit(&job, &d, W, H) == 0;
     }
     end_case("mipmap", ok);
+    vc4p_free(&p);
+}
+
+/* IEEE half precision of f, rounded to nearest even (by the bits). */
+static uint16_t half_of(float f)
+{
+    uint32_t b, s, m, h, rem, shift;
+    int e;
+    memcpy(&b, &f, 4);
+    s = (b >> 16) & 0x8000u;
+    e = (int)((b >> 23) & 0xff);
+    m = b & 0x7fffffu;
+    if (e == 255)
+        return (uint16_t)(s | 0x7c00u | (m ? 0x200u : 0));
+    e = e - 127 + 15;
+    if (e >= 31)
+        return (uint16_t)(s | 0x7c00u);
+    if (e <= 0) {
+        if (e < -10)
+            return (uint16_t)s;
+        m |= 0x800000u;
+        shift = (uint32_t)(14 - e);
+        h = m >> shift;
+        rem = m & ((1u << shift) - 1);
+        if (rem > 1u << (shift - 1) || (rem == 1u << (shift - 1) && (h & 1)))
+            h++;
+        return (uint16_t)(s | h);
+    }
+    h = (uint32_t)e << 10 | m >> 13;
+    rem = m & 0x1fffu;
+    if (rem > 0x1000u || (rem == 0x1000u && (h & 1)))
+        h++;
+    return (uint16_t)(s | h);
+}
+
+/* Half-float textures (patch 0018) are four S16F planes, one a channel
+ * (each a whole miptree in tiling.c's layout, cpp 2), plane k at k times
+ * the plane stride (the layout's size rounded up to 4 KB, P0's unit) from
+ * the first: the variant keyed R16G16B16A16_FLOAT makes one S16F lookup a
+ * plane (the TMU returns the half in the word's low 16 bits). halves is
+ * w x h x 4 halves (RGBA), level by level for levels > 1 (each level's
+ * texels after the one before). Into tex; the plane stride. */
+static uint32_t half_planes(struct vc4_texture_layout *lay, uint32_t w, uint32_t h, uint32_t levels,
+                            const uint16_t *halves)
+{
+    static uint16_t plane[128 * 128];
+    uint32_t stride, k, l, i, at = 0;
+    vc4_texture_layout(lay, w, h, 2, levels, 1);
+    stride = (lay->size + 4095) & ~4095u;
+    if (4 * stride > tex.size)
+        return 0;
+    for (l = 0; l < levels; l++) {
+        uint32_t n = lay->level[l].width * lay->level[l].height;
+        for (k = 0; k < 4; k++) {
+            for (i = 0; i < n; i++)
+                plane[i] = halves[(at + i) * 4 + k];
+            vc4_texture_store(tex.cpu + k * stride, lay, l, 0, (const uint8_t *)plane, lay->level[l].width * 2);
+        }
+        at += n;
+    }
+    return stride;
+}
+
+/* texhalf (OES_texture_half_float, PI3_PLAN §2.1): the texture case's
+ * texels as half floats (each byte / 255) in the four S16F planes, read by
+ * the variant keyed R16G16B16A16_FLOAT: Mesa's RGBA8 picture of them, pixel
+ * for pixel (a half's 11 bits round back to the same byte). After other
+ * texture cases too: the RGBA64 type this first used returned stale second
+ * words once a 32-bit texture had been sampled since the core's reset. */
+static void case_texhalf(void)
+{
+    static uint16_t halves[16 * 16 * 4];
+    struct vc4_texture_layout lay;
+    struct vc4p p;
+    struct vc4p_draw d;
+    uint32_t stride;
+    int x, y, c, ok;
+    printf("texhalf (the texture case's texels as half floats, four S16F planes)\n");
+    for (y = 0; y < 16; y++)
+        for (x = 0; x < 16; x++) {
+            const uint8_t v[4] = {(uint8_t)(x * 16), (uint8_t)(y * 16), (x + y) & 1 ? 0xff : 0, 0xff};
+            for (c = 0; c < 4; c++)
+                halves[(y * 16 + x) * 4 + c] = half_of(v[c] / 255.0f);
+        }
+    if (load_flat(&p, "texture-texture.vc4p") < 0 || begin_case(0) < 0 || !(stride = half_planes(&lay, 16, 16, 1, halves))) {
+        failures++;
+        return;
+    }
+    ok = two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R16G16B16A16_FLOAT, tq_pos, 8, 8, tq_uv, 8, 8,
+                    sizeof tq_pos, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+    d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_S16F, 0, 0);
+    d.tex[0][1] = vc4_tex_p1(VC4_TEX_S16F, 16, 16, VC4_MAG_NEAREST, VC4_MIN_NEAREST, VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+    d.tex_plane[0] = stride;
+    ok = ok && vc4p_emit(&job, &d, W, H) == 0;
+    /* the texture case's picture: Mesa's of the same texels as RGBA8 */
+    end_case("texture", ok);
+    vc4p_free(&p);
+}
+
+/* halfmip: the mipmap case's six one-colour levels as half floats in the
+ * planes (each plane a miptree), NEAREST_MIPMAP_NEAREST, the four quads:
+ * Mesa's mipmap picture, pixel for pixel (the TMU's own LOD and levels on
+ * each plane). */
+static void case_halfmip(void)
+{
+    static uint16_t halves[(32 * 32 + 16 * 16 + 8 * 8 + 4 * 4 + 2 * 2 + 1) * 4];
+    struct vc4_texture_layout lay;
+    struct vc4p p;
+    struct vc4p_draw d;
+    uint32_t stride, at = 0, i;
+    int l, q, c, ok = 1;
+    printf("halfmip (the mipmap case's levels as half floats, four S16F planes)\n");
+    for (l = 0; l < MIP_LEVELS; l++) {
+        uint32_t n = (uint32_t)(MIP_SIZE >> l) * (uint32_t)(MIP_SIZE >> l);
+        for (i = 0; i < n; i++, at++)
+            for (c = 0; c < 4; c++)
+                halves[at * 4 + c] = half_of(mip_col[l][c] / 255.0f);
+    }
+    if (load_flat(&p, "texture-texture.vc4p") < 0 || begin_case(0) < 0 ||
+        !(stride = half_planes(&lay, MIP_SIZE, MIP_SIZE, MIP_LEVELS, halves))) {
+        failures++;
+        return;
+    }
+    for (q = 0; q < 4 && ok; q++) {
+        ok = two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R16G16B16A16_FLOAT, mip_quad[q], 8, 8, mip_uv, 8,
+                        8, sizeof mip_uv, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+        if (!ok)
+            break;
+        d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_S16F, MIP_LEVELS - 1, 0);
+        d.tex[0][1] = vc4_tex_p1(VC4_TEX_S16F, MIP_SIZE, MIP_SIZE, VC4_MAG_NEAREST, VC4_MIN_NEAR_MIP_NEAR,
+                                 VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+        d.tex_plane[0] = stride;
+        ok = vc4p_emit(&job, &d, W, H) == 0;
+    }
+    end_case("mipmap", ok);
+    vc4p_free(&p);
+}
+
+/* ---- patch 0019's texture-parameter emulations (PI3_PLAN §2.1) ----
+ * The mipmap case's texture and quads (each level one colour, so a pixel
+ * shows the level picked), drawn by the variant keyed for the emulation;
+ * the picture is Mesa's mipmap picture with each quad's level L shown as
+ * level map[L] (the level GL picks with the parameter set). */
+
+/* Our frame against Mesa's mipmap picture with its levels mapped; the
+ * pixels differing. */
+static long compare_mip(const int *map)
+{
+    char path[512];
+    FILE *f;
+    int w, h, max, x, y, l;
+    long diff = 0;
+    snprintf(path, sizeof path, "%s/mesa_mipmap.ppm", refdir);
+    f = fopen(path, "rb");
+    if (!f || fscanf(f, "P6 %d %d %d", &w, &h, &max) != 3 || w != W || h != H) {
+        printf("  %s: not a %dx%d PPM\n", path, W, H);
+        if (f)
+            fclose(f);
+        return -1;
+    }
+    fgetc(f);
+    for (y = h - 1; y >= 0; y--)
+        for (x = 0; x < w; x++) {
+            int c[3], pr, pg, pb;
+            c[0] = fgetc(f), c[1] = fgetc(f), c[2] = fgetc(f);
+            for (l = 0; l < MIP_LEVELS; l++)
+                if (c[0] == mip_col[l][0] && c[1] == mip_col[l][1] && c[2] == mip_col[l][2]) {
+                    c[0] = mip_col[map[l]][0], c[1] = mip_col[map[l]][1], c[2] = mip_col[map[l]][2];
+                    break;
+                }
+            pixel(x, y, &pr, &pg, &pb);
+            if (pr != c[0] || pg != c[1] || pb != c[2]) {
+                if (diff < 5)
+                    printf("  differs at (%d,%d): ours %02x %02x %02x, expected %02x %02x %02x\n", x, y, pr, pg, pb,
+                           c[0], c[1], c[2]);
+                diff++;
+            }
+        }
+    fclose(f);
+    return diff;
+}
+
+/* The mipmap texture's six levels stored (the mipmap case's); 0 or -1. */
+static int mip_texture(struct vc4_texture_layout *lay)
+{
+    static uint8_t lv[MIP_SIZE * MIP_SIZE * 4];
+    int l, i;
+    vc4_texture_layout(lay, MIP_SIZE, MIP_SIZE, 4, MIP_LEVELS, 1);
+    if (lay->size > tex.size)
+        return -1;
+    for (l = 0; l < MIP_LEVELS; l++) {
+        for (i = 0; i < (int)(lay->level[l].width * lay->level[l].height); i++)
+            memcpy(lv + 4 * i, mip_col[l], 4);
+        vc4_texture_store(tex.cpu, lay, (uint32_t)l, 0, lv, lay->level[l].width * 4);
+    }
+    return 0;
+}
+
+struct mipemu
+{
+    const char *name, *what;
+    uint8_t first, emu, aniso; /* the variant's key bytes (force_first_level, bias 1 / clamp 2, aniso) */
+    uint32_t miplvls;          /* P0's last level */
+    float bias, min_lod, max_lod, first_level; /* the uniforms, as ogles2_vc4_sampler makes them */
+    int map[MIP_LEVELS];
+};
+static const struct mipemu mipemus[] = {
+    {"lodbias", "EXT_texture_lod_bias 1.0: the TMU's bias input", 0, 1, 0, 5, 1.0f, 0, 0, 0, {1, 2, 3, 4, 5, 5}},
+    {"minlod", "TEXTURE_MIN_LOD 2: an LOD from derivatives, clamped", 0, 2, 0, 5, 0, 2.0f, 5.0f, 0, {2, 2, 2, 3, 4, 5}},
+    {"maxlod", "TEXTURE_MAX_LOD 1", 0, 2, 0, 5, 0, -1000.0f, 1.0f, 0, {0, 1, 1, 1, 1, 1}},
+    {"baselevel", "TEXTURE_BASE_LEVEL 2: the LOD clamped from level 2", 0, 2, 0, 5, 0, 2.0f, 5.0f, 0,
+     {2, 2, 2, 3, 4, 5}},
+    {"lodboth", "LOD bias 1 and MAX_LOD 2.4 together", 0, 3, 0, 5, 1.0f, -1000.0f, 2.4f, 0, {1, 2, 2, 2, 2, 2}},
+    {"maxlevel", "TEXTURE_MAX_LEVEL 2: P0's levels alone", 0, 0, 0, 2, 0, 0, 0, 0, {0, 1, 2, 2, 2, 2}},
+    {"forcefirst", "BASE_LEVEL = MAX_LEVEL = 3: an explicit LOD (force_first_level)", 1, 0, 0, 3, 0, 0, 0, 3.0f,
+     {3, 3, 3, 3, 3, 3}},
+    {"aniso", "4 anisotropic lookups on square footprints: the levels unchanged", 0, 0, 2, 5, 0, 0, 0, 0,
+     {0, 1, 2, 3, 4, 5}},
+};
+#define NMIPEMUS (int)(sizeof mipemus / sizeof mipemus[0])
+
+static void mipemu_case(const struct mipemu *m)
+{
+    struct vc4_texture_layout lay;
+    struct vc4p p;
+    struct vc4p_draw d;
+    const struct vc4p_variant *fs;
+    int q, ok = 1;
+    printf("%s (%s)\n", m->name, m->what);
+    if (mip_texture(&lay) < 0 || load_flat(&p, "texture-texture.vc4p") < 0 || begin_case(0) < 0) {
+        failures++;
+        return;
+    }
+    fs = m->first || m->emu || m->aniso
+             ? vc4p_find_tex_emu(&p, VC4P_FORMAT_R8G8B8A8_UNORM, 0, m->first, m->emu, m->aniso)
+             : vc4p_find_tex(&p, 0, VC4P_FORMAT_R8G8B8A8_UNORM);
+    if (!fs) {
+        printf("  no variant keyed first %u, emulation %u, anisotropy %u\n", m->first, m->emu, m->aniso);
+        ok = 0;
+    }
+    for (q = 0; q < 4 && ok; q++) {
+        ok = two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R8G8B8A8_UNORM, mip_quad[q], 8, 8, mip_uv, 8, 8,
+                        sizeof mip_uv, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+        if (!ok)
+            break;
+        d.fs = fs;
+        d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_RGBA8888, m->miplvls, 0);
+        d.tex[0][1] = vc4_tex_p1(VC4_TEX_RGBA8888, MIP_SIZE, MIP_SIZE, VC4_MAG_NEAREST, VC4_MIN_NEAR_MIP_NEAR,
+                                 VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+        d.tex_emu[0][0] = m->bias;
+        d.tex_emu[0][1] = m->min_lod;
+        d.tex_emu[0][2] = m->max_lod;
+        d.tex_emu[0][3] = MIP_SIZE;
+        d.tex_emu[0][4] = MIP_SIZE;
+        d.tex_emu[0][5] = m->first_level;
+        ok = vc4p_emit(&job, &d, W, H) == 0;
+    }
+    if (!ok || vc4_job_run(&job, 1000000) < 0) {
+        check(0, "the job ran");
+    } else {
+        if (job.errstat != 0x1000u)
+            printf("  ERRSTAT %08x\n", job.errstat);
+        check(compare_mip(m->map) == 0, "Mesa's mipmap picture, each quad at the level GL picks");
+    }
+    vc4p_free(&p);
+}
+
+/* anisoquad (EXT_texture_filter_anisotropic): the mipmap texture over a
+ * quad 32 pixels wide and 8 high, 4 texels a pixel along t: the TMU alone
+ * (the plain variant) picks level 2 (GL's rho, the major axis); 4
+ * anisotropic lookups along t pick level 0 (the major axis over 4, not
+ * below the minor axis's 1 texel a pixel), as GL's reference
+ * implementation does. Two such quads, one each, every pixel checked. */
+static void case_anisoquad(void)
+{
+    static const float quad[2][8] = {
+        {-0.75f, 0.25f, -0.25f, 0.25f, -0.75f, 0.375f, -0.25f, 0.375f}, /* 32 x 8 pixels: the TMU's own LOD */
+        {0.125f, 0.25f, 0.625f, 0.25f, 0.125f, 0.375f, 0.625f, 0.375f}, /* the same with 4 anisotropic lookups */
+    };
+    static const int x0[2] = {16, 72}, want[2] = {2, 0};
+    struct vc4_texture_layout lay;
+    struct vc4p p;
+    struct vc4p_draw d;
+    const struct vc4p_variant *fs[2];
+    int q, x, y, ok = 1;
+    long bad = 0;
+    printf("anisoquad (32x8-pixel quads of the 32x32 mipmap: level 2 by the TMU, level 0 by 4 lookups)\n");
+    if (mip_texture(&lay) < 0 || load_flat(&p, "texture-texture.vc4p") < 0 || begin_case(0) < 0) {
+        failures++;
+        return;
+    }
+    fs[0] = vc4p_find_tex(&p, 0, VC4P_FORMAT_R8G8B8A8_UNORM);
+    fs[1] = vc4p_find_tex_emu(&p, VC4P_FORMAT_R8G8B8A8_UNORM, 0, 0, 0, 2);
+    for (q = 0; q < 2 && ok; q++) {
+        ok = fs[q] && two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R8G8B8A8_UNORM, quad[q], 8, 8, mip_uv, 8,
+                                 8, sizeof mip_uv, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+        if (!ok)
+            break;
+        d.fs = fs[q];
+        d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_RGBA8888, MIP_LEVELS - 1, 0);
+        d.tex[0][1] = vc4_tex_p1(VC4_TEX_RGBA8888, MIP_SIZE, MIP_SIZE, VC4_MAG_NEAREST, VC4_MIN_NEAR_MIP_NEAR,
+                                 VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+        d.tex_emu[0][3] = MIP_SIZE;
+        d.tex_emu[0][4] = MIP_SIZE;
+        ok = vc4p_emit(&job, &d, W, H) == 0;
+    }
+    if (!ok || vc4_job_run(&job, 1000000) < 0) {
+        check(0, "the job ran");
+        vc4p_free(&p);
+        return;
+    }
+    /* quad q covers x0[q] .. x0[q] + 31 and rows 80 .. 87 (from the bottom) */
+    for (q = 0; q < 2; q++)
+        for (y = 80; y < 88; y++)
+            for (x = x0[q]; x < x0[q] + 32; x++) {
+                int r, g, b;
+                pixel(x, y, &r, &g, &b);
+                if (r != mip_col[want[q]][0] || g != mip_col[want[q]][1] || b != mip_col[want[q]][2]) {
+                    if (bad < 5)
+                        printf("  quad %d at (%d,%d): %02x %02x %02x, level %d's colour expected\n", q, x, y, r, g,
+                               b, want[q]);
+                    bad++;
+                }
+            }
+    check(bad == 0, "the TMU's quad at level 2, the anisotropic one at level 0, every pixel");
+    vc4p_free(&p);
+}
+
+/* mirror (ARB_texture_mirror_clamp_to_edge): the texture case's 16x16
+ * texture on its quad with coordinates -1 to 1, MIRROR_CLAMP_TO_EDGE both
+ * ways (the shader's absolute value, the TMU's clamp), NEAREST: each pixel
+ * against texel min(floor(|u| * 16), 15) of the texels, worked out here
+ * (the coordinates at pixel centres are never on a texel's edge). */
+static void case_mirror(void)
+{
+    static const float uv[] = {-1, -1, 1, -1, -1, 1, 1, 1};
+    static uint8_t texels[16 * 16 * 4];
+    struct vc4_texture_layout lay;
+    struct vc4p p;
+    struct vc4p_draw d;
+    int x, y, ok;
+    long bad = 0;
+    printf("mirror (MIRROR_CLAMP_TO_EDGE: the texture case's quad with coordinates -1 to 1)\n");
+    for (y = 0; y < 16; y++)
+        for (x = 0; x < 16; x++) {
+            uint8_t *t = texels + (y * 16 + x) * 4;
+            t[0] = (uint8_t)(x * 16);
+            t[1] = (uint8_t)(y * 16);
+            t[2] = (x + y) & 1 ? 0xff : 0;
+            t[3] = 0xff;
+        }
+    if (load_flat(&p, "texture-texture.vc4p") < 0 || begin_case(0) < 0) {
+        failures++;
+        return;
+    }
+    vc4_texture_layout(&lay, 16, 16, 4, 1, 1);
+    vc4_texture_store(tex.cpu, &lay, 0, 0, texels, 16 * 4);
+    ok = two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R8G8B8A8_UNORM, tq_pos, 8, 8, uv, 8, 8,
+                    sizeof tq_pos, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+    d.fs = vc4p_find_tex_emu(&p, VC4P_FORMAT_R8G8B8A8_UNORM, 6, 0, 0, 0);
+    if (!d.fs) {
+        printf("  no variant keyed MIRROR_CLAMP_TO_EDGE\n");
+        ok = 0;
+    }
+    d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_RGBA8888, 0, 0);
+    d.tex[0][1] = vc4_tex_p1(VC4_TEX_RGBA8888, 16, 16, VC4_MAG_NEAREST, VC4_MIN_NEAREST, VC4_WRAP_CLAMP,
+                             VC4_WRAP_CLAMP);
+    if (!ok || vc4p_emit(&job, &d, W, H) < 0 || vc4_job_run(&job, 1000000) < 0) {
+        check(0, "the job ran");
+        vc4p_free(&p);
+        return;
+    }
+    /* the quad covers pixels 16 .. 111 both ways (y from the bottom) */
+    for (y = 0; y < H; y++)
+        for (x = 0; x < W; x++) {
+            int r, g, b, er = 0, eg = 0, eb = 0x40;
+            pixel(x, y, &r, &g, &b);
+            if (x >= 16 && x < 112 && y >= 16 && y < 112) {
+                float u = -1.0f + 2.0f * ((float)(x - 16) + 0.5f) / 96.0f;
+                float v = -1.0f + 2.0f * ((float)(y - 16) + 0.5f) / 96.0f;
+                int tx = (int)(fabsf(u) * 16.0f), ty = (int)(fabsf(v) * 16.0f);
+                const uint8_t *t;
+                tx = tx > 15 ? 15 : tx;
+                ty = ty > 15 ? 15 : ty;
+                t = texels + (ty * 16 + tx) * 4;
+                er = t[0], eg = t[1], eb = t[2];
+            }
+            if (r != er || g != eg || b != eb) {
+                if (bad < 5)
+                    printf("  differs at (%d,%d): ours %02x %02x %02x, expected %02x %02x %02x\n", x, y, r, g, b, er,
+                           eg, eb);
+                bad++;
+            }
+        }
+    check(bad == 0, "each pixel the mirrored, clamped texel");
     vc4p_free(&p);
 }
 
@@ -1006,6 +1459,421 @@ static void case_rtt(void)
     vc4p_free(&p);
 }
 
+/* hdr, hdrblend (EXT_color_buffer_half_float, patch 0021): the depth case
+ * (or the blend case) into a 128x128 T-format image in the tile buffer's
+ * 64-bit colour mode (RGBA16F pixels, 64x32 tiles), by fragment variants
+ * keyed R16G16B16A16_FLOAT (two TLB words a pixel; the blend in floats from
+ * two TLB reads), then that image's halves as S16F planes (on the CPU, as
+ * the library does before sampling a half-float target) drawn over the
+ * whole frame, a texel a pixel: Mesa's depth picture pixel for
+ * pixel (1.0, 0.0 and the clear's 0.25 are exact halves), or its blend
+ * picture within 1 (Mesa blends in 8 bits). And a stored texel inside the
+ * triangles, read back: one triangle's colour as exact halves. */
+static void hdr_case(const char *name, int blend)
+{
+    static const float full_pos[4 * 2] = {-1, -1, 1, -1, -1, 1, 1, 1};
+    static const float full_uv[4 * 2] = {0, 0, 1, 0, 0, 1, 1, 1};
+    struct vc4_texture_layout lay, play;
+    uint32_t plane_stride = 0;
+    struct vc4p p, tp;
+    struct vc4_target t;
+    struct vc4p_draw d;
+    int k, ok;
+    printf("%s (the %s case into a 64-bit colour T-format image, then drawn from its halves as planes)\n", name,
+           blend ? "blend" : "depth");
+    vc4_texture_layout(&lay, W, H, 8, 1, 1);
+    if (lay.level[0].tiling != VC4_TILING_T || lay.size > rtt.size) {
+        printf("  a %dx%d RGBA64 texture is not T, or larger than %u bytes\n", W, H, rtt.size);
+        failures++;
+        return;
+    }
+    if (load_flat(&p, "flat-flat.vc4p") < 0 || load_flat(&tp, "texture-texture.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    memset(&t, 0, sizeof t);
+    t.width = W;
+    t.height = H;
+    t.hdr = 1;
+    t.color.bus = rtt.bus + lay.level[0].offset;
+    t.color.tiling = VC4_TILING_T;
+    t.color.format = VC4_COLOR_RGBA8888;
+    t.store = VC4_COLOR;
+    t.clear = VC4_COLOR | VC4_ZS;
+    t.clear_hdr[0] = 0;                                     /* R 0, G 0 */
+    t.clear_hdr[1] = (uint32_t)half_of(0.25f) | 0x3c00u << 16; /* B 0.25, A 1 */
+    t.clear_z = 0xffffffu;
+    vc4_mem_fill(&rtt, 0, lay.size, 0x55555555u);
+    flat_rt = VC4P_FORMAT_R16G16B16A16_FLOAT;
+    ok = begin_target(&t) == 0;
+    if (blend) {
+        ok = ok && flat(&p, 0, 0, 0, blend_col[0], blend_quad, 4, VC4_PRIM_TRIANGLE_STRIP, 0, 4) == 0 &&
+             flat(&p, 0, 0, 1, blend_col[1], blend_tri, 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+    } else {
+        for (k = 0; k < 3 && ok; k++)
+            ok = flat(&p, 0, 1, 0, depth_col[k], depth_tri[k], 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+    }
+    flat_rt = 0;
+    ok = ok && vc4_job_run(&job, 1000000) == 0;
+    if (ok && job.errstat != 0x1000u)
+        printf("  first job: ERRSTAT %08x\n", job.errstat);
+    if (ok && !blend) {
+        /* the red triangle's centre: the first depth_tri's vertices' mean */
+        float cx = (depth_tri[0][0] + depth_tri[0][3] + depth_tri[0][6]) / 3.0f;
+        float cy = (depth_tri[0][1] + depth_tri[0][4] + depth_tri[0][7]) / 3.0f;
+        uint32_t x = (uint32_t)((cx + 1.0f) * 64.0f), y = (uint32_t)((cy + 1.0f) * 64.0f), o;
+        uint16_t hv[4];
+        vc4_os_invalidate(rtt.cpu, lay.size);
+        o = lay.level[0].offset + vc4_texel_offset(&lay.level[0], 8, x, y);
+        for (k = 0; k < 2; k++) { /* GPU memory: aligned 32-bit reads (vc4core.h) */
+            uint32_t w = vc4_get32(rtt.cpu + o + 4 * (uint32_t)k);
+            hv[2 * k] = (uint16_t)w;
+            hv[2 * k + 1] = (uint16_t)(w >> 16);
+        }
+        printf("  stored at (%u,%u): halves %04x %04x %04x %04x\n", x, y, hv[0], hv[1], hv[2], hv[3]);
+        check((hv[0] == 0 || hv[0] == 0x3c00) && (hv[1] == 0 || hv[1] == 0x3c00) && (hv[2] == 0 || hv[2] == 0x3c00) &&
+                  hv[0] + hv[1] + hv[2] == 0x3c00 && hv[3] == 0x3c00,
+              "one triangle's colour there as exact halves (1.0 0x3c00), alpha 1");
+    }
+    /* the image's RGBA16F pixels into the four S16F planes on the CPU (the
+     * library's way to sample a half-float target: patch 0018), then drawn
+     * from them */
+    if (ok) {
+        static uint16_t halves[W * H * 4];
+        uint32_t x, y;
+        vc4_os_invalidate(rtt.cpu, lay.size);
+        for (y = 0; y < H; y++)
+            for (x = 0; x < W; x++) {
+                uint32_t o = lay.level[0].offset + vc4_texel_offset(&lay.level[0], 8, x, y);
+                uint32_t rg = vc4_get32(rtt.cpu + o), ba = vc4_get32(rtt.cpu + o + 4);
+                uint16_t *h = halves + (y * W + x) * 4;
+                h[0] = (uint16_t)rg, h[1] = (uint16_t)(rg >> 16), h[2] = (uint16_t)ba, h[3] = (uint16_t)(ba >> 16);
+            }
+        ok = (plane_stride = half_planes(&play, W, H, 1, halves)) != 0;
+    }
+    ok = ok && begin_case(0) == 0 &&
+         two_inputs(&tp, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R16G16B16A16_FLOAT, full_pos, 8, 8, full_uv, 8, 8,
+                    sizeof full_pos, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+    d.tex[0][0] = vc4_tex_p0(tex.bus + play.level[0].offset, VC4_TEX_S16F, 0, 0);
+    d.tex[0][1] = vc4_tex_p1(VC4_TEX_S16F, W, H, VC4_MAG_NEAREST, VC4_MIN_NEAREST, VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+    d.tex_plane[0] = plane_stride;
+    ok = ok && vc4p_emit(&job, &d, W, H) == 0;
+    if (blend)
+        cmp_tol = 1;
+    end_case(blend ? "blend" : "depth", ok);
+    cmp_tol = 0;
+    vc4p_free(&tp);
+    vc4p_free(&p);
+}
+
+/* drawbuf (EXT_draw_buffers, PI3_PLAN §2.1: one pass per colour
+ * attachment, each with the fragment variant for its gl_FragData, patch
+ * 0016): mrt.frag writes color to gl_FragData[0] and 1 - color to
+ * gl_FragData[1]; the depth case's draws, once with each variant, each pass
+ * a job that clears depth as the frame's did: the first Mesa's depth
+ * picture pixel for pixel, the second the same with the triangles' colours
+ * inverted (the clear colour stays). */
+static long compare_inverted(void)
+{
+    char path[512];
+    FILE *f;
+    int w, h, max, x, y;
+    long diff = 0;
+    snprintf(path, sizeof path, "%s/mesa_depth.ppm", refdir);
+    f = fopen(path, "rb");
+    if (!f || fscanf(f, "P6 %d %d %d", &w, &h, &max) != 3 || w != W || h != H) {
+        printf("  %s: not a %dx%d PPM\n", path, W, H);
+        if (f)
+            fclose(f);
+        return -1;
+    }
+    fgetc(f);
+    for (y = h - 1; y >= 0; y--)
+        for (x = 0; x < w; x++) {
+            int c[3], pr, pg, pb;
+            c[0] = fgetc(f), c[1] = fgetc(f), c[2] = fgetc(f);
+            if (!(c[0] == 0 && c[1] == 0 && c[2] == 0x40))
+                c[0] = 255 - c[0], c[1] = 255 - c[1], c[2] = 255 - c[2];
+            pixel(x, y, &pr, &pg, &pb);
+            if (pr != c[0] || pg != c[1] || pb != c[2]) {
+                if (diff < 5)
+                    printf("  differs at (%d,%d): ours %02x %02x %02x, expected %02x %02x %02x\n", x, y, pr, pg, pb,
+                           c[0], c[1], c[2]);
+                diff++;
+            }
+        }
+    fclose(f);
+    return diff;
+}
+
+static void case_drawbuf(void)
+{
+    struct vc4p p;
+    int k, pass, ok = 1;
+    printf("drawbuf (gl_FragData[0] and [1] in two passes over the depth case's draws)\n");
+    if (load_flat(&p, "flat-mrt.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    for (pass = 0; pass < 2 && ok; pass++) {
+        ok = begin_case(1) == 0;
+        flat_db = pass;
+        for (k = 0; k < 3 && ok; k++)
+            ok = flat(&p, 0, 1, 0, depth_col[k], depth_tri[k], 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+        flat_db = -1;
+        if (!pass) {
+            end_case("depth", ok);
+        } else if (!ok || vc4_job_run(&job, 1000000) < 0) {
+            check(0, "the second pass ran");
+        } else {
+            if (job.errstat != 0x1000u)
+                printf("  ERRSTAT %08x\n", job.errstat);
+            check(compare_inverted() == 0, "gl_FragData[1]: Mesa's depth picture with the colours inverted");
+        }
+    }
+    vc4p_free(&p);
+}
+
+/* genmip (glGenerateMipmap on the GPU, PI3_PLAN §2.1 / P5): a 32x32
+ * texture's levels 1 to 5 each drawn from the level above, a job a level
+ * whose target is the level's own place in the miptree (T or LT as the TMU
+ * reads it: tiling.c), a quad over it sampling the level above at an
+ * explicit LOD (the force_first_level variant, its TEXTURE_FIRST_LEVEL) with
+ * LINEAR filters: a destination texel's centre is the corner of four, so
+ * the TMU averages them. Each level against the 2x2 box filter of the level
+ * drawn above it, within 2 a channel: the TMU's bilinear rounds down (seen
+ * 2026-11-05: up to 2 below the rounded average where neighbours differ
+ * by about 200; Mesa's vc4 generates mipmaps through the TMU too). */
+static uint32_t tex_texel(const struct vc4_texture_layout *lay, uint32_t l, uint32_t x, uint32_t y)
+{
+    return vc4_get32(tex.cpu + lay->level[l].offset + vc4_texel_offset(&lay->level[l], 4, x, y));
+}
+
+static void case_genmip(void)
+{
+    static const float full_pos[4 * 2] = {-1, -1, 1, -1, -1, 1, 1, 1};
+    static const float full_uv[4 * 2] = {0, 0, 1, 0, 0, 1, 1, 1};
+    static uint8_t lv0[MIP_SIZE * MIP_SIZE * 4];
+    struct vc4_texture_layout lay;
+    struct vc4p p;
+    struct vc4p_draw d;
+    struct vc4_target t;
+    const struct vc4p_variant *fs;
+    uint32_t l, x, y;
+    int ok = 1, c;
+    long bad = 0, worst = 0;
+    printf("genmip (a 32x32 texture's levels 1 to 5 drawn from the level above, LINEAR)\n");
+    vc4_texture_layout(&lay, MIP_SIZE, MIP_SIZE, 4, MIP_LEVELS, 1);
+    for (y = 0; y < MIP_SIZE; y++)
+        for (x = 0; x < MIP_SIZE; x++) {
+            uint8_t *o = lv0 + (y * MIP_SIZE + x) * 4;
+            o[0] = (uint8_t)(x * 8 + 3);
+            o[1] = (uint8_t)(y * 8 + 1);
+            o[2] = (uint8_t)(((x ^ y) * 37) & 0xff);
+            o[3] = (uint8_t)(255 - x * 4);
+        }
+    vc4_mem_fill(&tex, 0, lay.size, 0);
+    vc4_texture_store(tex.cpu, &lay, 0, 0, lv0, MIP_SIZE * 4);
+    if (load_flat(&p, "texture-texture.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    fs = vc4p_find_tex_emu(&p, VC4P_FORMAT_R8G8B8A8_UNORM, 0, 1, 0, 0);
+    if (!fs) {
+        printf("  no variant keyed force_first_level\n");
+        failures++;
+        vc4p_free(&p);
+        return;
+    }
+    for (l = 1; l < MIP_LEVELS && ok; l++) {
+        const struct vc4_level *lv = &lay.level[l];
+        memset(&t, 0, sizeof t);
+        t.width = (uint16_t)lv->width;
+        t.height = (uint16_t)lv->height;
+        t.color.bus = tex.bus + lv->offset;
+        t.color.tiling = lv->tiling;
+        t.color.format = VC4_COLOR_RGBA8888;
+        t.store = VC4_COLOR;
+        ok = begin_target(&t) == 0 &&
+             two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R8G8B8A8_UNORM, full_pos, 8, 8, full_uv, 8, 8,
+                        sizeof full_pos, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+        if (!ok)
+            break;
+        d.fs = fs;
+        d.vp_w = (float)lv->width;
+        d.vp_h = (float)lv->height;
+        d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_RGBA8888, MIP_LEVELS - 1, 0);
+        d.tex[0][1] = vc4_tex_p1(VC4_TEX_RGBA8888, MIP_SIZE, MIP_SIZE, VC4_MAG_LINEAR, VC4_MIN_LIN_MIP_NEAR,
+                                 VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+        d.tex_emu[0][5] = (float)(l - 1);
+        ok = vc4p_emit(&job, &d, (uint16_t)lv->width, (uint16_t)lv->height) == 0 && vc4_job_run(&job, 1000000) == 0;
+        if (ok && job.errstat != 0x1000u)
+            printf("  level %u: ERRSTAT %08x\n", l, job.errstat);
+        if (!ok)
+            break;
+        vc4_os_invalidate(tex.cpu, lay.size);
+        for (y = 0; y < lv->height; y++)
+            for (x = 0; x < lv->width; x++) {
+                uint32_t got = tex_texel(&lay, l, x, y), s[4];
+                s[0] = tex_texel(&lay, l - 1, 2 * x, 2 * y);
+                s[1] = tex_texel(&lay, l - 1, 2 * x + 1, 2 * y);
+                s[2] = tex_texel(&lay, l - 1, 2 * x, 2 * y + 1);
+                s[3] = tex_texel(&lay, l - 1, 2 * x + 1, 2 * y + 1);
+                for (c = 0; c < 4; c++) {
+                    int sh = c * 8, want = (int)(((s[0] >> sh & 255) + (s[1] >> sh & 255) + (s[2] >> sh & 255) +
+                                                  (s[3] >> sh & 255) + 2) / 4),
+                        g = (int)(got >> sh & 255), e = abs(g - want);
+                    if (e > worst)
+                        worst = e;
+                    if (e > 2) {
+                        if (bad < 5)
+                            printf("  level %u (%u,%u) channel %d: %d, the box filter %d\n", l, x, y, c, g, want);
+                        bad++;
+                    }
+                }
+            }
+    }
+    if (!ok) {
+        check(0, "the jobs ran");
+    } else {
+        printf("  largest difference from the box filter: %ld\n", worst);
+        check(bad == 0, "every level the box filter of the one above, within 2");
+    }
+    vc4p_free(&p);
+}
+
+/* copytex (glCopyTexSubImage2D's GPU path from a framebuffer object's
+ * texture): the depth case rendered into a 128x128 T-format image, then its
+ * centre 64x64 drawn into a 64x64 texture's level 0 (T format) by a quad
+ * sampling the image NEAREST at the texel centres of that rectangle: every
+ * texel equal to its source. (A raster source, the display, samples right
+ * only at power-of-two widths, PI3_PLAN §2 "Textures": its copies stay on the
+ * CPU.) */
+static void case_copytex(void)
+{
+    static const float full_pos[4 * 2] = {-1, -1, 1, -1, -1, 1, 1, 1};
+    static const float sub_uv[4 * 2] = {0.25f, 0.25f, 0.75f, 0.25f, 0.25f, 0.75f, 0.75f, 0.75f};
+    struct vc4_texture_layout src, dst;
+    struct vc4p p, tp;
+    struct vc4_target t;
+    struct vc4p_draw d;
+    uint32_t x, y;
+    long bad = 0;
+    int k, ok;
+    printf("copytex (a 64x64 rectangle of a T-format image drawn into a texture, NEAREST)\n");
+    vc4_texture_layout(&src, W, H, 4, 1, 1);
+    vc4_texture_layout(&dst, 64, 64, 4, 1, 1);
+    if (src.size > rtt.size || dst.size > tex.size || load_flat(&p, "flat-flat.vc4p") < 0 ||
+        load_flat(&tp, "texture-texture.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    memset(&t, 0, sizeof t);
+    t.width = W;
+    t.height = H;
+    t.color.bus = rtt.bus + src.level[0].offset;
+    t.color.tiling = src.level[0].tiling;
+    t.color.format = VC4_COLOR_RGBA8888;
+    t.store = VC4_COLOR;
+    t.clear = VC4_COLOR | VC4_ZS;
+    t.clear_color = 0xff400000u;
+    t.clear_z = 0xffffffu;
+    ok = begin_target(&t) == 0;
+    for (k = 0; k < 3 && ok; k++)
+        ok = flat(&p, 0, 1, 0, depth_col[k], depth_tri[k], 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+    ok = ok && vc4_job_run(&job, 1000000) == 0;
+    memset(&t, 0, sizeof t);
+    t.width = 64;
+    t.height = 64;
+    t.color.bus = tex.bus + dst.level[0].offset;
+    t.color.tiling = dst.level[0].tiling;
+    t.color.format = VC4_COLOR_RGBA8888;
+    t.store = VC4_COLOR;
+    vc4_mem_fill(&tex, 0, dst.size, 0x55555555u);
+    ok = ok && begin_target(&t) == 0 &&
+         two_inputs(&tp, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_R8G8B8A8_UNORM, full_pos, 8, 8, sub_uv, 8, 8,
+                    sizeof full_pos, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+    if (ok) {
+        d.vp_w = 64;
+        d.vp_h = 64;
+        d.tex[0][0] = vc4_tex_p0(rtt.bus + src.level[0].offset, VC4_TEX_RGBA8888, 0, 0);
+        d.tex[0][1] = vc4_tex_p1(VC4_TEX_RGBA8888, W, H, VC4_MAG_NEAREST, VC4_MIN_NEAREST, VC4_WRAP_CLAMP,
+                                 VC4_WRAP_CLAMP);
+        ok = vc4p_emit(&job, &d, 64, 64) == 0 && vc4_job_run(&job, 1000000) == 0;
+    }
+    if (!ok) {
+        check(0, "the jobs ran");
+        vc4p_free(&tp);
+        vc4p_free(&p);
+        return;
+    }
+    vc4_os_invalidate(rtt.cpu, src.size);
+    vc4_os_invalidate(tex.cpu, dst.size);
+    for (y = 0; y < 64; y++)
+        for (x = 0; x < 64; x++) {
+            uint32_t a = vc4_get32(rtt.cpu + src.level[0].offset + vc4_texel_offset(&src.level[0], 4, x + 32, y + 32));
+            uint32_t b = vc4_get32(tex.cpu + dst.level[0].offset + vc4_texel_offset(&dst.level[0], 4, x, y));
+            if (a != b) {
+                if (bad < 5)
+                    printf("  (%u,%u): %08x, the source's %08x\n", x, y, b, a);
+                bad++;
+            }
+        }
+    check(bad == 0, "every texel its source's");
+    vc4p_free(&tp);
+    vc4p_free(&p);
+}
+
+/* hdrrange: a half-float target keeps colours outside 0..1 (no clamp in
+ * the shader or the tile buffer): a triangle of (2, -0.5, 0.25, 1) over the
+ * frame's centre, its texel there read back as exact halves. */
+static void case_hdrrange(void)
+{
+    static const float col[4] = {2.0f, -0.5f, 0.25f, 1.0f};
+    static const float tri[9] = {-0.5f, -0.5f, 0, 0.5f, -0.5f, 0, 0, 0.5f, 0};
+    static const uint16_t want[4] = {0x4000, 0xb800, 0x3400, 0x3c00};
+    struct vc4_texture_layout lay;
+    struct vc4p p;
+    struct vc4_target t;
+    uint16_t hv[4];
+    uint32_t o;
+    int k, ok;
+    printf("hdrrange (a half-float target keeps 2.0 and -0.5)\n");
+    vc4_texture_layout(&lay, W, H, 8, 1, 1);
+    if (load_flat(&p, "flat-flat.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    memset(&t, 0, sizeof t);
+    t.width = W;
+    t.height = H;
+    t.hdr = 1;
+    t.color.bus = rtt.bus + lay.level[0].offset;
+    t.color.tiling = VC4_TILING_T;
+    t.store = VC4_COLOR;
+    t.clear = VC4_COLOR | VC4_ZS;
+    t.clear_z = 0xffffffu;
+    flat_rt = VC4P_FORMAT_R16G16B16A16_FLOAT;
+    ok = begin_target(&t) == 0 && flat(&p, 0, 1, 0, col, tri, 3, VC4_PRIM_TRIANGLES, 0, 3) == 0 &&
+         vc4_job_run(&job, 1000000) == 0;
+    flat_rt = 0;
+    if (!ok) {
+        check(0, "the job ran");
+        vc4p_free(&p);
+        return;
+    }
+    vc4_os_invalidate(rtt.cpu, lay.size);
+    o = lay.level[0].offset + vc4_texel_offset(&lay.level[0], 8, W / 2, H / 2);
+    for (k = 0; k < 2; k++) { /* GPU memory: aligned 32-bit reads */
+        uint32_t w = vc4_get32(rtt.cpu + o + 4 * (uint32_t)k);
+        hv[2 * k] = (uint16_t)w;
+        hv[2 * k + 1] = (uint16_t)(w >> 16);
+    }
+    printf("  stored at the centre: halves %04x %04x %04x %04x\n", hv[0], hv[1], hv[2], hv[3]);
+    check(!memcmp(hv, want, sizeof hv), "2.0, -0.5, 0.25, 1.0 (4000 b800 3400 3c00)");
+    vc4p_free(&p);
+}
+
 /* ---- speed: GPU-only numbers (PI3_PLAN §6.3), not a pass/fail case ---- */
 
 #define SW 1024
@@ -1240,7 +2108,9 @@ static void case_overflow(void)
 static const char *const all_cases[] = {"triangle", "texture", "depth",  "blend", "indices", "indices8",
                                         "scissor",  "lines",    "points",  "stencil", "attrib", "textures", "rgb565",
                                         "cube",     "padded",  "msaa",    "jobs",    "rtt",    "overflow",
-                                        "pclear",   "depthtex", "mipmap"};
+                                        "pclear",   "depthtex", "mipmap",  "texhalf", "halfmip", "mirror",  "mipemu",
+                                        "anisoquad", "clipz",  "hdr",     "hdrblend", "hdrrange",
+                                        "drawbuf",  "genmip",   "copytex"};
 #define NCASES (int)(sizeof all_cases / sizeof all_cases[0])
 
 /* One case by name; the jobs it ran (0: unknown). */
@@ -1265,6 +2135,39 @@ static int run_case(const char *name)
         case_pclear();
     else if (!strcmp(name, "mipmap"))
         case_mipmap();
+    else if (!strcmp(name, "texhalf"))
+        case_texhalf();
+    else if (!strcmp(name, "halfmip"))
+        case_halfmip();
+    else if (!strcmp(name, "mirror"))
+        case_mirror();
+    else if (!strcmp(name, "anisoquad"))
+        case_anisoquad();
+    else if (!strcmp(name, "clipz"))
+        case_clipz();
+    else if (!strcmp(name, "hdr")) {
+        hdr_case("hdr", 0);
+        return 2;
+    } else if (!strcmp(name, "copytex")) {
+        case_copytex();
+        return 2;
+    } else if (!strcmp(name, "genmip")) {
+        case_genmip();
+        return MIP_LEVELS - 1;
+    } else if (!strcmp(name, "drawbuf")) {
+        case_drawbuf();
+        return 2;
+    } else if (!strcmp(name, "hdrrange")) {
+        case_hdrrange();
+    } else if (!strcmp(name, "hdrblend")) {
+        hdr_case("hdrblend", 1);
+        return 2;
+    }
+    else if (!strcmp(name, "mipemu")) {
+        for (f = 0; f < NMIPEMUS; f++)
+            mipemu_case(&mipemus[f]);
+        return NMIPEMUS;
+    }
     else if (!strcmp(name, "depthtex")) {
         case_depthtex();
         return 2;
@@ -1307,10 +2210,49 @@ static int run_case(const char *name)
     return 1;
 }
 
+/* --abort=bin|render (with --keep): a job of many draws stopped while the
+ * binner or the renderer runs (its control thread reset, the core not), the
+ * program then ending with the core enabled: the state a user that crashes
+ * mid-job leaves (PI3_PLAN §2 "Power", the lost tiles). */
+static void abort_job(const char *mode)
+{
+    struct vc4p p;
+    int k, ok = 1;
+    if (load_flat(&p, "flat-flat.vc4p") < 0 || begin_case(1) < 0)
+        return;
+    for (k = 0; k < 600 && ok; k++)
+        ok = flat(&p, 0, 1, 0, depth_col[k % 3], depth_tri[k % 3], 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+    if (!ok || vc4_job_end_lists(&job) < 0) {
+        printf("abort: the job was not built\n");
+        return;
+    }
+    if (!strcmp(mode, "bin")) {
+        vc4_write(V3D_CT0CA, vc4_cl_start(&job.bcl));
+        vc4_write(V3D_CT0EA, vc4_cl_end(&job.bcl));
+    } else {
+        if (vc4_job_bin(&job, 1000000) < 0) {
+            printf("abort: the binning did not finish\n");
+            return;
+        }
+        vc4_job_render_start(&job);
+    }
+    {   /* a few microseconds into it */
+        uint64_t t0 = vc4_os_time_us();
+        while (vc4_os_time_us() - t0 < 30)
+            ;
+    }
+    printf("abort: %s stopped: CT0CS %08x CT1CS %08x PCS %08x ERRSTAT %08x BFC %08x RFC %08x\n", mode,
+           vc4_read(V3D_CT0CS), vc4_read(V3D_CT1CS), vc4_read(V3D_PCS), vc4_read(V3D_ERRSTAT), vc4_read(V3D_BFC),
+           vc4_read(V3D_RFC));
+    vc4_write(V3D_CT0CS, V3D_CTCS_RESET);
+    vc4_write(V3D_CT1CS, V3D_CTCS_RESET);
+    vc4p_free(&p);
+}
+
 int main(int argc, char **argv)
 {
-    const char *names[64];
-    int k, n = 0, soak = 0, loud = 0;
+    const char *names[64], *abort_mode = 0;
+    int k, n = 0, soak = 0, loud = 0, vpmbase = -1;
     setvbuf(stdout, NULL, _IONBF, 0);
     for (k = 1; k < argc; k++) {
         if (!strncmp(argv[k], "--dir=", 6))
@@ -1323,6 +2265,12 @@ int main(int argc, char **argv)
             overflow_passes = atoi(argv[k] + 9);
         else if (!strcmp(argv[k], "--loud"))
             loud = 1;
+        else if (!strcmp(argv[k], "--keep"))
+            vc4_keep_state = 1;
+        else if (!strncmp(argv[k], "--abort=", 8))
+            abort_mode = argv[k] + 8;
+        else if (!strncmp(argv[k], "--vpmbase=", 10))
+            vpmbase = (int)strtol(argv[k] + 10, NULL, 0);
         else if (argv[k][0] != '-' && n < 64)
             names[n++] = argv[k];
     }
@@ -1336,9 +2284,17 @@ int main(int argc, char **argv)
     if (vc4_open() < 0)
         return 2;
     if (vc4_pools_init(&pools, 4, 4) < 0 /* 128x128 in 32x32 tiles (MSAA) */ || vc4_job_init(&job) < 0 ||
-        vc4_mem_alloc(&fb, 132 * H * 4) < 0 || vc4_mem_alloc(&tex, 64u << 10) < 0 ||
-        vc4_mem_alloc(&zsbuf, W * H * 4) < 0 || vc4_mem_alloc(&rtt, W * H * 4) < 0)
+        vc4_mem_alloc(&fb, 132 * H * 4) < 0 || vc4_mem_alloc(&tex, 256u << 10) < 0 ||
+        vc4_mem_alloc(&zsbuf, W * H * 4) < 0 || vc4_mem_alloc(&rtt, W * H * 8) < 0)
         return 2;
+    if (vpmbase >= 0) { /* the lost tiles' search: VPM kept for user programs, as the reset value */
+        vc4_write(V3D_VPMBASE, (uint32_t)vpmbase);
+        printf("VPMBASE set to 0x%x\n", vpmbase);
+    }
+    if (abort_mode) {
+        abort_job(abort_mode);
+        n = 0;
+    }
     if (!soak) {
         for (k = 0; k < n; k++)
             run_case(names[k]);

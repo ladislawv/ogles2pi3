@@ -45,9 +45,14 @@ int vc4_job_begin(struct vc4_job *job, const struct vc4_target *t, struct vc4_po
     job->target = *t;
     job->pools = pools;
     /* 64x64 tiles, 32x32 with 4x MSAA (the tile buffer holds four samples
-     * a pixel: Mesa's vc4_job.c) */
+     * a pixel: Mesa's vc4_job.c), 64x32 with 64-bit colour (VideoCore IV
+     * guide, "Tile Buffer") */
     job->tiles_x = (uint16_t)(t->msaa ? (t->width + 31) / 32 : (t->width + 63) / 64);
-    job->tiles_y = (uint16_t)(t->msaa ? (t->height + 31) / 32 : (t->height + 63) / 64);
+    job->tiles_y = (uint16_t)(t->msaa || t->hdr ? (t->height + 31) / 32 : (t->height + 63) / 64);
+    if (t->msaa && t->hdr) {
+        vc4_os_log("job: 64-bit colour with 4x MSAA is not done");
+        return -1;
+    }
     if (job->tiles_x > pools->tiles_x || job->tiles_y > pools->tiles_y) {
         vc4_os_log("job: %ux%u (%s) does not fit pools of %ux%u tiles", t->width, t->height,
                    t->msaa ? "4x MSAA" : "1x", pools->tiles_x, pools->tiles_y);
@@ -63,6 +68,7 @@ int vc4_job_begin(struct vc4_job *job, const struct vc4_target *t, struct vc4_po
              .width_in_tiles = job->tiles_x,
              .height_in_tiles = job->tiles_y,
              .multisample_mode_4x = t->msaa ? 1u : 0u,
+             .tile_buffer_64_bit_color_depth = t->hdr ? 1u : 0u,
              .auto_initialise_tile_state_data_array = 1,
              .tile_allocation_initial_block_size = VC4_TILE_ALLOCATION_INITIAL_BLOCK_SIZE_BLOCK_SIZE_32,
              .tile_allocation_block_size = VC4_TILE_ALLOCATION_BLOCK_SIZE_BLOCK_SIZE_128);
@@ -112,7 +118,8 @@ static void build_rcl(struct vc4_job *job)
 
     if (t->clear) {
         VC4_EMIT(cl, CLEAR_COLORS,
-                 .clear_color = (uint64_t)t->clear_color << 32 | t->clear_color,
+                 .clear_color = t->hdr ? (uint64_t)t->clear_hdr[1] << 32 | t->clear_hdr[0]
+                                       : (uint64_t)t->clear_color << 32 | t->clear_color,
                  .clear_zs = t->clear_z & 0xffffffu,
                  .clear_vg_mask = 0,
                  .clear_stencil = t->clear_s);
@@ -124,6 +131,7 @@ static void build_rcl(struct vc4_job *job)
              .width_pixels = t->width,
              .height_pixels = t->height,
              .non_hdr_frame_buffer_color_format = t->color.format,
+             .tile_buffer_64_bit_color_depth = t->hdr ? 1u : 0u,
              .memory_format = t->color.tiling,
              /* 4x MSAA: the general loads and stores go over the pixels
               * (a load fills each pixel's four samples), and the resolved

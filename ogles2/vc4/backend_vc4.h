@@ -46,7 +46,10 @@ enum {
     VC4_U_TEXRECT_SCALE_X, VC4_U_TEXRECT_SCALE_Y, VC4_U_TEXTURE_BORDER_COLOR, VC4_U_BLEND_CONST_COLOR_X,
     VC4_U_BLEND_CONST_COLOR_Y, VC4_U_BLEND_CONST_COLOR_Z, VC4_U_BLEND_CONST_COLOR_W,
     VC4_U_BLEND_CONST_COLOR_RGBA, VC4_U_BLEND_CONST_COLOR_AAAA, VC4_U_STENCIL, VC4_U_SAMPLE_MASK,
-    VC4_U_UNIFORMS_ADDRESS
+    VC4_U_UNIFORMS_ADDRESS,
+    /* patch 0019's (docs/PI3_PLAN.md §2.1) */
+    VC4_U_TEXTURE_LOD_BIAS, VC4_U_TEXTURE_MIN_LOD, VC4_U_TEXTURE_MAX_LOD, VC4_U_TEXTURE_WIDTH,
+    VC4_U_TEXTURE_HEIGHT
 };
 
 /* Blocks freed once the job that may read them has rendered. */
@@ -126,8 +129,11 @@ BOOL ogles2_vc4_tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *
 /* A draw's sampler: the texture unit's texture of its kind (OGLES2_TEX_*),
  * complete or the fallback, its configuration words P0, P1, P2, its
  * storage for the key (FALSE: none at all). */
-BOOL ogles2_vc4_sampler(struct OGLES2Context *ctx, int unit, int kind, ULONG p[3],
-                        const struct vc4_tex_format **f, GLenum *wrap_s, GLenum *wrap_t, ULONG *first);
+BOOL ogles2_vc4_sampler(struct OGLES2Context *ctx, int unit, int kind, ULONG p[4], struct vc4_key_sampler *ks,
+                        ULONG *first, GLfloat emu[5]);
+/* The texture parameters the shader emulates (patch 0019), into ks, for the
+ * levels [first, last] sampled (texture_vc4.c, drawkey_vc4.c's probe R). */
+void ogles2_vc4_sampler_emu(const struct OGLES2Texture *t, int kind, int first, int last, struct vc4_key_sampler *ks);
 
 /* drawkey_vc4.c: VC4's storage of a texture (its level 0's format and
  * type; 0: none yet); the stencil test's uniform words, two-sidedness and

@@ -71,6 +71,10 @@ void vc4_write(uint32_t reg, uint32_t v);
 /* After a job that did not finish: both control threads stopped and the
  * core taken over again (its state is unknown). */
 int vc4_reset(const char *why);
+/* Tests only: 1 before vc4_open takes a powered core as it is (no power
+ * cycle) and leaves it enabled at vc4_close (the lost tiles of a core not
+ * reset: PI3_PLAN §2 "Power", tests/pi3/vc4core/draw.c --keep). */
+extern int vc4_keep_state;
 
 /* ---- memory (mem.c) ---- */
 
@@ -182,11 +186,15 @@ struct vc4_target
 {
     uint16_t width, height;
     uint8_t msaa;          /* 4x: 32x32 tiles, the colour stored resolved */
+    uint8_t hdr;           /* the tile buffer's 64-bit colour (RGBA16F pixels, stored as such:
+                            * the RGBA64 texture type's texels): 64x32 tiles; not with msaa
+                            * (EXT_color_buffer_half_float, PI3_PLAN §2.1) */
     struct vc4_surface color, zs;
     uint8_t load;          /* VC4_COLOR | VC4_ZS: loaded at each tile's start */
     uint8_t store;         /* and stored at its end */
     uint8_t clear;         /* cleared (the clear values below), instead of loaded */
     uint32_t clear_color;  /* RGBA8888 as the tile buffer holds it: A in the top byte */
+    uint32_t clear_hdr[2]; /* hdr's: RG and BA, two halves each (R, B in the low ones) */
     uint32_t clear_z;      /* 24 bits */
     uint8_t clear_s;
 };

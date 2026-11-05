@@ -11,6 +11,10 @@
  * words read as RGBA8888, the depth in the top 24 bits, which the shader
  * scales (Mesa's ntq_scale_depth_texture); X8Z24 for DEPTH_COMPONENT of
  * either type, S8_UINT_Z24 for DEPTH_STENCIL, sampled as luminance (XXX1).
+ * Half-float and float textures (OES_texture_half_float, OES_texture_float,
+ * docs/PI3_PLAN.md §2.1) are four planes of the S16F type, one a channel
+ * (expanded to RGBA at upload), keyed R16G16B16A16_FLOAT (the compiler's four
+ * lookups, tools/v3dglslc/patches/0018); Mesa's vc4 has no such textures.
  * Checked against the keys Mesa builds by tests/pi3/keys.
  *
  * MIT licence (LICENSE).
@@ -39,10 +43,16 @@ static const struct vc4_tex_format
     lumalpha = {VC4_TEX_LUMALPHA, 2, 0, VC4K_L8A8_UNORM, SW(X, X, X, W)},
     etc1 = {VC4_TEX_ETC1, 8, 1, VC4K_ETC1_RGB8, SW(X, Y, Z, S1)},
     depth = {VC4_TEX_RGBA8888, 4, 0, VC4K_X8Z24_UNORM, SW(X, X, X, S1)},
-    depth_stencil = {VC4_TEX_RGBA8888, 4, 0, VC4K_S8_UINT_Z24_UNORM, SW(X, X, X, S1)};
+    depth_stencil = {VC4_TEX_RGBA8888, 4, 0, VC4K_S8_UINT_Z24_UNORM, SW(X, X, X, S1)},
+    half = {VC4_TEX_S16F, 2, 0, VC4K_R16G16B16A16_FLOAT, SW(X, Y, Z, W)}; /* a plane's texel */
 
 const struct vc4_tex_format *vc4_tex_format(GLenum format, GLenum type)
 {
+    if (type == GL_HALF_FLOAT_OES || type == GL_FLOAT)
+        return format == GL_RGBA || format == GL_RGB || format == GL_LUMINANCE || format == GL_ALPHA ||
+                       format == GL_LUMINANCE_ALPHA
+                   ? &half
+                   : 0;
     switch (format) {
     case GL_RGBA:
         return type == GL_UNSIGNED_BYTE ? &rgba8
@@ -124,6 +134,8 @@ static unsigned char pipe_factor(GLenum f)
 
 static unsigned char pipe_wrap(GLenum w, int canonical)
 {
+    if (w == GL_MIRROR_CLAMP_TO_EDGE)
+        return 6; /* PIPE_TEX_WRAP_MIRROR_CLAMP_TO_EDGE: the shader's absolute value (patch 0019) */
     if (canonical)
         return 0; /* only CLAMP and CLAMP_TO_BORDER change vc4's code: GLES2 has neither */
     return w == GL_CLAMP_TO_EDGE ? 2 : w == GL_MIRRORED_REPEAT ? 4 : 0;
@@ -153,7 +165,10 @@ static unsigned char *samplers(unsigned char *o, int n, const struct vc4_key_sam
         o[9] = canonical ? 0 : 3;
         o[10] = pipe_wrap(s[i].wrap_s, canonical);
         o[11] = pipe_wrap(s[i].wrap_t, canonical);
-        /* o[12]: force_first_level (base level 0 in GLES2) */
+        o[12] = s[i].force_first;
+        /* patch 0019's emulations (FORMAT.md 1.1) */
+        o[13] = (unsigned char)((s[i].lod_bias ? 1 : 0) | (s[i].lod_clamp ? 2 : 0));
+        o[14] = s[i].aniso;
     }
     return o + 16 * (16 - (n < 16 ? n : 16));
 }
@@ -208,7 +223,7 @@ void vc4_key_vs(unsigned char *out, const struct vc4_vs_state *s, int canonical)
         o = put32(o, i < s->nattrs ? s->attr_format[i] : 0);
     *o++ = 0;                     /* is_coord: the compiler makes the coordinate twin */
     *o++ = s->per_vertex_point_size;
-    *o++ = 0;
+    *o++ = s->clip_halfz;         /* patch 0020 */
     *o++ = 0;
     o = put32(o, 0);              /* fs_inputs: the compiler takes the fragment variant's */
 }

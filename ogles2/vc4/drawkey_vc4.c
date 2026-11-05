@@ -44,14 +44,33 @@ const struct vc4_tex_format *ogles2_vc4_storage(const struct OGLES2Texture *t)
                               f == GL_DEPTH_STENCIL_OES ? GL_UNSIGNED_INT_24_8_OES : GL_UNSIGNED_INT);
     if (class_of(f, ty) == CLASS_BLOCKS)
         return vc4_tex_format(GL_RGBA, GL_UNSIGNED_BYTE); /* S3TC: decoded at upload (texture_vc4.c) */
-    if (class_of(f, ty) != CLASS_RGBA8)
-        return 0; /* float: not stored on VC4 yet */
+    if (class_of(f, ty) == CLASS_FLOAT)
+        return vc4_tex_format(GL_RGBA, GL_HALF_FLOAT_OES); /* RGBA64 (texture_vc4.c) */
     if (f == GL_ETC1_RGB8_OES)
         return vc4_tex_format(GL_RGB, GL_UNSIGNED_BYTE); /* decoded by texture.c */
     if (f == GL_BGRA_EXT)
         return vc4_tex_format(GL_RGBA, GL_UNSIGNED_BYTE); /* converted by texture.c */
     s = vc4_tex_format(f, ty);
     return s ? s : vc4_tex_format(GL_RGBA, GL_UNSIGNED_BYTE);
+}
+
+/* The emulated texture parameters (patch 0019, key_vc4.h): one level above
+ * level 0 by an explicit LOD; the bias whenever it is set; with a
+ * mipmapping filter (not on cube maps: the LOD there would need the
+ * major face's derivatives), the LOD computed and clamped when a base level
+ * or the LOD range limits it, and 2 or 4 lookups for anisotropy (the
+ * backend reports 4). */
+void ogles2_vc4_sampler_emu(const struct OGLES2Texture *t, int kind, int first, int last, struct vc4_key_sampler *ks)
+{
+    ks->force_first = (unsigned char)(first > 0 && first == last);
+    ks->lod_bias = (unsigned char)(t->lod_bias != 0.0f && !ks->force_first);
+    ks->lod_clamp = 0;
+    ks->aniso = 0;
+    if (kind == OGLES2_TEX_CUBE || ks->force_first || !mipmapped(t->min_filter))
+        return;
+    ks->lod_clamp = (unsigned char)(first > 0 || t->min_lod > 0.0f || t->max_lod < (GLfloat)(last - first));
+    if (t->max_aniso >= 2.0f)
+        ks->aniso = (unsigned char)(t->max_aniso >= 4.0f ? 2 : 1);
 }
 
 /* ---- the stencil test (Mesa's vc4_state.c, tlb_stencil_setup_*) ---- */
@@ -171,6 +190,7 @@ void ogles2_vc4_draw_keys(struct OGLES2Context *ctx, const struct OGLES2Program 
                                                               : VC4K_R32G32B32A32_FLOAT);
     }
     vss.per_vertex_point_size = (unsigned char)(psize ? 1 : 0);
+    vss.clip_halfz = (unsigned char)(s->clip_depth == GL_ZERO_TO_ONE_EXT); /* patch 0020 */
     vss.nsamplers = n[0];
     for (k = 0; k < n[0]; k++)
         vss.samp[k] = key[0][k];
@@ -227,6 +247,8 @@ static void probe_samplers(struct OGLES2Context *ctx, struct OGLES2Program *p,
                 key[st][idx].f = f ? f : vc4_tex_format(GL_RGBA, GL_UNSIGNED_BYTE);
                 key[st][idx].wrap_s = t ? t->wrap_s : GL_REPEAT;
                 key[st][idx].wrap_t = t ? t->wrap_t : GL_REPEAT;
+                if (f)
+                    ogles2_vc4_sampler_emu(t, kind, first, last, &key[st][idx]);
                 if (idx + 1 > n[st])
                     n[st] = (UBYTE)(idx + 1);
             }

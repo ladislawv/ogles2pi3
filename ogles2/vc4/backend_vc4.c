@@ -37,7 +37,10 @@ static const struct OGLES2Caps caps = {
     "GL_OES_draw_elements_base_vertex GL_OES_compressed_ETC1_RGB8_texture GL_OES_packed_depth_stencil "
     "GL_EXT_blend_minmax GL_EXT_texture_format_BGRA8888 GL_OES_texture_npot GL_OES_fbo_render_mipmap "
     "GL_OES_standard_derivatives GL_OES_depth_texture GL_EXT_texture_compression_dxt1 "
-    "GL_EXT_texture_compression_s3tc GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5",
+    "GL_EXT_texture_compression_s3tc GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5 "
+    "GL_OES_texture_half_float GL_OES_texture_half_float_linear GL_OES_texture_float "
+    "GL_ARB_texture_mirror_clamp_to_edge GL_EXT_texture_lod_bias GL_SGIS_texture_lod "
+    "GL_EXT_texture_filter_anisotropic GL_EXT_clip_control",
     2048,  /* textures (vc4_screen.c) */
     2048,  /* viewport and renderbuffers: Mesa's on the Pi 3 (§2 "Render targets") */
     1,     /* draw buffers: one colour buffer (EXT_draw_buffers comes emulated, §2.1) */
@@ -47,8 +50,8 @@ static const struct OGLES2Caps caps = {
     4,     /* subpixel bits */
     32.0f, /* lines */
     512.0f, /* points */
-    1.0f,  /* no anisotropy yet (emulated, §2.1) */
-    0.0f,  /* no LOD bias yet */
+    4.0f,  /* anisotropy: 2 or 4 lookups along the major axis (emulated, §2.1, patch 0019) */
+    15.0f, /* LOD bias (emulated: the TMU's bias input, patch 0019) */
 };
 
 /* ---- the device ---- */

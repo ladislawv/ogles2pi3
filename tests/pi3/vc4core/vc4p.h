@@ -23,8 +23,10 @@ struct vc4p_variant
     uint32_t stage;
     /* key */
     uint32_t tex_format[16];              /* each sampler's pipe_format */
+    uint8_t tex_wrap[16], tex_first[16];  /* wrap_s; force_first_level */
+    uint8_t tex_emu[16], tex_aniso[16];   /* patch 0019: bias 1, clamp 2; anisotropy's log2 lookups */
     uint32_t attr_formats[8];
-    uint8_t is_coord, per_vertex_point_size;
+    uint8_t is_coord, per_vertex_point_size, clip_halfz; /* clip_halfz: patch 0020 */
     uint32_t color_format;
     uint8_t depth_enabled, stencil_enabled, is_points, is_lines, blend_enable, colormask, draw_buffer;
     /* prog data */
@@ -66,7 +68,7 @@ struct vc4p
     int nuniforms, nattribs, nvariants;
     struct vc4p_uniform u[64];
     struct vc4p_attrib a[16];
-    struct vc4p_variant v[32];
+    struct vc4p_variant v[64];
 };
 
 /* 0, or -1 with the reason printed. */
@@ -75,6 +77,9 @@ void vc4p_free(struct vc4p *p);
 /* The first variant of stage (points: is_points for the fragment shader,
  * per_vertex_point_size for the vertex ones). */
 const struct vc4p_variant *vc4p_find(const struct vc4p *p, uint32_t stage, int points);
+/* The vertex or coordinate variant keyed clip_halfz (EXT_clip_control's
+ * ZERO_TO_ONE, patch 0020), not for points. */
+const struct vc4p_variant *vc4p_find_halfz(const struct vc4p *p, uint32_t stage);
 /* Mesa's pipe_format values at 74b69717c52b (u_formats.h is generated:
  * printed from the host's Mesa build), the ones the tests' keys hold. */
 #define VC4P_FORMAT_R32G32_FLOAT 22
@@ -87,11 +92,16 @@ const struct vc4p_variant *vc4p_find(const struct vc4p *p, uint32_t stage, int p
 #define VC4P_FORMAT_L8A8_UNORM 319
 #define VC4P_FORMAT_ETC1_RGB8 186
 #define VC4P_FORMAT_X8Z24_UNORM 278
+#define VC4P_FORMAT_R16G16B16A16_FLOAT 56
 /* The vertex or coordinate variant (not for points) whose attribute slot
  * has format; the fragment variant for triangles (no depth test, blending,
  * stencil test) whose sampler unit has format. */
 const struct vc4p_variant *vc4p_find_attr(const struct vc4p *p, uint32_t stage, uint32_t slot, uint32_t format);
 const struct vc4p_variant *vc4p_find_tex(const struct vc4p *p, uint32_t unit, uint32_t format);
+/* The same for sampler 0 with patch 0019's key bytes (wrap_s, force_first_level,
+ * the emulation flags, anisotropy). */
+const struct vc4p_variant *vc4p_find_tex_emu(const struct vc4p *p, uint32_t format, uint8_t wrap, uint8_t first,
+                                             uint8_t emu, uint8_t aniso);
 /* The vertex variant as vc4p_find_attr, also writing as many fragment inputs
  * as fs reads (Mesa pairs them by the inputs; enough for the tests). */
 const struct vc4p_variant *vc4p_find_attr_for(const struct vc4p *p, uint32_t slot, uint32_t format,
@@ -99,6 +109,10 @@ const struct vc4p_variant *vc4p_find_attr_for(const struct vc4p *p, uint32_t slo
 /* The fragment variant for a primitive class (0 triangles, 1 lines, 2
  * points) with the depth test, blending and the stencil test on or off. */
 const struct vc4p_variant *vc4p_find_fs(const struct vc4p *p, int prim, int depth, int blend, int stencil);
+/* The triangles' fragment variant (RGBA8, no blending or stencil) for
+ * gl_FragData[draw_buffer] (EXT_draw_buffers one pass per attachment: patch
+ * 0016's key). */
+const struct vc4p_variant *vc4p_find_fs_db(const struct vc4p *p, int depth, uint8_t draw_buffer);
 /* The same for a render target of color_format (a pipe_format: vc4_find_fs
  * takes R8G8B8A8). */
 const struct vc4p_variant *vc4p_find_fs_rt(const struct vc4p *p, int prim, int depth, int blend, int stencil,
@@ -136,6 +150,9 @@ struct vc4p_draw
     const uint16_t *indices;              /* NULL: arrays, in order */
     const uint8_t *indices8;              /* or 8-bit ones */
     uint32_t tex[16][3];                  /* per fragment sampler index: P0, P1, P2 */
+    uint32_t tex_plane[16];               /* patch 0018's S16F planes: bytes from one to the next */
+    float tex_emu[16][6];                 /* patch 0019's uniforms: LOD bias, min and max LOD, width,
+                                           * height; and TEXTURE_FIRST_LEVEL */
     float vp_x, vp_y, vp_w, vp_h;         /* the viewport, pixels */
     uint16_t clip[4];                     /* the scissor box: x, y (from the bottom), w, h; w 0: the frame */
     float depth_near, depth_far;

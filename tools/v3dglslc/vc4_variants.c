@@ -122,8 +122,9 @@ static void serialize(enum qstage stage, const struct vc4_key *key, uint32_t key
         s_u8(&b, key->tex[i].wrap_s);
         s_u8(&b, key->tex[i].wrap_t);
         s_u8(&b, key->tex[i].force_first_level);
-        s_u8(&b, 0);
-        s_u8(&b, 0);
+        /* patch 0019: the texture-parameter emulations (FORMAT.md 1.1) */
+        s_u8(&b, key->tex[i].lod_bias | key->tex[i].lod_clamp << 1);
+        s_u8(&b, key->tex[i].aniso);
         s_u8(&b, 0);
     }
     if (stage == QSTAGE_FRAG) {
@@ -161,7 +162,7 @@ static void serialize(enum qstage stage, const struct vc4_key *key, uint32_t key
             s_u32(&b, k->attr_formats[i]);
         s_u8(&b, k->is_coord);
         s_u8(&b, k->per_vertex_point_size);
-        s_u8(&b, 0);
+        s_u8(&b, k->clip_halfz); /* patch 0020 */
         s_u8(&b, 0);
         s_inputs(&b, k->fs_inputs);
     }
@@ -325,8 +326,12 @@ static void r_key_common(struct rd *r, struct vc4_key *k)
         k->tex[i].wrap_s = r_u8(r);
         k->tex[i].wrap_t = r_u8(r);
         k->tex[i].force_first_level = r_u8(r);
-        r_u8(r);
-        r_u8(r);
+        {
+            uint8_t f = r_u8(r); /* patch 0019 */
+            k->tex[i].lod_bias = f & 1;
+            k->tex[i].lod_clamp = (f >> 1) & 1;
+            k->tex[i].aniso = r_u8(r) & 7;
+        }
         r_u8(r);
     }
 }
@@ -371,7 +376,7 @@ static void r_vs_key(struct rd *r, struct vc4_vs_key *k)
         k->attr_formats[i] = r_u32(r);
     k->is_coord = r_u8(r);
     k->per_vertex_point_size = r_u8(r);
-    r_u8(r);
+    k->clip_halfz = r_u8(r); /* patch 0020 */
     r_u8(r);
     n = r_u32(r); /* fs_inputs: replaced */
     for (i = 0; i < n * 2 && !r->bad; i++)

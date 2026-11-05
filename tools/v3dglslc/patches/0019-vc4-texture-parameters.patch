@@ -1,0 +1,410 @@
+ogles2: the texture parameters VC4's TMU lacks, in the shader (docs/PI3_PLAN.md
+§2.1): ARB_texture_mirror_clamp_to_edge, EXT_texture_lod_bias,
+SGIS_texture_lod's base level and LOD range, EXT_texture_filter_anisotropic.
+The sampler key gets lod_bias, lod_clamp and aniso (bits beside
+force_first_level), and five uniform types follow QUNIFORM_UNIFORMS_ADDRESS:
+the texture's LOD bias, min and max LOD (in level 0's terms) and level 0's
+width and height. A wrap mode of PIPE_TEX_WRAP_MIRROR_CLAMP_TO_EDGE takes the
+coordinate's absolute value (the library sets the TMU's clamp); the bias is
+added to the shader's (or to an explicit LOD), or written alone as the TMU's
+bias; with lod_clamp or aniso (fragment shaders, not cube maps) the LOD is
+computed from the coordinates' derivatives in texels (GL's rho), the lookup
+made with it explicitly (BSLOD) and clamped; aniso takes 2^aniso lookups
+spread along the major axis, the LOD from the major axis over their number
+but not below the minor axis's, and averages them. ntq_emit_tex's lookup
+(the request and its result, patch 0018's planes too) is ntq_tex_lookup,
+storing its results as it makes them. With none of the new key bits set the code is
+the same as before. Mesa's own state makes none of these keys (its uniform
+writer gives neutral values); v3dglslc compiles them from keys (-k, patch
+0017). Applies after 0018.
+
+--- a/src/gallium/drivers/vc4/vc4_program.c
++++ b/src/gallium/drivers/vc4/vc4_program.c
+@@ -396,9 +396,12 @@
+         }
+ }
+ 
++static struct qreg ntq_fddx(struct vc4_compile *c, struct qreg src);
++static struct qreg ntq_fddy(struct vc4_compile *c, struct qreg src);
++
+ /* One TMU request: s, t (r for cube maps) and lod (when is_txl or is_txb);
+- * P0's data word is the unit, with the plane above bit 16 (0 for other
+- * textures). Returns the result (r4's word). */
++ * P0's data word is the unit, with patch 0018's plane above bit 16 (0 for
++ * other textures). Returns the result (r4's word). */
+ static struct qreg
+ ntq_tex_request(struct vc4_compile *c, nir_tex_instr *instr,
+                 struct qreg s, struct qreg t, struct qreg r, struct qreg lod,
+@@ -443,6 +446,20 @@
+                 t = qir_SAT(c, t);
+         }
+ 
++        /* ogles2 (docs/PI3_PLAN.md §2.1, ARB_texture_mirror_clamp_to_edge):
++         * the coordinate's absolute value, then the TMU's clamp to edge
++         * (the library sets it in P1).
++         */
++        if (c->key->tex[unit].wrap_s == PIPE_TEX_WRAP_MIRROR_CLAMP_TO_EDGE &&
++            instr->sampler_dim != GLSL_SAMPLER_DIM_CUBE) {
++                s = qir_FMAXABS(c, s, s);
++        }
++
++        if (c->key->tex[unit].wrap_t == PIPE_TEX_WRAP_MIRROR_CLAMP_TO_EDGE &&
++            instr->sampler_dim != GLSL_SAMPLER_DIM_CUBE) {
++                t = qir_FMAXABS(c, t, t);
++        }
++
+         tmu = qir_MOV_dest(c, qir_reg(QFILE_TEX_T, 0), t);
+         tmu->src[qir_get_tex_uniform_src(tmu)] =
+                 texture_u[next_texture_u++];
+@@ -463,63 +480,16 @@
+         return qir_TEX_RESULT(c);
+ }
+ 
++/* One lookup (vc4's, and patch 0018's planes): its four results stored
++ * into def as they are made (ntq_store_def takes the last instruction's),
++ * or into out[0..3] when def is NULL. */
+ static void
+-ntq_emit_tex(struct vc4_compile *c, nir_tex_instr *instr)
++ntq_tex_lookup(struct vc4_compile *c, nir_tex_instr *instr,
++               struct qreg s, struct qreg t, struct qreg r, struct qreg lod,
++               bool is_txl, bool is_txb, struct qreg compare,
++               nir_def *def, struct qreg *out)
+ {
+-        struct qreg lod, compare;
+-        struct qreg r = { 0 }, s= { 0 }, t = { 0 };
+-        bool is_txb = false, is_txl = false;
+         unsigned unit = instr->texture_index;
+-
+-        if (instr->op == nir_texop_txf) {
+-                ntq_emit_txf(c, instr);
+-                return;
+-        }
+-
+-        assert(instr->num_srcs > 0);
+-        for (unsigned i = 0; i < instr->num_srcs; i++) {
+-                switch (instr->src[i].src_type) {
+-                case nir_tex_src_coord:
+-                        s = ntq_get_src(c, instr->src[i].src, 0);
+-                        if (instr->sampler_dim == GLSL_SAMPLER_DIM_1D)
+-                                t = qir_uniform_f(c, 0.5);
+-                        else
+-                                t = ntq_get_src(c, instr->src[i].src, 1);
+-                        if (instr->sampler_dim == GLSL_SAMPLER_DIM_CUBE)
+-                                r = ntq_get_src(c, instr->src[i].src, 2);
+-                        break;
+-                case nir_tex_src_bias:
+-                        lod = ntq_get_src(c, instr->src[i].src, 0);
+-                        is_txb = true;
+-                        break;
+-                case nir_tex_src_lod:
+-                        lod = ntq_get_src(c, instr->src[i].src, 0);
+-                        is_txl = true;
+-                        break;
+-                case nir_tex_src_comparator:
+-                        compare = ntq_get_src(c, instr->src[i].src, 0);
+-                        break;
+-                default:
+-                        UNREACHABLE("unknown texture source");
+-                }
+-        }
+-
+-        if (c->stage != QSTAGE_FRAG && !is_txl) {
+-                /* From the GLSL 1.20 spec:
+-                 *
+-                 *     "If it is mip-mapped and running on the vertex shader,
+-                 *      then the base texture is used."
+-                 */
+-                is_txl = true;
+-                lod = qir_uniform_ui(c, 0);
+-        }
+-
+-        if (c->key->tex[unit].force_first_level) {
+-                lod = qir_uniform(c, QUNIFORM_TEXTURE_FIRST_LEVEL, unit);
+-                is_txl = true;
+-                is_txb = false;
+-        }
+-
+         enum pipe_format format = c->key->tex[unit].format;
+ 
+         if (format == PIPE_FORMAT_R16G16B16A16_FLOAT) {
+@@ -537,8 +507,9 @@
+                         struct qreg w = ntq_tex_request(c, instr, s, t, r, lod,
+                                                         is_txl, is_txb,
+                                                         unit | (i << 16));
+-                        ntq_store_def(c, &instr->def, i,
+-                                      qir_UNPACK_16_F(c, w, 0));
++                        out[i] = qir_UNPACK_16_F(c, w, 0);
++                        if (def)
++                                ntq_store_def(c, def, i, out[i]);
+                 }
+                 return;
+         }
+@@ -598,13 +569,179 @@
+                         depth_output = normalized;
+                 }
+ 
+-                for (int i = 0; i < 4; i++)
+-                        ntq_store_def(c, &instr->def, i,
+-                                      qir_MOV(c, depth_output));
++                for (int i = 0; i < 4; i++) {
++                        out[i] = qir_MOV(c, depth_output);
++                        if (def)
++                                ntq_store_def(c, def, i, out[i]);
++                }
++        } else {
++                for (int i = 0; i < 4; i++) {
++                        out[i] = qir_UNPACK_8_F(c, tex, i);
++                        if (def)
++                                ntq_store_def(c, def, i, out[i]);
++                }
++        }
++}
++
++static void
++ntq_emit_tex(struct vc4_compile *c, nir_tex_instr *instr)
++{
++        struct qreg lod = { 0 }, compare = { 0 };
++        struct qreg r = { 0 }, s= { 0 }, t = { 0 };
++        bool is_txb = false, is_txl = false;
++        unsigned unit = instr->texture_index;
++
++        if (instr->op == nir_texop_txf) {
++                ntq_emit_txf(c, instr);
++                return;
++        }
++
++        assert(instr->num_srcs > 0);
++        for (unsigned i = 0; i < instr->num_srcs; i++) {
++                switch (instr->src[i].src_type) {
++                case nir_tex_src_coord:
++                        s = ntq_get_src(c, instr->src[i].src, 0);
++                        if (instr->sampler_dim == GLSL_SAMPLER_DIM_1D)
++                                t = qir_uniform_f(c, 0.5);
++                        else
++                                t = ntq_get_src(c, instr->src[i].src, 1);
++                        if (instr->sampler_dim == GLSL_SAMPLER_DIM_CUBE)
++                                r = ntq_get_src(c, instr->src[i].src, 2);
++                        break;
++                case nir_tex_src_bias:
++                        lod = ntq_get_src(c, instr->src[i].src, 0);
++                        is_txb = true;
++                        break;
++                case nir_tex_src_lod:
++                        lod = ntq_get_src(c, instr->src[i].src, 0);
++                        is_txl = true;
++                        break;
++                case nir_tex_src_comparator:
++                        compare = ntq_get_src(c, instr->src[i].src, 0);
++                        break;
++                default:
++                        UNREACHABLE("unknown texture source");
++                }
++        }
++
++        if (c->stage != QSTAGE_FRAG && !is_txl) {
++                /* From the GLSL 1.20 spec:
++                 *
++                 *     "If it is mip-mapped and running on the vertex shader,
++                 *      then the base texture is used."
++                 */
++                is_txl = true;
++                lod = qir_uniform_ui(c, 0);
++        }
++
++        /* ogles2 (docs/PI3_PLAN.md §2.1): EXT_texture_lod_bias,
++         * SGIS_texture_lod's min and max LOD and
++         * EXT_texture_filter_anisotropic, which VC4's TMU lacks (it has a
++         * bias input and an explicit LOD, BSLOD in P2, and no clamp). The
++         * texture's bias is added to the shader's (or to an explicit LOD);
++         * with a clamp or anisotropy the LOD is computed here from the
++         * coordinates' derivatives in texels (the texture's size as
++         * uniforms: GL's rho, the larger of the two axes' lengths), the
++         * lookup made with it explicitly, and clamped to the texture's
++         * range. Anisotropy takes 2^aniso lookups spread along the major
++         * axis (its length in the footprint, centred), the LOD from the
++         * major axis divided by their number but not below the minor
++         * axis's, and averages them. Not for cube maps (the library keys
++         * only the bias for them) nor when one level is forced.
++         */
++        bool forced = c->key->tex[unit].force_first_level;
++        bool not_cube = instr->sampler_dim != GLSL_SAMPLER_DIM_CUBE;
++        unsigned aniso = c->stage == QSTAGE_FRAG && not_cube && !forced &&
++                !is_txl ? c->key->tex[unit].aniso : 0;
++        bool lod_clamp = c->key->tex[unit].lod_clamp && not_cube && !forced;
++        struct qreg major_s = { 0 }, major_t = { 0 };
++
++        if ((lod_clamp || aniso) && !is_txl) {
++                struct qreg w = qir_uniform(c, QUNIFORM_TEXTURE_WIDTH, unit);
++                struct qreg h = qir_uniform(c, QUNIFORM_TEXTURE_HEIGHT, unit);
++                struct qreg dsdx = ntq_fddx(c, s), dtdx = ntq_fddx(c, t);
++                struct qreg dsdy = ntq_fddy(c, s), dtdy = ntq_fddy(c, t);
++                struct qreg ux = qir_FMUL(c, dsdx, w), vx = qir_FMUL(c, dtdx, h);
++                struct qreg uy = qir_FMUL(c, dsdy, w), vy = qir_FMUL(c, dtdy, h);
++                struct qreg px2 = qir_FADD(c, qir_FMUL(c, ux, ux),
++                                           qir_FMUL(c, vx, vx));
++                struct qreg py2 = qir_FADD(c, qir_FMUL(c, uy, uy),
++                                           qir_FMUL(c, vy, vy));
++                struct qreg rho2 = qir_FMAX(c, px2, py2);
++
++                if (aniso) {
++                        /* the major axis in coordinates, and rho2 the
++                         * larger of (major / n)^2 and minor^2 */
++                        struct qreg minor2 = qir_FMIN(c, px2, py2);
++                        float inv_n2 = 1.0f / (float)((1 << aniso) * (1 << aniso));
++
++                        qir_SF(c, qir_FSUB(c, px2, py2));
++                        major_s = qir_MOV(c, qir_SEL(c, QPU_COND_NC,
++                                                     dsdx, dsdy));
++                        major_t = qir_MOV(c, qir_SEL(c, QPU_COND_NC,
++                                                     dtdx, dtdy));
++                        rho2 = qir_FMAX(c, qir_FMUL(c, rho2,
++                                                    qir_uniform_f(c, inv_n2)),
++                                        minor2);
++                }
++
++                /* log2(rho) = log2(rho^2) / 2; the bias of the third
++                 * argument of texture2D added */
++                struct qreg lambda = qir_FMUL(c, qir_LOG2(c, rho2),
++                                              qir_uniform_f(c, 0.5f));
++                lod = is_txb ? qir_FADD(c, lambda, lod) : lambda;
++                is_txl = true;
++                is_txb = false;
++        }
++
++        if (!forced && c->key->tex[unit].lod_bias) {
++                struct qreg bias = qir_uniform(c, QUNIFORM_TEXTURE_LOD_BIAS,
++                                               unit);
++                if (is_txl || is_txb) {
++                        lod = qir_FADD(c, lod, bias);
++                } else {
++                        lod = bias;
++                        is_txb = true;
++                }
++        }
++
++        if (lod_clamp && is_txl) {
++                lod = qir_FMIN(c, qir_FMAX(c, lod,
++                                           qir_uniform(c, QUNIFORM_TEXTURE_MIN_LOD, unit)),
++                               qir_uniform(c, QUNIFORM_TEXTURE_MAX_LOD, unit));
++        }
++
++        if (forced) {
++                lod = qir_uniform(c, QUNIFORM_TEXTURE_FIRST_LEVEL, unit);
++                is_txl = true;
++                is_txb = false;
++        }
++
++        struct qreg out[4];
++
++        if (aniso) {
++                unsigned n = 1 << aniso;
++                struct qreg sum[4];
++
++                for (unsigned k = 0; k < n; k++) {
++                        struct qreg o[4];
++                        struct qreg f = qir_uniform_f(c, ((float)k + 0.5f) /
++                                                      (float)n - 0.5f);
++                        ntq_tex_lookup(c, instr,
++                                       qir_FADD(c, s, qir_FMUL(c, major_s, f)),
++                                       qir_FADD(c, t, qir_FMUL(c, major_t, f)),
++                                       r, lod, is_txl, is_txb, compare, NULL, o);
++                        for (int i = 0; i < 4; i++)
++                                sum[i] = k ? qir_FADD(c, sum[i], o[i]) : o[i];
++                }
++                for (int i = 0; i < 4; i++) {
++                        out[i] = qir_FMUL(c, sum[i],
++                                          qir_uniform_f(c, 1.0f / (float)n));
++                        ntq_store_def(c, &instr->def, i, out[i]);
++                }
+         } else {
+-                for (int i = 0; i < 4; i++)
+-                        ntq_store_def(c, &instr->def, i,
+-                                      qir_UNPACK_8_F(c, tex, i));
++                ntq_tex_lookup(c, instr, s, t, r, lod, is_txl, is_txb,
++                               compare, &instr->def, out);
+         }
+ }
+ 
+--- a/src/gallium/drivers/vc4/vc4_qir.h
++++ b/src/gallium/drivers/vc4/vc4_qir.h
+@@ -290,6 +290,17 @@
+          * an instruction writing to QPU_W_UNIFORMS_ADDRESS.
+          */
+         QUNIFORM_UNIFORMS_ADDRESS,
++
++        /* ogles2 (docs/PI3_PLAN.md §2.1): a sampler's texture's LOD bias,
++         * min and max LOD (floats, relative to its first level), and its
++         * first level's width and height (floats) for an LOD computed in the
++         * shader. The data word is the sampler, as for the TEXTURE_ ones.
++         */
++        QUNIFORM_TEXTURE_LOD_BIAS,
++        QUNIFORM_TEXTURE_MIN_LOD,
++        QUNIFORM_TEXTURE_MAX_LOD,
++        QUNIFORM_TEXTURE_WIDTH,
++        QUNIFORM_TEXTURE_HEIGHT,
+ };
+ 
+ struct vc4_varying_slot {
+@@ -309,6 +320,13 @@
+                                 unsigned wrap_s:3;
+                                 unsigned wrap_t:3;
+                                 bool force_first_level:1;
++                                /* ogles2 (docs/PI3_PLAN.md §2.1):
++                                 * EXT_texture_lod_bias's bias, SGIS_texture_lod's
++                                 * min/max LOD, EXT_texture_filter_anisotropic's
++                                 * 2^aniso lookups (vc4_program.c) */
++                                unsigned lod_bias:1;
++                                unsigned lod_clamp:1;
++                                unsigned aniso:3;
+                         };
+                         struct {
+                                 uint16_t msaa_width, msaa_height;
+--- a/src/gallium/drivers/vc4/vc4_qir.c
++++ b/src/gallium/drivers/vc4/vc4_qir.c
+@@ -356,6 +356,11 @@
+                 [QUNIFORM_TEXTURE_CONFIG_P1] = "tex_p1",
+                 [QUNIFORM_TEXTURE_CONFIG_P2] = "tex_p2",
+                 [QUNIFORM_TEXTURE_FIRST_LEVEL] = "tex_first_level",
++                [QUNIFORM_TEXTURE_LOD_BIAS] = "tex_lod_bias",
++                [QUNIFORM_TEXTURE_MIN_LOD] = "tex_min_lod",
++                [QUNIFORM_TEXTURE_MAX_LOD] = "tex_max_lod",
++                [QUNIFORM_TEXTURE_WIDTH] = "tex_width",
++                [QUNIFORM_TEXTURE_HEIGHT] = "tex_height",
+         };
+ 
+         switch (contents) {
+--- a/src/gallium/drivers/vc4/vc4_uniforms.c
++++ b/src/gallium/drivers/vc4/vc4_uniforms.c
+@@ -344,6 +344,20 @@
+                         /* This will be filled in by the kernel. */
+                         cl_aligned_u32(&uniforms, 0xd0d0d0d0);
+                         break;
++
++                /* ogles2's (patch 0019): Mesa's state makes none of these
++                 * keys; neutral values. */
++                case QUNIFORM_TEXTURE_LOD_BIAS:
++                case QUNIFORM_TEXTURE_MIN_LOD:
++                        cl_aligned_f(&uniforms, 0.0f);
++                        break;
++                case QUNIFORM_TEXTURE_MAX_LOD:
++                        cl_aligned_f(&uniforms, 1000.0f);
++                        break;
++                case QUNIFORM_TEXTURE_WIDTH:
++                case QUNIFORM_TEXTURE_HEIGHT:
++                        cl_aligned_f(&uniforms, 1.0f);
++                        break;
+                 }
+ 
+                 if (false) {
+@@ -393,6 +407,11 @@
+                 case QUNIFORM_TEXTURE_MSAA_ADDR:
+                 case QUNIFORM_TEXRECT_SCALE_X:
+                 case QUNIFORM_TEXRECT_SCALE_Y:
++                case QUNIFORM_TEXTURE_LOD_BIAS:
++                case QUNIFORM_TEXTURE_MIN_LOD:
++                case QUNIFORM_TEXTURE_MAX_LOD:
++                case QUNIFORM_TEXTURE_WIDTH:
++                case QUNIFORM_TEXTURE_HEIGHT:
+                         /* We could flag this on just the stage we're
+                          * compiling for, but it's not passed in.
+                          */

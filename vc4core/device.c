@@ -17,6 +17,10 @@
 static volatile uint32_t *regs;
 static int enabled; /* we hold one SET_ENABLE_QPU */
 
+/* Tests only (the lost tiles of a core not reset, PI3_PLAN §2 "Power"): a
+ * powered core taken as it is, and left enabled at the end. */
+int vc4_keep_state;
+
 uint32_t vc4_read(uint32_t reg)
 {
     return vc4_le32(regs[reg / 4]);
@@ -38,6 +42,11 @@ static int enable_qpu(int on)
 static int take_over(void)
 {
     int k;
+    if (vc4_keep_state && vc4_read(V3D_IDENT0) != V3D_UNPOWERED) {
+        vc4_os_log("keep: the core taken as it is, not reset (VPMBASE 0x%08x, ERRSTAT 0x%08x)",
+                   vc4_read(V3D_VPMBASE), vc4_read(V3D_ERRSTAT));
+        return 0;
+    }
     for (k = 0; k < 32 && vc4_read(V3D_IDENT0) != V3D_UNPOWERED; k++)
         if (enable_qpu(0) < 0)
             return -1;
@@ -91,7 +100,7 @@ int vc4_open(void)
 
 void vc4_close(void)
 {
-    if (enabled)
+    if (enabled && !vc4_keep_state)
         enable_qpu(0);
     enabled = 0;
     vc4_os_close();

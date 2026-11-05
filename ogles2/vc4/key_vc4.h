@@ -30,6 +30,9 @@
 #ifndef GL_ETC1_RGB8_OES
 #define GL_ETC1_RGB8_OES 0x8D64
 #endif
+#ifndef GL_MIRROR_CLAMP_TO_EDGE
+#define GL_MIRROR_CLAMP_TO_EDGE 0x8743
+#endif
 #ifndef GL_DEPTH_STENCIL_OES
 #define GL_DEPTH_STENCIL_OES 0x84F9
 #define GL_UNSIGNED_INT_24_8_OES 0x84FA
@@ -51,6 +54,7 @@
 #define VC4K_ETC1_RGB8 186
 #define VC4K_S8_UINT_Z24_UNORM 274 /* depth and stencil textures: stencil in the low byte */
 #define VC4K_X8Z24_UNORM 278       /* depth textures (16-bit ones too: VC4 samples no Z16) */
+#define VC4K_R16G16B16A16_FLOAT 56 /* half-float and float textures: four S16F planes (patch 0018) */
 
 /* How a GL texture format is stored on VC4 and sampled: the TMU's type
  * (VC4_TEX_*: vc4core.h), bytes a texel (a 4x4 block for ETC1), the key's
@@ -74,7 +78,14 @@ unsigned vc4_attr_format(GLenum type, int size, int normalized);
 struct vc4_key_sampler
 {
     const struct vc4_tex_format *f; /* NULL: no texture bound (zeros) */
-    GLenum wrap_s, wrap_t;
+    GLenum wrap_s, wrap_t;          /* GL_MIRROR_CLAMP_TO_EDGE: the shader's absolute value (patch 0019) */
+    /* The texture parameters the shader emulates (docs/PI3_PLAN.md §2.1,
+     * patch 0019): one level sampled above level 0 (Mesa's
+     * force_first_level: an explicit LOD), EXT_texture_lod_bias's bias,
+     * SGIS_texture_lod's levels and LOD range (an LOD computed in the
+     * shader and clamped), EXT_texture_filter_anisotropic (2^aniso
+     * lookups). */
+    unsigned char force_first, lod_bias, lod_clamp, aniso;
 };
 
 /* What the fragment key takes from a draw. */
@@ -99,6 +110,7 @@ struct vc4_vs_state
     unsigned char nattrs;       /* the shader's inputs in slot order */
     unsigned short attr_format[8];
     unsigned char per_vertex_point_size; /* points, and the shader writes gl_PointSize */
+    unsigned char clip_halfz;   /* EXT_clip_control's ZERO_TO_ONE: z from 0..w (patch 0020) */
     unsigned char nsamplers;
     struct vc4_key_sampler samp[16];
 };

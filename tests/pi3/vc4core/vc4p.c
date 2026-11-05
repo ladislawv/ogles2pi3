@@ -15,7 +15,9 @@ enum {
     U_TEXTURE_CONFIG_P0, U_TEXTURE_CONFIG_P1, U_TEXTURE_CONFIG_P2, U_TEXTURE_FIRST_LEVEL, U_TEXTURE_MSAA_ADDR,
     U_UBO0_ADDR, U_UBO1_ADDR, U_TEXRECT_SCALE_X, U_TEXRECT_SCALE_Y, U_TEXTURE_BORDER_COLOR,
     U_BLEND_CONST_COLOR_X, U_BLEND_CONST_COLOR_Y, U_BLEND_CONST_COLOR_Z, U_BLEND_CONST_COLOR_W,
-    U_BLEND_CONST_COLOR_RGBA, U_BLEND_CONST_COLOR_AAAA, U_STENCIL, U_SAMPLE_MASK, U_UNIFORMS_ADDRESS
+    U_BLEND_CONST_COLOR_RGBA, U_BLEND_CONST_COLOR_AAAA, U_STENCIL, U_SAMPLE_MASK, U_UNIFORMS_ADDRESS,
+    /* patch 0019's */
+    U_TEXTURE_LOD_BIAS, U_TEXTURE_MIN_LOD, U_TEXTURE_MAX_LOD, U_TEXTURE_WIDTH, U_TEXTURE_HEIGHT
 };
 
 struct rd
@@ -84,14 +86,20 @@ static int variant(struct vc4p *p, struct rd *r)
 {
     struct vc4p_variant *v;
     uint32_t k;
-    if (p->nvariants >= 32)
+    if (p->nvariants >= 64)
         return -1;
     v = &p->v[p->nvariants];
     memset(v, 0, sizeof(*v));
     v->stage = u32(r);
     for (k = 0; k < 16; k++) {
         v->tex_format[k] = u32(r);
-        skip(r, 12); /* swizzle, compare, wrap, first level: the tests set the matching textures */
+        skip(r, 6); /* swizzle, compare: the tests set the matching textures */
+        v->tex_wrap[k] = (uint8_t)u8(r); /* wrap_s, with wrap_t: MIRROR_CLAMP_TO_EDGE's 6 (patch 0019) */
+        skip(r, 1);
+        v->tex_first[k] = (uint8_t)u8(r);
+        v->tex_emu[k] = (uint8_t)u8(r);   /* patch 0019: bias 1, clamp 2 */
+        v->tex_aniso[k] = (uint8_t)u8(r);
+        skip(r, 1);
     }
     if (v->stage == VC4P_STAGE_FS) {
         v->color_format = u32(r);
@@ -113,7 +121,8 @@ static int variant(struct vc4p *p, struct rd *r)
             v->attr_formats[k] = u32(r);
         v->is_coord = (uint8_t)u8(r);
         v->per_vertex_point_size = (uint8_t)u8(r);
-        skip(r, 2);
+        v->clip_halfz = (uint8_t)u8(r); /* patch 0020 */
+        skip(r, 1);
         v->nfs_inputs = inputs(r); /* the fragment inputs it writes */
     }
     v->fs_threaded = (uint8_t)u8(r);
@@ -265,9 +274,19 @@ const struct vc4p_variant *vc4p_find(const struct vc4p *p, uint32_t stage, int p
     int k;
     for (k = 0; k < p->nvariants; k++) {
         const struct vc4p_variant *v = &p->v[k];
-        if (v->stage == stage && (stage == VC4P_STAGE_FS ? v->is_points : v->per_vertex_point_size) == (points != 0))
+        if (v->stage == stage && (stage == VC4P_STAGE_FS ? v->is_points : v->per_vertex_point_size) == (points != 0) &&
+            !v->clip_halfz)
             return v;
     }
+    return 0;
+}
+
+const struct vc4p_variant *vc4p_find_halfz(const struct vc4p *p, uint32_t stage)
+{
+    int k;
+    for (k = 0; k < p->nvariants; k++)
+        if (p->v[k].stage == stage && p->v[k].clip_halfz && !p->v[k].per_vertex_point_size)
+            return &p->v[k];
     return 0;
 }
 
@@ -302,7 +321,35 @@ const struct vc4p_variant *vc4p_find_tex(const struct vc4p *p, uint32_t unit, ui
         const struct vc4p_variant *v = &p->v[k];
         if (v->stage == VC4P_STAGE_FS && !v->is_points && !v->is_lines && !v->depth_enabled && !v->blend_enable &&
             !v->stencil_enabled && v->color_format == VC4P_FORMAT_R8G8B8A8_UNORM && unit < 16 &&
-            v->tex_format[unit] == format)
+            v->tex_format[unit] == format && !v->tex_emu[unit] && !v->tex_aniso[unit] && !v->tex_first[unit] &&
+            v->tex_wrap[unit] != 6)
+            return v;
+    }
+    return 0;
+}
+
+const struct vc4p_variant *vc4p_find_tex_emu(const struct vc4p *p, uint32_t format, uint8_t wrap, uint8_t first,
+                                             uint8_t emu, uint8_t aniso)
+{
+    int k;
+    for (k = 0; k < p->nvariants; k++) {
+        const struct vc4p_variant *v = &p->v[k];
+        if (v->stage == VC4P_STAGE_FS && !v->is_points && !v->is_lines && !v->depth_enabled && !v->blend_enable &&
+            !v->stencil_enabled && v->color_format == VC4P_FORMAT_R8G8B8A8_UNORM && v->tex_format[0] == format &&
+            v->tex_wrap[0] == wrap && v->tex_first[0] == first && v->tex_emu[0] == emu && v->tex_aniso[0] == aniso)
+            return v;
+    }
+    return 0;
+}
+
+const struct vc4p_variant *vc4p_find_fs_db(const struct vc4p *p, int depth, uint8_t draw_buffer)
+{
+    int k;
+    for (k = 0; k < p->nvariants; k++) {
+        const struct vc4p_variant *v = &p->v[k];
+        if (v->stage == VC4P_STAGE_FS && !v->is_points && !v->is_lines && v->depth_enabled == (depth != 0) &&
+            !v->blend_enable && !v->stencil_enabled && v->color_format == VC4P_FORMAT_R8G8B8A8_UNORM &&
+            v->draw_buffer == draw_buffer)
             return v;
     }
     return 0;
@@ -378,9 +425,19 @@ static int stream(struct vc4_job *job, const struct vc4p_draw *d, const struct v
         case U_VIEWPORT_Y_SCALE: w = fbits(d->vp_h * 0.5f * 16.0f); break;
         case U_VIEWPORT_Z_OFFSET: w = fbits((d->depth_near + d->depth_far) * 0.5f); break;
         case U_VIEWPORT_Z_SCALE: w = fbits((d->depth_far - d->depth_near) * 0.5f); break;
-        case U_TEXTURE_CONFIG_P0: w = d->tex[x & 15][0]; break;
+        case U_TEXTURE_CONFIG_P0: /* patch 0018: the plane in bits 16 and up */
+            w = d->tex[x & 15][0] + ((x >> 16) & 3) * d->tex_plane[x & 15];
+            break;
         case U_TEXTURE_CONFIG_P1: w = d->tex[x & 15][1]; break;
-        case U_TEXTURE_CONFIG_P2: w = d->tex[x & 15][2]; break;
+        case U_TEXTURE_CONFIG_P2: /* Mesa's: PTYPE 1 (cube map stride) always, BSLOD (an explicit LOD) the
+                                   * recipe's bit 16; BSLOD counts only with PTYPE 1 (PI3_PLAN §2 "Textures") */
+            w = 1u << 30 | d->tex[x & 15][2] | ((x >> 16) & 1);
+            break;
+        case U_TEXTURE_FIRST_LEVEL: w = fbits(d->tex_emu[x & 15][5]); break;
+        case U_TEXTURE_LOD_BIAS: case U_TEXTURE_MIN_LOD: case U_TEXTURE_MAX_LOD: case U_TEXTURE_WIDTH:
+        case U_TEXTURE_HEIGHT:
+            w = fbits(d->tex_emu[x & 15][t - U_TEXTURE_LOD_BIAS]);
+            break;
         case U_BLEND_CONST_COLOR_X: case U_BLEND_CONST_COLOR_Y: case U_BLEND_CONST_COLOR_Z:
         case U_BLEND_CONST_COLOR_W:
             w = fbits(bc[t - U_BLEND_CONST_COLOR_X] / 255.0f); /* the colour's bytes R, G, B, A */

@@ -1,0 +1,61 @@
+ogles2: EXT_clip_control's ZERO_TO_ONE depth mode on VC4 (docs/PI3_PLAN.md
+§2.1), which clips clip-space z to -w..w. The vertex key gets clip_halfz (a
+byte that was padding): the vertex and coordinate shaders take the
+position's z from 0..w to 2z - w before the clip coordinates, the scaled Z
+and 1/W are written, so VC4 clips and maps it as -w..w; the library keeps
+GL's -1..1 viewport Z scale and offset. The twin of v3d's patch 0013, by the
+key instead of a uniform: no cost in the other mode. Mesa's own state never
+sets it; v3dglslc compiles it from keys (-k, patch 0017). Applies after 0019.
+
+--- a/src/gallium/drivers/vc4/vc4_program.c
++++ b/src/gallium/drivers/vc4/vc4_program.c
+@@ -1579,11 +1579,27 @@
+         c->num_inputs++;
+ }
+ 
++/* ogles2 (patch 0020): EXT_clip_control's ZERO_TO_ONE, z from 0..w to the
++ * -w..w VC4 clips (twin of v3d's patch 0013, by the key instead of a
++ * uniform); the viewport's z scale and offset stay GL's -1..1 ones. */
++static void
++emit_clip_halfz(struct vc4_compile *c)
++{
++        if (!c->vs_key->clip_halfz)
++                return;
++        struct qreg z = c->outputs[c->output_position_index + 2];
++        c->outputs[c->output_position_index + 2] =
++                qir_FSUB(c, qir_FADD(c, z, z),
++                         c->outputs[c->output_position_index + 3]);
++}
++
+ static void
+ emit_vert_end(struct vc4_compile *c,
+               struct vc4_varying_slot *fs_inputs,
+               uint32_t num_fs_inputs)
+ {
++        emit_clip_halfz(c);
++
+         struct qreg rcp_w = ntq_rcp(c, c->outputs[c->output_position_index + 3]);
+ 
+         emit_stub_vpm_read(c);
+@@ -1619,6 +1635,8 @@
+ static void
+ emit_coord_end(struct vc4_compile *c)
+ {
++        emit_clip_halfz(c);
++
+         struct qreg rcp_w = ntq_rcp(c, c->outputs[c->output_position_index + 3]);
+ 
+         emit_stub_vpm_read(c);
+--- a/src/gallium/drivers/vc4/vc4_qir.h
++++ b/src/gallium/drivers/vc4/vc4_qir.h
+@@ -369,6 +369,10 @@
+         enum pipe_format attr_formats[8];
+         bool is_coord;
+         bool per_vertex_point_size;
++        /* ogles2 (docs/PI3_PLAN.md §2.1, EXT_clip_control's ZERO_TO_ONE):
++         * the position's z taken from 0..w to -w..w (2z - w), which VC4
++         * clips and maps (vc4_program.c, emit_vert_end, emit_coord_end). */
++        bool clip_halfz;
+ };
+ 
+ /** A basic block of QIR instructions. */

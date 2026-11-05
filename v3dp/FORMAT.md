@@ -272,7 +272,10 @@ Recipe types are vc4's own enum (`vc4_qir.h`), not v3d's: at 74b69717c52b, 0 `CO
 9 `TEXTURE_FIRST_LEVEL`, 10 `TEXTURE_MSAA_ADDR`, 11 `UBO0_ADDR`, 12 `UBO1_ADDR`,
 13 `TEXRECT_SCALE_X`, 14 `TEXRECT_SCALE_Y`, 15 `TEXTURE_BORDER_COLOR`,
 16 to 19 `BLEND_CONST_COLOR_X`, `_Y`, `_Z`, `_W`, 20 `BLEND_CONST_COLOR_RGBA`,
-21 `BLEND_CONST_COLOR_AAAA`, 22 `STENCIL`, 23 `SAMPLE_MASK`, 24 `UNIFORMS_ADDRESS`. As in 1.0,
+21 `BLEND_CONST_COLOR_AAAA`, 22 `STENCIL`, 23 `SAMPLE_MASK`, 24 `UNIFORMS_ADDRESS`, and ogles2's own
+(`tools/v3dglslc/patches/0019`) 25 `TEXTURE_LOD_BIAS`, 26 `TEXTURE_MIN_LOD`, 27 `TEXTURE_MAX_LOD`
+(floats; the LOD range in the miptree's level 0 terms), 28 `TEXTURE_WIDTH`, 29 `TEXTURE_HEIGHT` (level 0's
+size as floats), each with the sampler as its data word. As in 1.0,
 `UNIFORM`'s data word is an index (32-bit units) into the stage's constant buffer and
 `CONSTANT`'s the value; the texture types' data word is the sampler (texture unit index of
 that stage). `UBO0_ADDR` (indirectly indexed uniform arrays) reads the constant buffer through
@@ -287,13 +290,19 @@ like the recipe types.
 **Key, every stage** (`struct vc4_key`; its `shader_state` pointer is the program itself and is
 not stored): for each of the 16 samplers (`VC4_MAX_TEXTURE_SAMPLERS`): `u32 format`,
 `u8 swizzle[4]`, then `u8` each `compare_mode`, `compare_func`, `wrap_s`, `wrap_t`,
-`force_first_level`, `u8 pad[3]` (16 bytes). The key's other view of these bits, the
+`force_first_level`, then ogles2's emulated texture parameters (`tools/v3dglslc/patches/0019`; zeros
+before it): `u8` flags (bit 0 `lod_bias`, bit 1 `lod_clamp`), `u8 aniso` (2^aniso lookups, 0 off),
+`u8 pad` (16 bytes). A `wrap_s` or `wrap_t` of 6 (`MIRROR_CLAMP_TO_EDGE`) takes the coordinate's
+absolute value; a `format` of `R16G16B16A16_FLOAT` (56) reads four planes of the S16F type, one a
+channel (patch 0018): four lookups, each `TEXTURE_CONFIG_P0`'s data word carrying the plane in bits
+16 and up (the runtime gives that plane's P0). The key's other view of these bits, the
 multisampled texture's `msaa_width`/`msaa_height`, is not stored: GLES2 samples no
 multisampled textures, and the two views of one union depend on the host's bitfield layout.
 
 **Key, vertex and coordinate shaders** (`struct vc4_vs_key`), after the common key:
 `u32 attr_formats[8]` (each attribute's `pipe_format`: VC4 converts formats in the shader),
-`u8` each `is_coord`, `per_vertex_point_size`, `u8 pad[2]`, then the fragment shader's inputs
+`u8` each `is_coord`, `per_vertex_point_size`, `clip_halfz` (`EXT_clip_control`'s `ZERO_TO_ONE`: z
+taken from 0..w to -w..w, `tools/v3dglslc/patches/0020`; 0 before it), `u8 pad`, then the fragment shader's inputs
 the variant writes (`fs_inputs`, compiled for the fragment variant it feeds): `u32` count,
 per input `u8 slot`, `u8 swizzle`, zero padding to 4 bytes.
 

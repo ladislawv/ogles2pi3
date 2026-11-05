@@ -69,7 +69,7 @@ confused with the phases or with DEVELOPMENT_PLAN's D1, D2, ...
 | Registers (68k, Emu68) | `0xF2C00000` (`v3d_regs.h`: Emu68 maps `/soc` from `0xF2000000`) | the same `0xF2C00000` by the same rule (`map_peripheral_ranges` maps `/soc` and, on BCM2711 only, `/scb`) (verify P5) |
 | Mailbox | `0xFE00B880`, found through `/aliases/mailbox` and `/soc`'s `ranges` (`v3d_device.c`) | `0x3F00B880` (`bcm283x.dtsi`); the alias exists (`bcm270x-rpi.dtsi`; **(Pi 3)** `/soc/mailbox@7e00b880`) |
 | GPU addresses | identity (bus = physical) | **bus = `0xC0000000` + physical** (`/soc` `dma-ranges` = `<0xc0000000 0x00000000 0x3f000000>`, `bcm2837.dtsi`; **(Pi 3)** plus `<0x7e000000 0x3f000000 0x1000000>` for the peripherals): the uncached alias, which the ARM side must use because it cannot see the VideoCore's L2 (`hello_fft` uses the same alias on the Pi 2 and 3). Every address the GPU or the firmware reads gets it, **the mailbox's message buffer too** (`v3d_device.c` passes the 68k address as is). **(Pi 3)** `ALLOCATE_MEMORY` with flag `0x4` and `LOCK_MEMORY` gave bus `0xFE001000` (physical `0x3E001000`, in `gpu_mem`); the GPU used it as is |
-| Power | `power_on_V3D`: PM_GRAFX and the ASB bridges at BCM2711's addresses (ASB `0x7EC11000`) | **(Pi 3) the mailbox's `SET_ENABLE_QPU` (`0x00030012`, value 1), as `hello_fft`**: the registers answer at once. `SET_DOMAIN_STATE` (`0x00038030`, domain 10, `RPI_POWER_DOMAIN_V3D`) alone reports the domain on, but the registers read `0xdeadbeef` (Linux also enables the V3D clock, `vc4_v3d.c`, `clk_prepare_enable`); `GET_DOMAIN_STATE` keeps answering 0 after `SET_ENABLE_QPU`. Direct PM/ASB writes (Linux's `bcm2835-power`) not needed. **The firmware counts `SET_ENABLE_QPU`:** after two enables one disable leaves the core on with its state; only the last disable powers it off (registers `0xdeadbeef`), and the next enable brings it up reset (`VPMBASE` `0x10`). A user that does not disable (a crash, a second program) leaves the next one a core that was never reset, and **such a core loses a whole tile's primitives about once in 80 draws, with VPM errors in `ERRSTAT`** (bits 6 to 8: read, write and free of unallocated VPM); a core reset first did not, in over 1,600 draws, nor did Mesa in 3,000 (`ERRSTAT` stays `0x1000`). So `vc4core` takes the core over by disabling until the registers read `0xdeadbeef`, enabling once and checking `VPMBASE` = `0x10`, and checks `ERRSTAT` after jobs (P3: why the state goes bad, and a long soak) |
+| Power | `power_on_V3D`: PM_GRAFX and the ASB bridges at BCM2711's addresses (ASB `0x7EC11000`) | **(Pi 3) the mailbox's `SET_ENABLE_QPU` (`0x00030012`, value 1), as `hello_fft`**: the registers answer at once. `SET_DOMAIN_STATE` (`0x00038030`, domain 10, `RPI_POWER_DOMAIN_V3D`) alone reports the domain on, but the registers read `0xdeadbeef` (Linux also enables the V3D clock, `vc4_v3d.c`, `clk_prepare_enable`); `GET_DOMAIN_STATE` keeps answering 0 after `SET_ENABLE_QPU`. Direct PM/ASB writes (Linux's `bcm2835-power`) not needed. **The firmware counts `SET_ENABLE_QPU`:** after two enables one disable leaves the core on with its state; only the last disable powers it off (registers `0xdeadbeef`), and the next enable brings it up reset (`VPMBASE` `0x10`). A user that does not disable (a crash, a second program) leaves the next one a core that was never reset, and **such a core loses a whole tile's primitives about once in 80 draws, with VPM errors in `ERRSTAT`** (bits 6 to 8: read, write and free of unallocated VPM); a core reset first did not, in over 1,600 draws, nor did Mesa in 3,000 (`ERRSTAT` stays `0x1000`). So `vc4core` takes the core over by disabling until the registers read `0xdeadbeef`, enabling once and checking `VPMBASE` = `0x10`, and checks `ERRSTAT` after jobs. **The cause (2026-11-05, `vc4_draw --keep`, a core taken as it is):** `VPMBASE` changed on a core that has run jobs. Raised from 0 to `0x10` (the VPM kept for user programs) on such a core, the next jobs lost a tile's primitives (2 of 3 tries, in the first round) and every change left the VPM errors (bits 6 to 8) in `ERRSTAT`; the same change on a core just reset, before any job, did nothing (480 jobs clean), nor did a job stopped mid-binning or mid-render (its control thread reset, the program ending with the core enabled: 480 jobs clean after each), nor a core left enabled by a clean user with `VPMBASE` unchanged. So the vertex cache manager's VPM allocator keeps state that a `VPMBASE` change puts out of step, until a power cycle; `vc4core` writes `VPMBASE` once, after the reset of its take-over, before any job |
 | RAM | 1 to 8 GB | 3B, 3B+: 1 GB; 3A+, Zero 2 W: 512 MB. Shared with the firmware's `gpu_mem`, Emu68's JIT cache and its RTG memory (`vc4-mem`). **(Pi 3)** Linux sees 905 MB with `gpu_mem` 76 MB (the KMS default), 855 MB with `gpu_mem=128` |
 | CPU for Emu68 | Cortex-A72, 1.5 to 1.8 GHz | Cortex-A53: 1.2 GHz (3B), 1.4 GHz (3B+, 3A+), 1.0 GHz (Zero 2 W) |
 | Shader cores | 8 QPUs, QPU v4 | 12 QPUs (3 slices of 4), QPU v2; **(Pi 3, 3B)** V3D clock 300 MHz (`vcgencmd measure_clock v3d`, both boots; core 400 MHz, ARM 1200 MHz) |
@@ -79,7 +79,7 @@ confused with the phases or with DEVELOPMENT_PLAN's D1, D2, ...
 | Command lists | V3D 4.x packets; the render list loops over supertiles by itself | VC4 packets, `src/broadcom/cle/vc4_packet.xml` (packers `v3d_packet_v21_pack.h`); the same scheme (binner, tile lists, renderer, semaphores), other encoding; **the render list names every tile** (coordinates, loads, branch to its bin list, stores). Linux builds it in the kernel; Mesa keeps an MIT copy of that code (`src/gallium/drivers/vc4/kernel/vc4_render_cl.c`, for the simulator). **(Pi 3) Mesa's copy is older than Linux's and wrong on the hardware:** it puts `CLEAR_COLORS` and the None-mode store after `TILE_RENDERING_MODE_CONFIG`, and then every job stores the previous job's clear colour (all tiles); Linux puts them first, which works (`tests/pi3_probe`, `clearseq`, `--variant=mesa`). The clear values are taken when the rendering-mode packet is processed. `vc4core` follows Linux's order |
 | Binner memory | tile state, tile allocation, overflow | tile state 48 bytes and allocation 32 bytes per tile, the allocation 4 KB-aligned after the state (`kernel/vc4_validate.c`); **the tile state's pointers have 28 bits: state, allocation and overflow must lie in one 256 MB-aligned segment** (Linux `vc4_v3d.c`, `bin_bo_alloc`); overflow through `BPOA`/`BPOS`, `INTCTL`'s `OUTOMEM` bit |
 | Shader state | GL shader state record, v4 | GL shader state record, v2; three shaders per program as now (fragment, vertex, coordinate); the vertex shader is compiled for the fragment shader it feeds (`vc4_vs_key.fs_inputs`) |
-| Textures | UIF, UBLINEAR, LT; many formats; TFU | T and LT tilings (LT for small levels), sizes up to 2048 (`max_texture_2d_size`); types (guide, table 18): RGBA8888, RGBX8888, RGBA4444, RGBA5551, RGB565, LUMINANCE, ALPHA, LUMALPHA, ETC1, S16F, S8, S16, BW1, A4, A1, **RGBA64 (16-bit float per channel, filtered, read as two 32-bit results)**, RGBA32R and YUYV422R (raster). Mesa uses RGBA8888 (also for RGBX, BGRA and depth Z24S8, by swizzle and scaling), RGBA4444, RGBA5551, RGB565, ALPHA (A8, L8, I8, R8 by swizzle), LUMALPHA (LA8, RG8) and ETC1 (`vc4_formats.c`). Base addresses in 4 KB units (`VC4_TEX_P0_OFFSET`); mip levels stored before level 0, levels above 0 padded to powers of two. Raster textures: the guide supports them, Mesa says the Pi cannot sample them (`vc4_state.c`, it copies them to a tiled shadow). **(Pi 3)** both partly right: a raster RGBA32R texture is sampled right **when its width is a power of two** (16, 32, 64, 128, 256 wide, any height tried: 7 to 256); other widths are read from wrong rows (rows in groups of 4, spaced inside a group by the width rounded up to a power of two, the groups by 4 widths rounded up to a granule that changes with the height; no stride the CPU could choose fits, `tests/pi3_probe` `rastermap`). So an RTG bitmap or other raster image is sampled directly only at power-of-two widths, else through a copy (T/LT). An LT RGBA8888 texture gives Mesa's picture exactly. **No TFU** |
+| Textures | UIF, UBLINEAR, LT; many formats; TFU | T and LT tilings (LT for small levels), sizes up to 2048 (`max_texture_2d_size`); types (guide, table 18): RGBA8888, RGBX8888, RGBA4444, RGBA5551, RGB565, LUMINANCE, ALPHA, LUMALPHA, ETC1, S16F, S8, S16, BW1, A4, A1, **RGBA64 (16-bit float per channel, filtered, read as two 32-bit results)**, RGBA32R and YUYV422R (raster). Mesa uses RGBA8888 (also for RGBX, BGRA and depth Z24S8, by swizzle and scaling), RGBA4444, RGBA5551, RGB565, ALPHA (A8, L8, I8, R8 by swizzle), LUMALPHA (LA8, RG8) and ETC1 (`vc4_formats.c`). Base addresses in 4 KB units (`VC4_TEX_P0_OFFSET`); mip levels stored before level 0, levels above 0 padded to powers of two. Raster textures: the guide supports them, Mesa says the Pi cannot sample them (`vc4_state.c`, it copies them to a tiled shadow). **(Pi 3)** both partly right: a raster RGBA32R texture is sampled right **when its width is a power of two** (16, 32, 64, 128, 256 wide, any height tried: 7 to 256); other widths are read from wrong rows (rows in groups of 4, spaced inside a group by the width rounded up to a power of two, the groups by 4 widths rounded up to a granule that changes with the height; no stride the CPU could choose fits, `tests/pi3_probe` `rastermap`). So an RTG bitmap or other raster image is sampled directly only at power-of-two widths, else through a copy (T/LT). An LT RGBA8888 texture gives Mesa's picture exactly. **(Pi 3, 2026-11-05)** RGBA64 is read as the guide says, one request and two results (RG, then BA, two halves each), **but its second word comes back stale once a 32-bit texture has been sampled since the core's reset**: alone (and after RGBA64 or untextured jobs) every pixel is right; after any RGBA8 lookup (2D, mipmap, cube map, a copy) thousands of pixels get the BA word of other texels of the same texture, earlier lookups, the count varying run to run, until a power cycle. Not changed by a pause before the job, another buffer, waiting for the cache clears, P2 written, the cache swizzle, the L2 cache off; halved by `TMU_NOSWAP`. So half-float textures are not RGBA64 but four **S16F** planes (one 16-bit float channel, filtered; a lookup returns the half in the word's low 16 bits, `s16fdiag`): patch 0018, `texhalf`, `halfmip`, clean after every other case. **P2's `BSLOD` (an explicit LOD, "use bias only") counts only with `PTYPE` 1** (cube map stride), which Mesa writes for every texture: with `PTYPE` 0 the TMU added its own LOD to the explicit one (every derivative-LOD case one level off, `minlod`). The TMU's bilinear rounds down: a 2x2 average through it is up to 2 below the rounded box filter where neighbours differ by about 200 (`genmip`). The tile buffer's 64-bit colour mode stores RGBA16F pixels, which are the RGBA64 type's texels (`hdr`). **No TFU** |
 | Wrap modes | repeat, clamp, mirror, mirror-clamp | repeat, clamp to edge, mirror, clamp to border (`translate_wrap`) |
 | Texture LOD | bias, min/max LOD in the sampler | none in the sampler: a mip-level count only (`MIPLVLS`); a first level other than 0 by an explicit LOD in the shader (`force_first_level`) or a copy (`vc4_state.c`) |
 | Render targets | RGBA8, RGB565, RGBA4, RGB5A1, RGBA16F; up to 4 (MRT) | **one** colour buffer, RGBA8888 (BGRA by the shader's swizzle) or RGB565 (`vc4_formats.c`); 64×64 tiles, 32×32 with 4× MSAA (`vc4_job.c`); stored as raster, T or LT; up to 4096 (the shaded vertex format's 12.4 fixed point, `kernel/vc4_validate.c`), textures up to 2048; **(Pi 3)** Mesa reports 2048 for the viewport and renderbuffers |
@@ -133,12 +133,12 @@ come from Mesa decompressing on the CPU at upload, as PD6 does. It lacks
 | Native | `OES_compressed_ETC1_RGB8_texture`, `OES_packed_depth_stencil`, `EXT_blend_minmax`, `EXT_texture_format_BGRA8888`, `OES_texture_npot`, `OES_fbo_render_mipmap`, `OES_standard_derivatives`, `OES_depth_texture`, `ARB_texture_rectangle` | ETC1 texture type; depth is always 24 + 8 bits; min/max in the shader's blending; BGRA by swizzle; NPOT with padded mip levels; derivatives by QPU rotations within each 2×2 quad (`ntq_fddx`, `ntq_fddy`: complete, used by Mesa's GL 2.1, but the driver has never reported the capability, once `PIPE_CAP_SM3`, now `fragment_shader_derivatives`, so Mesa's ES string lacks the extension; dEQP-GLES2 has no derivative cases, so `tests/m6_ext` checks it, P3); depth sampled as Z24S8 through RGBA8888 with the compare in the shader; `QUNIFORM_TEXRECT_SCALE_X/Y` |
 | Near native | `OES_element_index_uint` | the 16-bit copy works while a draw's indices span at most 65536 (rebased by the minimum index); a wider draw is split by the CPU into pieces whose vertices are copied and re-indexed (Mesa does not do this: indices above 65535 break there) |
 | Emulated, texture data | `EXT_texture_compression_s3tc`, `EXT_texture_compression_dxt1`, `ANGLE_texture_compression_dxt3`, `ANGLE_texture_compression_dxt5` | decoded on the CPU at upload (Mesa's `util/format` S3TC decoders, MIT) into RGBA8888, or RGB565/RGBA5551 for DXT1; 4 to 8 times the memory |
-| Emulated, half-float textures | `OES_texture_half_float`, `OES_texture_half_float_linear` | the RGBA64 texture type (filtered by the hardware); the shader reads two results (RG, BA) and unpacks halves: a vc4 compiler change (key bit per sampler). RGB, LUMINANCE, ALPHA, LUMINANCE_ALPHA expanded to RGBA at upload |
-| Emulated, float textures | `OES_texture_float` | stored as RGBA64 half floats (range ±65504, 11-bit precision): a documented deviation (accepted by the developer, 2026-11-03). Not planned: exact storage as raw 32-bit values in RGBA8888 texels decoded in the shader |
-| Emulated, in the shader | `ARB_texture_mirror_clamp_to_edge` (the coordinate's absolute value, then the hardware's clamp to edge); `EXT_texture_lod_bias` (a uniform added through the TMU's bias input); `SGIS_texture_lod` (base and max level through `MIPLVLS` and a first-level copy as Mesa makes; min/max LOD by an LOD computed from derivatives and an explicit-LOD lookup); `EXT_texture_filter_anisotropic` (extra lookups along the major axis from the derivatives, up to the maximum reported, at least 2) | key bits per sampler and vc4 compiler changes (§4.1); the cost falls only on programs that use them |
-| Emulated, render targets | `EXT_draw_buffers`, `NV_fbo_color_attachments` | **one pass per colour attachment:** the framebuffer object's job is binned and rendered once per attachment, each pass with a fragment variant that writes that attachment's output (key: output index) and loads the depth and stencil the job started with; only the last pass stores them. Costs N times the work; needs a vc4 compiler change (Mesa's vc4 has one colour output, `max_outputs` 1 for fragment shaders: the compiler's screen reports four draw buffers, and the key picks one output). **Compiler side done (2026-11-04):** patch 0016 adds the fragment key's `draw_buffer` (`gl_FragData[draw_buffer]` is the colour, `gl_FragColor` in every pass, the other outputs dropped), `v3dglslc -g 21` reports four draw buffers and compiles one fragment variant per `gl_FragData[k]` written; the format's key has the byte (FORMAT.md 1.1) |
-| Emulated, render targets | `EXT_color_buffer_half_float` | the fragment shader packs two half floats into each 32-bit tile-buffer pixel and blends them itself (VC4 blends in the shader anyway): RGBA16F as two packed images (RG, BA) through the passes above, sampled as packed textures and unpacked in the shader (filtering done in the shader). The largest change of all: a new packed colour format in `vc4_nir_lower_blend.c` |
-| Emulated, depth | `EXT_clip_control` | origin by the front end's flips as now; `ZERO_TO_ONE` by a twin of patch 0013 (z lerped towards w by a uniform) in the vc4 vertex and coordinate shaders (verify P4: how VC4 clips z) |
+| Emulated, half-float textures | `OES_texture_half_float`, `OES_texture_half_float_linear` | planned as the RGBA64 type (two results, RG and BA); RGB, LUMINANCE, ALPHA, LUMINANCE_ALPHA expanded to RGBA at upload. **Done (2026-11-05) as four S16F planes instead**, one a channel, each a whole miptree the TMU filters (RGBA64's second word comes back stale after 32-bit lookups, §2 "Textures"): patch 0018 (no key bit: the sampler's key format `R16G16B16A16_FLOAT` says it; four lookups, the P0 recipe's data word carrying the plane in bits 16 and up), the library's planes (`texture_vc4.c`: plane k at k plane strides, 4 KB multiples; `draw_vc4.c` adds the plane's offset to P0), `vc4_draw texhalf` and `halfmip` Mesa's pictures pixel for pixel. Four lookups a sample instead of one |
+| Emulated, float textures | `OES_texture_float` | stored as RGBA64 half floats (range ±65504, 11-bit precision): a documented deviation (accepted by the developer, 2026-11-03); filtered as the half-float ones. Not planned: exact storage as raw 32-bit values in RGBA8888 texels decoded in the shader. **Done (2026-11-05)** with the half-float ones |
+| Emulated, in the shader | `ARB_texture_mirror_clamp_to_edge` (the coordinate's absolute value, then the hardware's clamp to edge); `EXT_texture_lod_bias` (a uniform added through the TMU's bias input); `SGIS_texture_lod` (max level through `MIPLVLS`; min/max LOD by an LOD computed from derivatives and an explicit-LOD lookup); `EXT_texture_filter_anisotropic` (extra lookups along the major axis from the derivatives, up to the maximum reported, at least 2) | key bits per sampler and vc4 compiler changes (§4.1); the cost falls only on programs that use them. **Done (2026-11-05), patch 0019:** the sampler key's `lod_bias`, `lod_clamp`, `aniso` (2^aniso lookups; the backend reports 4), wrap mode 6 for mirror-clamp; five uniform types (the bias, the LOD range in level 0's terms, level 0's size). A base level above 0 is not a copy: the LOD computed in the shader, clamped to [base + min LOD, min(base + max LOD, max level)] over the whole miptree, or Mesa's `force_first_level` (an explicit LOD) when one level is sampled; **deviation:** magnifying a base level above 0 filters with the minification filter (the TMU's LOD is above 0 there). Not on cube maps (their LOD would need the major face's derivatives): only the bias there. `vc4_draw mirror` (against texels worked out), `mipemu` (bias, min LOD, max LOD, base level, both, max level, a forced level, anisotropy on square footprints: Mesa's mipmap picture with the levels GL picks), `anisoquad` (a 32x8 footprint: level 2 by the TMU, level 0 by 4 lookups), every pixel |
+| Emulated, render targets | `EXT_draw_buffers`, `NV_fbo_color_attachments` | **one pass per colour attachment:** the framebuffer object's job is binned and rendered once per attachment, each pass with a fragment variant that writes that attachment's output (key: output index) and loads the depth and stencil the job started with; only the last pass stores them. Costs N times the work; needs a vc4 compiler change (Mesa's vc4 has one colour output, `max_outputs` 1 for fragment shaders: the compiler's screen reports four draw buffers, and the key picks one output). **Compiler side done (2026-11-04):** patch 0016 adds the fragment key's `draw_buffer` (`gl_FragData[draw_buffer]` is the colour, `gl_FragColor` in every pass, the other outputs dropped), `v3dglslc -g 21` reports four draw buffers and compiles one fragment variant per `gl_FragData[k]` written; the format's key has the byte (FORMAT.md 1.1). **GPU side checked (2026-11-05):** `vc4_draw drawbuf`, the depth case's draws in two passes with `gl_FragData[0]` and `[1]`'s variants (`tests/pi3/ref/shaders/mrt.frag`): Mesa's depth picture and its inverse, pixel for pixel. Left: the library's passes (`job_vc4.c`, P5) |
+| Native (64-bit tile buffer) | `EXT_color_buffer_half_float` | **Changed (2026-11-05):** not packing but the tile buffer's own 64-bit colour mode (the guide's "HDR" mode, which Mesa does not use: 64x32 tiles, RGBA16F pixels, the stores' colour format ignored), whose stored pixels are the RGBA64 texture type's texels, so a half-float target is sampled as a half-float texture with no conversion. Patch 0021: a fragment key with `color_format` `R16G16B16A16_FLOAT` writes two TLB words a pixel (RG, BA) through the per-sample colour writes, and blends in floats, unclamped, from two TLB reads; vc4core's `struct vc4_target` `hdr` (the tile-depth bits, the tile size, a 64-bit clear colour). No MSAA with it. A rendered image is RGBA16F pixels, so sampling it needs the S16F planes (the TMU's RGBA64 type is unreliable, §2 "Textures"): the CPU splits it (as `vc4_draw hdr` does; a GPU split would need an S16F store the tile buffer does not have). `vc4_draw hdr` (the depth case into an RGBA16F T-format image, split, drawn from the planes: Mesa's depth picture pixel for pixel), `hdrblend` (Mesa's blend picture within 1), `hdrrange` (2.0 and -0.5 stored as such). Left: the library's half-float renderbuffers and texture targets, and the split before such a texture is sampled (P5) |
+| Emulated, depth | `EXT_clip_control` | origin by the front end's flips as now; `ZERO_TO_ONE` by a twin of patch 0013 in the vc4 vertex and coordinate shaders. **Done (2026-11-05), patch 0020:** by a vertex key byte (`clip_halfz`) rather than a uniform, so the other mode costs nothing: z taken from 0..w to 2z - w before the clip coordinates and the scaled Z, VC4 clipping z to -w..w as the guide says; the viewport's Z scale and offset stay GL's. `vc4_draw clipz` (the depth case through it, a triangle before the near plane clipped away): Mesa's depth picture pixel for pixel |
 
 Order of work (P3, P4): the native and near-native ones first, then S3TC, half-float and float
 textures, the texture-parameter ones, then multiple render targets, then half-float targets.
@@ -358,6 +358,17 @@ Linux's vc4 driver where named; nothing from `v3dcore` or PiStorm3D (PD9).
   indices) binned at 34 Mtri/s and rendered at 13.5 Mtri/s; the CPU's tiling of a texture
   into GPU memory (Linux, the A53) 79 MB/s. The Amiga's numbers (P5) are the ones that count:
   its CPU writes and tiles everything.
+- **With the heatsink and fan (2026-11-05):** the speed case three times: the same numbers to
+  0.5 % (flat 1,030 to 1,032 Mpixel/s, blended 769, textured 711 to 712, 13.45 Mtri/s
+  rendered, the tiling 79 MB/s), so the first ones were not throttled either. **The burn:** a
+  3,000-round soak of every case (171,600 jobs, the overflow case every tenth round) with the
+  four CPU cores busy, 37 minutes: **no failure, never throttled** (`get_throttled` `0x0`,
+  the ARM at 1.2 GHz and the V3D at 300 MHz in every 30 s sample), 31 °C at the start, 53 to
+  55 °C after the first two minutes (55.3 at most). **`VCMBE` with the CPU busy:** 239 of the
+  300 overflow jobs reported it (pictures right); in 500 rounds each, 0 of 50 with the cores
+  idle against 32 of 50 with them busy. So the binner's vertex cache error when it runs out of
+  memory is common when the CPU loads the memory bus, as Emu68 does on the A1200: the backend
+  counting it, not failing a job on it (§5.1, `job_vc4.c`), is right.
 
 ## 4. The compiler
 
@@ -391,7 +402,15 @@ Linux's vc4 driver where named; nothing from `v3dcore` or PiStorm3D (PD9).
     `ZERO_TO_ONE`) and 0014 (alpha-to-coverage variants), where vc4 needs them (P4: each checked);
   - the emulations' key bits (§2.1): half-float textures (two reads), mirror-clamp, LOD bias,
     LOD clamp, anisotropic lookups, output index (multiple render targets), packed half-float
-    colour;
+    colour. **Done (2026-11-05)**, each checked on the Pi 3 (§6.3) and S1 and S2 identical on
+    them (`compare_vc4p.sh`'s `emutex`, `emuflat`, `emumrt` runs): patch 0016 (output index,
+    2026-11-04); **0018** half-float and float textures as four S16F planes (the key's format;
+    not RGBA64: §2 "Textures"); **0019** the texture parameters (`lod_bias`, `lod_clamp`,
+    `aniso` beside `force_first_level`, mirror-clamp by its wrap value, five uniform types,
+    `ntq_emit_tex`'s lookup split out); **0020** `EXT_clip_control`'s `ZERO_TO_ONE` (the vertex
+    key's `clip_halfz`); **0021** half-float targets in the tile buffer's 64-bit mode (no
+    packing: the hardware has the mode). With none of their key bits set the code is as before
+    (the VC4 corpus 36 of 36 unchanged);
   - big-endian fixes found by the S1/S2 byte comparison (`compare_v3dp.sh`), as 0008 was for v3d.
 - **The Pi 4's output does not change:** with both drivers linked, every V3D 4.2 `.v3dp` of the
   corpus and of the release's examples is byte for byte the one 1.3.3's compiler writes (apart from
@@ -859,24 +878,26 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   (`tests/a1200/p2_deqp.sh`: every group, and multisample in a 4x MSAA context), run
   2026-11-04 from 20:58, shaders compiled on the Amiga: **51 of the 59 groups done, each the
   same as October's** (passes, fails, not supported and warnings;
-  `tests/a1200/results/p2-deqp-20261104-2058.txt`), through `shaders-return`. Paused at the
-  developer's request on 2026-11-05 shortly after midnight; the A1200 had stopped answering
-  (no ping, no `amictl` port) during the next group, `shaders-scoping`, so whether that group
-  hung it is not known. To resume: `bash tests/a1200/p2_deqp.sh shaders-scoping shaders-struct
-  shaders-swizzles shaders-texture_functions state_query texture uniform_api vertex_arrays`,
-  then the 4x MSAA multisample run (the script does it only without arguments: `run
-  multisample "MSAA=1" multisample-msaa`); if `shaders-scoping` stops the Amiga again, it is a
-  finding of its own (October's run passed it). **The PC compile bridge is ported (2026-11-05)**,
-  so the rest compiles its shaders on the PC (about 80 minutes a full run, as in `ogles3`, instead
-  of hours): `p2_deqp.sh` starts the package's `v3dglslc-remote` on the station (it takes the
-  compiler's port, `NOFALLBACK`: nothing compiles on the A1200) and needs
-  `python3 tools/amictl/compile_bridge.py` running in WSL first (`PC=0`: the A1200's compiler,
-  as before). The host `v3dglslc` has a `SERVE` mode for it (the requests as frames on stdin;
-  one request handler with the Amiga server's), the frames are this repository's (`V2`: the
-  version, the device and VC4's keys; `ogles3`'s carry other fields), and
-  `compile_bridge.py --check` gives the command line's files byte for byte (8 of 8: the Pi 4's
-  test programs, and on the Pi 3 a plain link, a bound one and one with keys). Untried on the
-  A1200 until it answers again.
+  `tests/a1200/results/p2-deqp-20261104-2058.txt`), through `shaders-return`. **Finished 2026-11-05, every group
+  the same as October's: P2's acceptance is done.** The rest ran with the shaders compiled on
+  the PC through the compile bridge (port 6803: `ogles3`'s bridge to the same station uses
+  6802), `shaders-scoping` to `state_query` in minutes each (`p2-deqp-20261105-0905.txt`),
+  then `texture`, `uniform_api`, `vertex_arrays` and the 4x MSAA `multisample` run under
+  `deqp_watch.py` (`p2-deqp-20261105-1120.txt`, its `-watch.txt` the case-by-case log), ported
+  from `ogles3` with amictld 1.4, dEQP's progress patch (`ports/deqp/patches/0005`) and
+  `Run-M1 PROGRESS=1`: every 15 s the case running, the library's new log lines and the free
+  memory, a hang reported with its case. **All 60 parts (59 groups and the MSAA run): 17,132
+  of 17,181 pass, 25 fail, 18 not supported, 6 quality warnings, each group's counts equal to
+  its last run before; `texture`'s 24 failures the same cases as on 2026-10-19.** The A1200
+  stopped answering twice during the day, both times in a long group under the blind runner
+  (`shaders-scoping` in the night, `texture` in the morning: no ping, then a reset); under the
+  watcher `texture` ran its 807 cases in 44 minutes without it, so no case hangs it reliably.
+  Found on the way: `amictl runpkg` without screenshots holds the station in one RUN for the
+  whole job, so a killed client leaves the server blocked until the job ends (the watcher's
+  START and short WAITs do not); it was freed by sending dEQP a Ctrl-C through the input
+  channel (``Break `Status COM=deqp-gles2` C`` typed into Execute Command). The station's tools
+  are now the shared repository `ladislawv/amictl` (`tools/amictl`, a git submodule; the
+  compile bridge, this project's own, in `tools/compile_bridge/`).
 - **Program binaries:** `OES_get_program_binary`'s binary is the `.v3dp` file
   (`GL_PROGRAM_BINARY_V3DP_PISTORM`, `program.c`). The token stays one for both GPUs: a binary for
   the other GPU fails to load (device field), which GLES2 allows, and the program then compiles
@@ -965,7 +986,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    once in the middle of dEQP (the run went on, §6.1); a short thick cable and a supply soldered
    to the board did not help. **Solved by another supply, 5.2 V at the board** (the developer's
    meter): `0x0` and 1200 MHz, also after a minute of all four cores busy with the GPU drawing
-   (61 to 74 °C; the Pi 3 throttles at 80 °C, so a heatsink before long speed runs). Mesa's
+   (61 to 74 °C; the Pi 3 throttles at 80 °C, so a heatsink before long speed runs: fitted
+   2026-11-05 with a fan, 53 to 55 °C through a 37-minute burn, §3.1). Mesa's
    pictures had stayed exact through the low voltage (400 runs). Results taken before this
    (dEQP's baseline, the probe's timings) ran at the low voltage; their pass/fail results stand,
    their times are not speed figures.
@@ -1194,12 +1216,13 @@ Everything that can run here runs here first (the developer, 2026-11-03).
   suspect (§6.0).
 
 **Next:**
-1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0). A heatsink before long speed
-   runs on it.
+1. Done: the test Pi holds 5 V (another supply, 5.2 V; §6.0); a heatsink and fan on it
+   (2026-11-05: never throttled in a 37-minute burn, §3.1).
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
-   the Pi 4 card (PD7 decided: option 1): steps 1 to 8 done (§5.1, §5.3); the acceptance done
-   but for dEQP's result (§5.1); the PC compile bridge for its rest is ported (§5.1), untried on
-   the A1200 until it answers again.
+   the Pi 4 card (PD7 decided: option 1): steps 1 to 8 done (§5.1, §5.3); **the acceptance done
+   (2026-11-05)**: the packages, the speed and dEQP-GLES2's must-pass list all as 1.3.3 and
+   October (§5.1; dEQP's last groups compiled on the PC through the bridge and watched by
+   `deqp_watch.py`). **P2 is finished.**
 3. P4: the limits are settled (§4.1: `-L`, the VC4 backend's caps take them); the corpus
    compiled for VC4 as a whole is done (36 of 36, §4.3, with the draw-buffers variants of patch
    0016); variants compile from given keys (`-k`, patch 0017, §4.2); the request's device field
@@ -1230,9 +1253,27 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    (6,040 jobs) clean.
    The GPU lock needs no `lock.c`: the VC4 backend keeps its own public semaphore
    (`"VC4 submit"`, backend_vc4.c), and the Linux tests are the GPU's only user.
-   Left: the speed runs again with the heatsink, the emulations'
-   GPU side (§2.1: RGBA64 half floats, the shader's texture tricks), and the cause of the
-   not-reset core's lost tiles. Then P5 (the VC4 backend); begun
+   **The Linux bench's rest (2026-11-05), all on the Pi 3 in the bare boot:** the emulations'
+   GPU side (§2.1) with compiler patches 0018 to 0021 and new `vc4_draw` cases: `texhalf`,
+   `halfmip` (half floats as S16F planes), `mirror`, `mipemu` (bias, min and max LOD, base and
+   max level, a forced level, anisotropy), `anisoquad`, `clipz`, `hdr`, `hdrblend`, `hdrrange`
+   (the 64-bit tile buffer), `drawbuf` (`EXT_draw_buffers`' passes), `genmip` (mipmaps drawn on
+   the GPU, glGenerateMipmap's path) and `copytex` (glCopyTexSubImage2D's from a T-format
+   image); every case against Mesa's pictures (mapped where GL picks other levels) or texels
+   worked out; all cases and a 200-round soak (11,440 jobs) clean. Found on the way: P2's
+   `BSLOD` counts only with `PTYPE` 1 (the library wrote 0 for 2D textures: an explicit LOD,
+   every vertex-shader lookup, was added to the TMU's own; fixed), the RGBA64 type's stale
+   second word (so the planes), the cause of the not-reset core's lost tiles (`VPMBASE`
+   changed after jobs, §2 "Power"), the TMU's bilinear rounding (§2 "Textures"). The library
+   side done with them: the keys' new bytes (`key_vc4.c`, `drawkey_vc4.c`), the half-float
+   planes, the uniforms of patch 0019, P2's `PTYPE`, the extensions offered (`OES_texture_half_float`,
+   `_linear`, `OES_texture_float`, `ARB_texture_mirror_clamp_to_edge`, `EXT_texture_lod_bias`,
+   `SGIS_texture_lod`, `EXT_texture_filter_anisotropic` with 4, `EXT_clip_control`); left for P5
+   on the A1200: `EXT_draw_buffers`' passes in `job_vc4.c`, half-float targets (renderbuffers,
+   texture levels, the CPU split into planes before sampling), the GPU paths of glGenerateMipmap
+   and glCopyTex* (a built-in blit program), and checking all of it there. **Nothing is left on
+   Linux**: the speed runs and the burn with the heatsink done too (§3.1). Then P5 (the VC4
+   backend); begun
    2026-11-05 with what the PC and the Pi 3 can test: `vc4core/os_amiga.c` (written, compiles
    for the 68k, waits for the A1200 with the Pi 3: the device tree's `/soc` ranges and
    dma-ranges, `/aliases`' mailbox, fast RAM as GPU memory cleaned by `CachePreDMA`, the system
