@@ -9,6 +9,12 @@
 # A summary goes to tests/a1200/results/p2-deqp-<date>.txt as it runs. Stops
 # at the first group whose run does not finish (the station may need a reset:
 # ask before one).
+# The shaders are compiled on the PC (a run of hours on the A1200's own
+# compiler is about 80 minutes so): the package's v3dglslc-remote is started
+# on the station first, with NOFALLBACK (nothing compiles on the A1200), and
+# needs the PC's side running in WSL beforehand:
+#   python3 tools/amictl/compile_bridge.py       (WSL; --check tests it alone)
+# PC=0 compiles on the A1200 instead (to exercise the on-target compiler).
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
@@ -44,6 +50,21 @@ run() { # group, extra Run-M1 arguments, name
 
 GROUPS_=${*:-$(ls "$PKG/caselists" | sed 's/\.txt$//')}
 echo "P2 acceptance, dEQP-GLES2 must-pass, $(date)" > "$SUM"
+JOB=""
+if [ "${PC:-1}" = 1 ]; then
+    [ -f "$PKG/bin/v3dglslc-remote" ] || { echo "no $PKG/bin/v3dglslc-remote: build the package again"; exit 1; }
+    wsl -d Ubuntu-24.04 pgrep -f compile_bridge.py > /dev/null ||
+        { echo "no compile_bridge.py running: start python3 tools/amictl/compile_bridge.py in WSL first"; exit 1; }
+    # the package's drawer on the station (runpkg's: the server's work directory)
+    P="$(amictl run CD | tr -d '\r' | tail -1)/ogles2-m7-1"
+    amictl mkdir "$P" > /dev/null 2>&1
+    amictl mkdir "$P/bin" > /dev/null 2>&1
+    amictl mkdir "$P/libs" > /dev/null 2>&1
+    amictl put "$PKG/bin/v3dglslc-remote" "$P/bin/v3dglslc-remote" > /dev/null || { echo "cannot put v3dglslc-remote"; exit 1; }
+    JOB=$(amictl start -d "$P" bin/v3dglslc-remote WAIT NOFALLBACK "COMPILER=$P/libs/v3dglslc" | tail -1)
+    echo "shaders compiled on the PC (v3dglslc-remote job $JOB)" | tee -a "$SUM"
+    trap '[ -n "$JOB" ] && { amictl abort "$JOB" > /dev/null 2>&1; amictl wait "$JOB" 30 > /dev/null 2>&1; }' EXIT
+fi
 for g in $GROUPS_; do
     run "$g" "" "$g"
 done

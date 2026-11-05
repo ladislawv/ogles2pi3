@@ -7,6 +7,9 @@
  *            (-k: variants for the vc4 keys in KEYFILE too: vc4_variants.c)
  *            (the Raspberry Pi 3's VC4: see run_pairs_vc4)
  *          v3dglslc SERVER   (AmigaOS: the on-target compiler, v3dp/v3dglsl_port.h)
+ *          v3dglslc SERVE    (the host: the same requests as frames on stdin, serve_stdio;
+ *                             tools/amictl/compile_bridge.py runs it for the A1200's
+ *                             v3dglslc-remote)
  * Creates a V3D 4.2 screen (compat/fake_drm.c), a surfaceless GLES2 context
  * through the state tracker, and calls Mesa's GL entry points directly.
  * -o writes each program as <dir>/<vs>-<fs>.v3dp (dev/v3dp/FORMAT.md), with
@@ -53,8 +56,11 @@ static int use_device(int dev);
 #include "compile_common.c"
 #ifdef __amigaos__
 #include <proto/exec.h>
-#include "v3dglsl_port.h"
+#else
+#include <unistd.h>
+#define V3DGLSL_OPS_ONLY /* the host's SERVE: the constants, no Exec */
 #endif
+#include "v3dglsl_port.h"
 
 int fake_drm_open(void);
 int fake_drm_vc4_open(void);
@@ -494,6 +500,151 @@ static int write_program(GLuint p, const char *path, const char *vs_src, const c
     return 1;
 }
 
+/* One request, the Amiga server's or the host's SERVE (version as struct
+ * V3DGLSLRequest's: 1 the Pi 4's, 2 naming the GPU; dev its device field;
+ * keys and bindings NULL when not sent): its result (0 done, 1 compile or
+ * link failed, 2 not written, 3 not understood), the messages into log;
+ * *quit for a QUIT the server must obey. */
+static int handle(uint32_t version, uint32_t op, uint32_t dev, const char *vs, const char *fs, const char *out_path,
+                  const char *bindings, const void *keys, size_t keys_size, char *log, size_t log_size, int *quit)
+{
+    int result;
+    if (version != V3DGLSL_VERSION_DEVICE)
+        dev = V3DGLSL_DEVICE_V3D42; /* version 1: the Pi 4, as since 1.0 */
+    if (log && log_size)
+        log[0] = 0;
+    if ((version != V3DGLSL_VERSION && version != V3DGLSL_VERSION_DEVICE) ||
+        (op != V3DGLSL_LINK && op != V3DGLSL_QUIT && op != V3DGLSL_COMPILE && op != V3DGLSL_LINK32 &&
+         op != V3DGLSL_LINK_BOUND && op != V3DGLSL_LINK_A2C) ||
+        ((op == V3DGLSL_LINK || op == V3DGLSL_LINK32 || op == V3DGLSL_LINK_BOUND || op == V3DGLSL_LINK_A2C) &&
+         (!vs || !fs || !out_path)) ||
+        (op == V3DGLSL_LINK_BOUND && !bindings) || (op == V3DGLSL_COMPILE && !vs == !fs) ||
+#ifdef V3DGLSLC_VC4
+        (dev != V3DGLSL_DEVICE_V3D42 && dev != V3DGLSL_DEVICE_VC4) ||
+        (dev == V3DGLSL_DEVICE_VC4 && (op == V3DGLSL_LINK32 || op == V3DGLSL_LINK_A2C))
+#else
+        dev != V3DGLSL_DEVICE_V3D42
+#endif
+    ) {
+        log_add(log, log_size, "the compiler does not understand this request", NULL);
+        return 3;
+    }
+    if (op == V3DGLSL_QUIT) {
+        *quit = 1;
+        return 0;
+    }
+    if (use_device((int)dev) < 0) {
+        log_add(log, log_size, "the compiler could not make a context for this GPU", NULL);
+        return 2;
+    }
+    if (op == V3DGLSL_COMPILE) {
+        /* The front end only: GL_COMPILE_STATUS and the shader's info log. */
+        int ok;
+        GLuint s = compile_src(vs ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER, vs ? "vertex shader" : "fragment shader",
+                               vs ? vs : fs, &ok, NULL, 0);
+        char info[2048];
+        info[0] = 0;
+        glGetShaderInfoLog(s, sizeof(info), NULL, info);
+        log_add(log, log_size, info, NULL);
+        glDeleteShader(s);
+        return ok ? 0 : 1;
+    }
+    write_mode = op == V3DGLSL_LINK32 ? WRITE_WIDE : op == V3DGLSL_LINK_A2C ? WRITE_A2C : WRITE_PLAIN;
+    link_bindings = op == V3DGLSL_LINK_BOUND ? bindings : NULL;
+#ifdef V3DGLSLC_VC4
+    vc4_req_keys = dev == V3DGLSL_DEVICE_VC4 ? keys : NULL;
+    vc4_req_keys_size = vc4_req_keys ? keys_size : 0;
+#else
+    (void)keys;
+    (void)keys_size;
+#endif
+    result = link_pair("vertex shader", "fragment shader", vs, fs, out_path, log, log_size) ? 0 : 1;
+    link_bindings = NULL;
+#ifdef V3DGLSLC_VC4
+    vc4_req_keys = NULL;
+#endif
+    return result;
+}
+
+#ifndef __amigaos__
+/* SERVE on the host, the PC's side of the A1200's v3dglslc-remote
+ * (tools/amictl/compile_bridge.py runs it): the Amiga server's requests as
+ * frames on stdin, each answered on stdout, until stdin ends. Big-endian
+ * u32s; a string is its length (0xffffffff: NULL) and its bytes.
+ *   request: "V2Q1", version, op, device, vs, fs, bindings, keys, out_path
+ *   answer:  "V2A1", result, log
+ * ("V2": ogles2's, not ogles3's "V3" frames, which carry other fields.) A
+ * QUIT is answered and the compiler goes on: the bridge ends it itself. The
+ * compiler's own messages go to stderr: stdout is the frames'. */
+static int read_u32(FILE *f, uint32_t *v)
+{
+    uint8_t b[4];
+    if (fread(b, 1, 4, f) != 4)
+        return 0;
+    *v = (uint32_t)b[0] << 24 | (uint32_t)b[1] << 16 | (uint32_t)b[2] << 8 | b[3];
+    return 1;
+}
+
+static void write_u32(FILE *f, uint32_t v)
+{
+    uint8_t b[4] = { (uint8_t)(v >> 24), (uint8_t)(v >> 16), (uint8_t)(v >> 8), (uint8_t)v };
+    fwrite(b, 1, 4, f);
+}
+
+/* A string, NUL-terminated (malloc'd), or NULL; FALSE at the input's end. */
+static int read_str(FILE *f, char **s, uint32_t *n)
+{
+    if (!read_u32(f, n))
+        return 0;
+    *s = NULL;
+    if (*n == 0xffffffffu) {
+        *n = 0;
+        return 1;
+    }
+    if (!(*s = malloc((size_t)*n + 1)) || fread(*s, 1, *n, f) != *n)
+        return 0;
+    (*s)[*n] = 0;
+    return 1;
+}
+
+static int serve_stdio(void)
+{
+    static char log[16384];
+    FILE *out;
+    int fd = dup(1), served = 0;
+    dup2(2, 1);
+    if (fd < 0 || !(out = fdopen(fd, "wb")))
+        return 20;
+    fprintf(stderr, "v3dglslc: serving on stdin (%s)\n", v3dglslc_stamp);
+    for (;;) {
+        char magic[4], *s[5] = { 0 };
+        uint32_t version, op, dev, n[5];
+        int k, ok, quit = 0;
+        if (fread(magic, 1, 4, stdin) != 4)
+            break;
+        ok = !memcmp(magic, "V2Q1", 4) && read_u32(stdin, &version) && read_u32(stdin, &op) &&
+             read_u32(stdin, &dev);
+        for (k = 0; ok && k < 5; k++)
+            ok = read_str(stdin, &s[k], &n[k]);
+        if (!ok) {
+            fprintf(stderr, "v3dglslc: unreadable request\n");
+            return 20;
+        }
+        k = handle(version, op, dev, s[0], s[1], s[4], s[2], s[3], n[3], log, sizeof(log), &quit);
+        fwrite("V2A1", 1, 4, out);
+        write_u32(out, (uint32_t)k);
+        write_u32(out, (uint32_t)strlen(log));
+        fwrite(log, 1, strlen(log), out);
+        fflush(out);
+        for (k = 0; k < 5; k++)
+            free(s[k]);
+        served++;
+    }
+    fprintf(stderr, "v3dglslc: server done, %d request(s)\n", served);
+    return 0;
+}
+#endif
+
 #ifdef __amigaos__
 /* A request goes back to its sender; one without a reply port (a QUIT sent
  * from ogles2.library's expunge, which cannot wait) is ours to free. */
@@ -535,61 +686,14 @@ static int serve(void)
         WaitPort(port);
         while ((r = (struct V3DGLSLRequest *)GetMsg(port))) {
             /* Version 1: the Pi 4 (device 42), as since 1.0; version 2 names
-             * the GPU (docs/PI3_PLAN.md §4.5). */
-            ULONG dev = r->version == V3DGLSL_VERSION_DEVICE ? r->device : V3DGLSL_DEVICE_V3D42;
-            if (r->log && r->log_size)
-                r->log[0] = 0;
-            if ((r->version != V3DGLSL_VERSION && r->version != V3DGLSL_VERSION_DEVICE) ||
-                (r->op != V3DGLSL_LINK && r->op != V3DGLSL_QUIT && r->op != V3DGLSL_COMPILE &&
-                 r->op != V3DGLSL_LINK32 && r->op != V3DGLSL_LINK_BOUND && r->op != V3DGLSL_LINK_A2C) ||
-                ((r->op == V3DGLSL_LINK || r->op == V3DGLSL_LINK32 || r->op == V3DGLSL_LINK_BOUND ||
-                  r->op == V3DGLSL_LINK_A2C) &&
-                 (!r->vs || !r->fs || !r->out_path)) ||
-                (r->op == V3DGLSL_LINK_BOUND && !r->bindings) ||
-                (r->op == V3DGLSL_COMPILE && !r->vs == !r->fs) ||
-#ifdef V3DGLSLC_VC4
-                (dev != V3DGLSL_DEVICE_V3D42 && dev != V3DGLSL_DEVICE_VC4) ||
-                (dev == V3DGLSL_DEVICE_VC4 && (r->op == V3DGLSL_LINK32 || r->op == V3DGLSL_LINK_A2C))
-#else
-                dev != V3DGLSL_DEVICE_V3D42
-#endif
-            ) {
-                log_add(r->log, r->log_size, "the compiler does not understand this request", NULL);
-                r->result = 3;
-            } else if (r->op != V3DGLSL_QUIT && use_device((int)dev) < 0) {
-                log_add(r->log, r->log_size, "the compiler could not make a context for this GPU", NULL);
-                r->result = 2;
-            } else if (r->op == V3DGLSL_QUIT) {
-                r->result = 0;
-                quit = 1;
-            } else if (r->op == V3DGLSL_COMPILE) {
-                /* The front end only: GL_COMPILE_STATUS and the shader's info log. */
-                int ok;
-                GLuint s = compile_src(r->vs ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER,
-                                       r->vs ? "vertex shader" : "fragment shader",
-                                       r->vs ? r->vs : r->fs, &ok, NULL, 0);
-                char info[2048];
-                info[0] = 0;
-                glGetShaderInfoLog(s, sizeof(info), NULL, info);
-                log_add(r->log, r->log_size, info, NULL);
-                glDeleteShader(s);
-                r->result = ok ? 0 : 1;
-            } else {
-                write_mode = r->op == V3DGLSL_LINK32 ? WRITE_WIDE : r->op == V3DGLSL_LINK_A2C ? WRITE_A2C
-                                                                                  : WRITE_PLAIN;
-                link_bindings = r->op == V3DGLSL_LINK_BOUND ? r->bindings : NULL;
-#ifdef V3DGLSLC_VC4
-                vc4_req_keys = dev == V3DGLSL_DEVICE_VC4 ? r->vc4_keys : NULL;
-                vc4_req_keys_size = vc4_req_keys ? r->vc4_keys_size : 0;
-#endif
-                r->result = link_pair("vertex shader", "fragment shader", r->vs, r->fs, r->out_path,
-                                      r->log, r->log_size) ? 0 : 1;
-                link_bindings = NULL;
-#ifdef V3DGLSLC_VC4
-                vc4_req_keys = NULL;
-#endif
+             * the GPU and carries VC4's keys (docs/PI3_PLAN.md §4.5): read
+             * only from a version-2 request (an older sender's ends before). */
+            int v2 = r->version == V3DGLSL_VERSION_DEVICE;
+            r->result = handle(r->version, r->op, v2 ? r->device : V3DGLSL_DEVICE_V3D42, r->vs, r->fs, r->out_path,
+                               r->op == V3DGLSL_LINK_BOUND ? r->bindings : NULL, v2 ? r->vc4_keys : NULL,
+                               v2 ? r->vc4_keys_size : 0, r->log, r->log_size, &quit);
+            if (r->result != 3 && r->result != 2 && r->op != V3DGLSL_QUIT && r->op != V3DGLSL_COMPILE)
                 served++;
-            }
             done(r);
         }
     }
@@ -1073,6 +1177,8 @@ int main(int argc, char **argv)
 
 #ifdef __amigaos__
     int server = argc == 2 && !strcmp(argv[1], "SERVER");
+#else
+    int server = argc == 2 && !strcmp(argv[1], "SERVE"); /* frames on stdin: serve_stdio */
 #endif
     while (first + 1 < argc && argv[first][0] == '-') {
         if (!strcmp(argv[first], "-d"))
@@ -1120,13 +1226,15 @@ int main(int argc, char **argv)
         set_option(device == 21 ? "VC4_DEBUG" : "V3D_DEBUG", debug_flags);
     }
 
-#ifdef __amigaos__
     /* The server makes each GPU's context when a request first names it. */
     if (server) {
         vc4_listing = 0;
+#ifdef __amigaos__
         return serve();
-    }
+#else
+        return serve_stdio();
 #endif
+    }
     if (use_device(device) < 0)
         return 20;
     fprintf(stderr, "v3dglslc: renderer %s\n", (const char *)_mesa_GetString(GL_RENDERER));

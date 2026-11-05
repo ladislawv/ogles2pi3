@@ -19,7 +19,11 @@
 #ifndef V3DGLSL_PORT_H
 #define V3DGLSL_PORT_H
 
+/* V3DGLSL_OPS_ONLY: the constants alone, for code without Exec (the host
+ * compiler's SERVE, tools/amictl/compile_bridge.py's peer). */
+#ifndef V3DGLSL_OPS_ONLY
 #include <exec/ports.h>
+#endif
 
 #define V3DGLSL_PORT_NAME "v3dglsl compiler"
 #define V3DGLSL_VERSION   1 /* the Raspberry Pi 4's requests, as since 1.0: device 42 */
@@ -46,6 +50,7 @@
                               * program's hash (v3dp/FORMAT.md). A compiler older than this
                               * answers 3. */
 
+#ifndef V3DGLSL_OPS_ONLY
 struct V3DGLSLRequest
 {
     struct Message msg;   /* mn_ReplyPort: the sender's */
@@ -65,5 +70,6 @@ struct V3DGLSLRequest
                            * (tools/v3dglslc/vc4_variants.c); the file is written anew with all */
     ULONG vc4_keys_size;  /* bytes */
 };
+#endif
 
 #endif

@@ -865,7 +865,17 @@ emulations add their own (LOD bias, LOD clamp, clip z).
   shaders-swizzles shaders-texture_functions state_query texture uniform_api vertex_arrays`,
   then the 4x MSAA multisample run (the script does it only without arguments: `run
   multisample "MSAA=1" multisample-msaa`); if `shaders-scoping` stops the Amiga again, it is a
-  finding of its own (October's run passed it).
+  finding of its own (October's run passed it). **The PC compile bridge is ported (2026-11-05)**,
+  so the rest compiles its shaders on the PC (about 80 minutes a full run, as in `ogles3`, instead
+  of hours): `p2_deqp.sh` starts the package's `v3dglslc-remote` on the station (it takes the
+  compiler's port, `NOFALLBACK`: nothing compiles on the A1200) and needs
+  `python3 tools/amictl/compile_bridge.py` running in WSL first (`PC=0`: the A1200's compiler,
+  as before). The host `v3dglslc` has a `SERVE` mode for it (the requests as frames on stdin;
+  one request handler with the Amiga server's), the frames are this repository's (`V2`: the
+  version, the device and VC4's keys; `ogles3`'s carry other fields), and
+  `compile_bridge.py --check` gives the command line's files byte for byte (8 of 8: the Pi 4's
+  test programs, and on the Pi 3 a plain link, a bound one and one with keys). Untried on the
+  A1200 until it answers again.
 - **Program binaries:** `OES_get_program_binary`'s binary is the `.v3dp` file
   (`GL_PROGRAM_BINARY_V3DP_PISTORM`, `program.c`). The token stays one for both GPUs: a binary for
   the other GPU fails to load (device field), which GLES2 allows, and the program then compiles
@@ -1179,8 +1189,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    runs on it.
 2. P2's backend interface and the MIT rewrite of the shared front end's PiStorm3D parts, on
    the Pi 4 card (PD7 decided: option 1): steps 1 to 8 done (§5.1, §5.3); the acceptance done
-   but for dEQP's result (§5.1). Before the next dEQP run: the PC compile bridge ported here
-   (the A1200's dEQP shaders compiled on the PC, as in `ogles3`).
+   but for dEQP's result (§5.1); the PC compile bridge for its rest is ported (§5.1), untried on
+   the A1200 until it answers again.
 3. P4: the limits are settled (§4.1: `-L`, the VC4 backend's caps take them); the corpus
    compiled for VC4 as a whole is done (36 of 36, §4.3, with the draw-buffers variants of patch
    0016); variants compile from given keys (`-k`, patch 0017, §4.2); the request's device field
