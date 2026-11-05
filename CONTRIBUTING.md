@@ -143,6 +143,24 @@ The server accepts only the allowed addresses and the token, logs every command,
 stay on the LAN (do not forward port 6800). Ask the machine's owner before rebooting it or
 changing its system files.
 
+### dEQP and the PC compile bridge
+
+dEQP-GLES2's must-pass list runs on the Amiga as package `m7-1` (`tests/a1200/p2_deqp.sh`
+runs it a group at a time, with a summary beside the last run of each group). Its programs'
+shaders are compiled on the PC, not by the Amiga's `v3dglslc` (about 80 minutes a run instead
+of hours): start `python3 tools/amictl/compile_bridge.py` in WSL first (it runs the host
+`v3dglslc SERVE`; `--check` tests it without the Amiga), and the script starts the package's
+`v3dglslc-remote` on the station, which takes the compiler's port and forwards each request
+(`NOFALLBACK`: nothing compiles on the Amiga). `PC=0` uses the Amiga's compiler instead.
+
+### Probes
+
+`ENV:OGLES2/Probe` holds letters, each a probe for the tests (they change what the library
+does; never for applications): `context.c` lists them. Two serve the Pi 3 port: `V` logs how
+many VC4 shader keys each program's draws need, `R` writes the keys themselves to
+`T:ogles2-vc4keys/<hash>.keys`, which `tools/v3dglslc/test/vc4_corpus.sh` (`KEYS=<dir>`)
+compiles a program's variants for.
+
 ### The speed comparison
 
 `tests/perf` draws the same gears scene with ogles2 (`gears_gles2`) and with PiStorm3D 29.1's
