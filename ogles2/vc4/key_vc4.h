@@ -30,6 +30,10 @@
 #ifndef GL_ETC1_RGB8_OES
 #define GL_ETC1_RGB8_OES 0x8D64
 #endif
+#ifndef GL_DEPTH_STENCIL_OES
+#define GL_DEPTH_STENCIL_OES 0x84F9
+#define GL_UNSIGNED_INT_24_8_OES 0x84FA
+#endif
 
 /* pipe_format values the keys use */
 #define VC4K_R32_FLOAT 21
@@ -45,6 +49,8 @@
 #define VC4K_A8_UNORM 316
 #define VC4K_L8A8_UNORM 319
 #define VC4K_ETC1_RGB8 186
+#define VC4K_S8_UINT_Z24_UNORM 274 /* depth and stencil textures: stencil in the low byte */
+#define VC4K_X8Z24_UNORM 278       /* depth textures (16-bit ones too: VC4 samples no Z16) */
 
 /* How a GL texture format is stored on VC4 and sampled: the TMU's type
  * (VC4_TEX_*: vc4core.h), bytes a texel (a 4x4 block for ETC1), the key's

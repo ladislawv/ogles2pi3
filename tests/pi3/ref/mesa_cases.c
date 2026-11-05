@@ -235,6 +235,45 @@ int main(int argc, char **argv)
     glDisable(GL_DEPTH_TEST);
     save("pclear");
 
+    {
+        GLuint dt, dfb;
+        glGenTextures(1, &dt);
+        glBindTexture(GL_TEXTURE_2D, dt);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, W, H, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glGenFramebuffers(1, &dfb);
+        glBindFramebuffer(GL_FRAMEBUFFER, dfb);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dt, 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            printf("depthtex: the depth-only framebuffer is incomplete: not written\n");
+        } else {
+            glViewport(0, 0, W, H);
+            glClearDepthf(1.0f);
+            glClear(GL_DEPTH_BUFFER_BIT);
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);
+            for (k = 0; k < 3; k++)
+                draw(flat, depth_col[k], depth_tri[k], GL_TRIANGLES, 3);
+            glDisable(GL_DEPTH_TEST);
+            glBindFramebuffer(GL_FRAMEBUFFER, fb);
+            begin();
+            glBindTexture(GL_TEXTURE_2D, dt);
+            glUseProgram(texp);
+            glUniform1i(glGetUniformLocation(texp, "tex"), 0);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, tq_pos);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, tq_uv);
+            glEnableVertexAttribArray(1);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            glDisableVertexAttribArray(1);
+            save("depthtex");
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, fb);
+    }
+
     begin();
     glUseProgram(color);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, attr_pos);

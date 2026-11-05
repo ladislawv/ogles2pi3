@@ -7,6 +7,10 @@
  * LUMINANCE: XXX1; LUMINANCE_ALPHA: XXXW; ALPHA: 000W). RGBA4 is kept in
  * the RGBA4444 texture type, which reads GL's packing in the RGBA8 order, so
  * its key is RGBA8's (Mesa itself stores GL_RGBA4 as RGBA8: the same code).
+ * Depth textures (OES_depth_texture, OES_packed_depth_stencil) are Z24S8
+ * words read as RGBA8888, the depth in the top 24 bits, which the shader
+ * scales (Mesa's ntq_scale_depth_texture); X8Z24 for DEPTH_COMPONENT of
+ * either type, S8_UINT_Z24 for DEPTH_STENCIL, sampled as luminance (XXX1).
  * Checked against the keys Mesa builds by tests/pi3/keys.
  *
  * MIT licence (LICENSE).
@@ -33,7 +37,9 @@ static const struct vc4_tex_format
     lum = {VC4_TEX_ALPHA, 1, 0, VC4K_L8_UNORM, SW(X, X, X, S1)},
     alpha = {VC4_TEX_ALPHA, 1, 0, VC4K_A8_UNORM, SW(S0, S0, S0, W)},
     lumalpha = {VC4_TEX_LUMALPHA, 2, 0, VC4K_L8A8_UNORM, SW(X, X, X, W)},
-    etc1 = {VC4_TEX_ETC1, 8, 1, VC4K_ETC1_RGB8, SW(X, Y, Z, S1)};
+    etc1 = {VC4_TEX_ETC1, 8, 1, VC4K_ETC1_RGB8, SW(X, Y, Z, S1)},
+    depth = {VC4_TEX_RGBA8888, 4, 0, VC4K_X8Z24_UNORM, SW(X, X, X, S1)},
+    depth_stencil = {VC4_TEX_RGBA8888, 4, 0, VC4K_S8_UINT_Z24_UNORM, SW(X, X, X, S1)};
 
 const struct vc4_tex_format *vc4_tex_format(GLenum format, GLenum type)
 {
@@ -54,6 +60,10 @@ const struct vc4_tex_format *vc4_tex_format(GLenum format, GLenum type)
         return type == GL_UNSIGNED_BYTE ? &lumalpha : 0;
     case GL_ETC1_RGB8_OES:
         return &etc1;
+    case GL_DEPTH_COMPONENT:
+        return type == GL_UNSIGNED_SHORT || type == GL_UNSIGNED_INT ? &depth : 0;
+    case GL_DEPTH_STENCIL_OES:
+        return type == GL_UNSIGNED_INT_24_8_OES ? &depth_stencil : 0;
     default:
         return 0;
     }

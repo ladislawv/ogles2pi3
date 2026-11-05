@@ -27,7 +27,7 @@ mkdir -p "$OUT/vc4p"
 "$V" -g 21 -o "$OUT/vc4p" triangle.vert triangle.frag > /dev/null 2>&1 || echo "v3dglslc failed on triangle"
 # the cases of ../ref/cases.h: their states too (-s), the second input at
 # location 1 as mesa_cases.c binds it (-b)
-"$V" -g 21 -b pos,uv -s tex565,texlum,tex4444,tex5551,texla,etc1 -o "$OUT/vc4p" texture.vert texture.frag > /dev/null 2>&1 || echo "v3dglslc failed on texture"
+"$V" -g 21 -b pos,uv -s tex565,texlum,tex4444,tex5551,texla,etc1,texd24,texds,texd16 -o "$OUT/vc4p" texture.vert texture.frag > /dev/null 2>&1 || echo "v3dglslc failed on texture"
 "$V" -g 21 -s depth,blend,lines,stencil,rt565 -o "$OUT/vc4p" flat.vert flat.frag > /dev/null 2>&1 || echo "v3dglslc failed on flat"
 "$V" -g 21 -s points -o "$OUT/vc4p" point.vert flat.frag > /dev/null 2>&1 || echo "v3dglslc failed on point"
 "$V" -g 21 -b pos,col -s ubyte1 -o "$OUT/vc4p" color.vert color.frag > /dev/null 2>&1 || echo "v3dglslc failed on color"

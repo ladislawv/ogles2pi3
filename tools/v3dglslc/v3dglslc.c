@@ -3,7 +3,7 @@
  *   usage: v3dglslc [-d <V3D_DEBUG flags>] [-o <dir>] vs.vert fs.frag [vs2 fs2 ...]
  *          v3dglslc -g 21 [-d <VC4_DEBUG flags>] [-b attr0,attr1,...]
  *                         [-s depth,blend,points,lines,stencil,ubyte1,tex565,texlum,tex4444,
- *                             tex5551,texla,etc1,rt565] [-k KEYFILE] [-o <dir>] vs.vert fs.frag ...
+ *                             tex5551,texla,etc1,rt565,texd24,texds,texd16] [-k KEYFILE] [-o <dir>] vs.vert fs.frag ...
  *            (-k: variants for the vc4 keys in KEYFILE too: vc4_variants.c)
  *            (the Raspberry Pi 3's VC4: see run_pairs_vc4)
  *          v3dglslc SERVER   (AmigaOS: the on-target compiler, v3dp/v3dglsl_port.h)
@@ -750,8 +750,12 @@ static const char *bindings_from_list(const char *list)
 #define VC4_STATE_TEXLA 1024  /* LUMINANCE_ALPHA */
 #define VC4_STATE_ETC1 2048   /* ETC1 */
 #define VC4_STATE_RT565 4096  /* into an RGB565 target: plain, and blending as -s blend */
+#define VC4_STATE_TEXD24 8192 /* a depth texture (OES_depth_texture: DEPTH_COMPONENT, UNSIGNED_INT) */
+#define VC4_STATE_TEXDS 16384 /* a depth and stencil one (OES_packed_depth_stencil) */
+#define VC4_STATE_TEXD16 32768 /* a 16-bit depth texture (DEPTH_COMPONENT, UNSIGNED_SHORT) */
 #define VC4_STATE_TEXTURES (VC4_STATE_TEX565 | VC4_STATE_TEXLUM | VC4_STATE_TEX4444 | VC4_STATE_TEX5551 | \
-                            VC4_STATE_TEXLA | VC4_STATE_ETC1)
+                            VC4_STATE_TEXLA | VC4_STATE_ETC1 | VC4_STATE_TEXD24 | VC4_STATE_TEXDS | \
+                            VC4_STATE_TEXD16)
 /* -s depth,blend,points,lines,stencil,ubyte1,tex565,texlum,tex4444,tex5551,texla,etc1,rt565 */
 static unsigned vc4_states;
 
@@ -936,11 +940,14 @@ static int draw_vc4_reference(GLuint p)
             {VC4_STATE_TEX5551, GL_RGB5_A1, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 0},
             {VC4_STATE_TEXLA, GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 0},
             {VC4_STATE_ETC1, GL_ETC1_RGB8_OES, 0, 0, 16 * 16 / 2},
+            {VC4_STATE_TEXD24, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, 0},
+            {VC4_STATE_TEXDS, GL_DEPTH_STENCIL, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, 0},
+            {VC4_STATE_TEXD16, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, 0},
         };
-        static GLuint t[6];
-        static GLubyte texels2[16 * 16 * 2];
+        static GLuint t[9];
+        static GLubyte texels2[16 * 16 * 4];
         int u, which;
-        for (which = 0; which < 6; which++) {
+        for (which = 0; which < 9; which++) {
             if (!(vc4_states & fmts[which].state))
                 continue;
             if (!t[which]) {
@@ -1200,7 +1207,8 @@ int main(int argc, char **argv)
                           (strstr(a, "tex565") ? VC4_STATE_TEX565 : 0) | (strstr(a, "texlum") ? VC4_STATE_TEXLUM : 0) |
                           (strstr(a, "tex4444") ? VC4_STATE_TEX4444 : 0) | (strstr(a, "tex5551") ? VC4_STATE_TEX5551 : 0) |
                           (strstr(a, "texla") ? VC4_STATE_TEXLA : 0) | (strstr(a, "etc1") ? VC4_STATE_ETC1 : 0) |
-                          (strstr(a, "rt565") ? VC4_STATE_RT565 : 0);
+                          (strstr(a, "rt565") ? VC4_STATE_RT565 : 0) | (strstr(a, "texd24") ? VC4_STATE_TEXD24 : 0) |
+                          (strstr(a, "texds") ? VC4_STATE_TEXDS : 0) | (strstr(a, "texd16") ? VC4_STATE_TEXD16 : 0);
         }
 #endif
         else if (!strcmp(argv[first], "-L")) {

@@ -524,7 +524,8 @@ Linux's vc4 driver where named; nothing from `v3dcore` or PiStorm3D (PD9).
   bytes a texel, the key's format and view swizzle: RGBA8, RGB8 as RGBX8888, RGB565, RGBA4444,
   RGBA5551, LUMINANCE and ALPHA in the ALPHA type, LUMINANCE_ALPHA, BGRA8, ETC1). Checked on
   the PC against the keys Mesa's state tracker and driver build for the same states
-  (`tests/pi3/keys/`, against the `-s` files): **all 28 keys equal Mesa's byte for byte**, and
+  (`tests/pi3/keys/`, against the `-s` files): **all 28 keys equal Mesa's byte for byte** (31
+  with the depth textures' three, 2026-11-05), and
   every key in the files is one of them. Two of Mesa's habits found on the way: the sampler's
   comparison function is filled in (GL's `LEQUAL`) with comparison off, and blending's factors
   are zero when it is off. **Canonical keys** (wraps as `REPEAT`, the comparison function 0)
@@ -1215,9 +1216,11 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    glClears) pixel for pixel; found on the way that a colour-masked clear's vertex variant writes
    no varyings, so a vertex variant must be paired with its fragment one by the inputs (as the
    library does; the tests' loader now too). All cases and a 300-round soak (8,160 jobs) clean.
+   The GPU lock needs no `lock.c`: the VC4 backend keeps its own public semaphore
+   (`"VC4 submit"`, backend_vc4.c), and the Linux tests are the GPU's only user.
    Left: the speed runs again with the heatsink, the emulations'
-   GPU side (§2.1: RGBA64 half floats, the shader's texture tricks), the GPU lock (`lock.c`),
-   and the cause of the not-reset core's lost tiles. Then P5 (the VC4 backend); begun
+   GPU side (§2.1: RGBA64 half floats, the shader's texture tricks), and the cause of the
+   not-reset core's lost tiles. Then P5 (the VC4 backend); begun
    2026-11-05 with what the PC and the Pi 3 can test: `vc4core/os_amiga.c` (written, compiles
    for the 68k, waits for the A1200 with the Pi 3: the device tree's `/soc` ranges and
    dma-ranges, `/aliases`' mailbox, fast RAM as GPU memory cleaned by `CachePreDMA`, the system
@@ -1273,8 +1276,14 @@ Everything that can run here runs here first (the developer, 2026-11-03).
      (BGRA and ETC1 arrive converted: stored as RGBA8 and RGB8), the miptree in tiling.c's layout,
      whole levels by `vc4_texture_store`, boxes texel by texel, loads back after a job drew into
      one, renaming, a level as a render target (RGBA8888, BGR565), the TMU's words P0, P1, P2
-     for the uniform stream; float, depth and S3TC textures not stored (left), so
-     `GL_OES_depth_texture` is not offered;
+     for the uniform stream; float and S3TC textures not stored (left). **Depth textures
+     (2026-11-05)**, as Mesa's vc4 has them: Z24S8 words read as RGBA8888 that the shader scales
+     (the key's X8Z24 for `DEPTH_COMPONENT` of either type, S8_UINT_Z24 for `DEPTH_STENCIL`,
+     sampled as luminance: `-s texd24,texds,texd16` in the compiler, the key builder equal to
+     Mesa's); packed from the RAM copies' depth words, a level as a job's depth and stencil image
+     (`tex_zs_surface`), read back after a job; sampled nearest (Mesa filters the word's bytes);
+     `GL_OES_depth_texture` offered. The `depthtex` case on the Pi 3 (the depth case's triangles
+     into a depth texture, then drawn from it) gives Mesa's picture pixel for pixel;
    - framebuffer targets (`fbo_vc4.c`): every depth or stencil renderbuffer a Z24S8 T image
      (the tile buffer loads and stores the two together), a framebuffer object's own pools when
      its frame has more tiles across or down than the context's (`vc4_pools_layout`);

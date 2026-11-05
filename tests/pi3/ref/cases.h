@@ -57,6 +57,11 @@ static const float sten_col[2][4] = {{1, 0, 0, 1}, {0, 1, 0.5f, 1}};
 static const int pclr_box[2][4] = {{10, 10, 60, 40}, {50, 40, 50, 60}};
 static const float pclr_col[4] = {1, 0.6f, 0, 1};
 
+/* depthtex: the depth case's triangles drawn into a 128x128 depth texture
+ * (OES_depth_texture: DEPTH_COMPONENT, UNSIGNED_INT; an FBO with only it),
+ * then that texture drawn as the textured quad (tq_pos, tq_uv below), NEAREST,
+ * CLAMP: its depths as greys. */
+
 /* attrib (color.vert, color.frag): a triangle, its colours unsigned bytes,
  * normalized (attribute 1), smooth shaded. */
 static const float attr_pos[3 * 3] = {-0.8f, -0.8f, 0, 0.8f, -0.6f, 0, 0.0f, 0.85f, 0};

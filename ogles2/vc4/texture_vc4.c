@@ -12,8 +12,12 @@
  * packing, little-endian; LUMINANCE and ALPHA one byte (the TMU's ALPHA type,
  * the key's swizzle tells them apart); LUMINANCE_ALPHA two. BGRA is
  * converted to RGBA by texture.c, so it is stored as RGBA8; ETC1 is decoded
- * there, so it is stored as RGB8. Float, depth and S3TC textures are not
- * stored (left, §2.1).
+ * there, so it is stored as RGB8. Depth textures (their RAM copies hold a
+ * depth word a texel: 16 bits, or 24 bits over the stencil byte) are Z24S8
+ * words, the depth in the top 24 bits, as the tile buffer stores them (a
+ * job draws into one: tex_zs_surface) and the shader reads them (Mesa's);
+ * sampled nearest (filtering would mix the word's bytes). Float and S3TC
+ * textures are not stored (left, §2.1).
  *
  * MIT licence (LICENSE).
  */
@@ -35,6 +39,7 @@ struct vc4_tex
     struct v3d_mem mem;
     struct vc4_texture_layout lay;
     const struct vc4_tex_format *f;
+    int cls;               /* the RAM copies' class (texture_private.h): RGBA8, DEPTH16, DEPTH24 */
 };
 
 #define VT(t) ((struct vc4_tex *)(t)->gpu)
@@ -47,10 +52,24 @@ static void le16(UBYTE *d, ULONG v)
     d[1] = (UBYTE)(v >> 8);
 }
 
-/* n RGBA8 texels into the stored format, as the GPU reads it. */
-static void pack(const struct vc4_tex_format *f, const UBYTE *s, UBYTE *d, ULONG n)
+/* n RAM-copy texels (RGBA8, or depth words) into the stored format, as the
+ * GPU reads it. */
+static void pack(const struct vc4_tex_format *f, int cls, const UBYTE *s, UBYTE *d, ULONG n)
 {
     ULONG i;
+    if (cls == CLASS_DEPTH24 || cls == CLASS_DEPTH16) {
+        const ULONG *w = (const ULONG *)s;
+        for (i = 0; i < n; i++, d += 4) {
+            ULONG v = w[i];
+            if (cls == CLASS_DEPTH16) /* 16 bits to 24, the top bits repeated */
+                v = ((v & 0xffff) << 8 | (v & 0xffff) >> 8) << 8;
+            d[0] = (UBYTE)v;
+            d[1] = (UBYTE)(v >> 8);
+            d[2] = (UBYTE)(v >> 16);
+            d[3] = (UBYTE)(v >> 24);
+        }
+        return;
+    }
     switch (f->hw_type) {
     case VC4_TEX_RGB565:
         for (i = 0; i < n; i++, s += 4, d += 2)
@@ -80,11 +99,16 @@ static void pack(const struct vc4_tex_format *f, const UBYTE *s, UBYTE *d, ULONG
     }
 }
 
-/* One stored texel at p back into RGBA8 (8 bits from fewer: the top bits
- * repeated, as the TMU expands them). */
-static void unpack1(const struct vc4_tex_format *f, const UBYTE *p, UBYTE *d)
+/* One stored texel at p back into the RAM copy's form: RGBA8 (8 bits from
+ * fewer: the top bits repeated, as the TMU expands them), or a depth word. */
+static void unpack1(const struct vc4_tex_format *f, int cls, const UBYTE *p, UBYTE *d)
 {
     ULONG v = (ULONG)p[0] | (ULONG)p[1] << 8;
+    if (cls == CLASS_DEPTH24 || cls == CLASS_DEPTH16) {
+        ULONG w = v | (ULONG)p[2] << 16 | (ULONG)p[3] << 24;
+        *(ULONG *)d = cls == CLASS_DEPTH16 ? w >> 16 : w;
+        return;
+    }
     switch (f->hw_type) {
     case VC4_TEX_RGB565:
         d[0] = (UBYTE)((v >> 8 & 0xf8) | v >> 13);
@@ -158,7 +182,7 @@ void ogles2_vc4_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *sr
     if (!(packed = AllocVec(row * (ULONG)h + 4, MEMF_ANY)))
         return;
     for (j = 0; j < h; j++)
-        pack(g->f, src + (ULONG)j * (ULONG)w * 4, packed + (ULONG)j * row, (ULONG)w);
+        pack(g->f, g->cls, src + (ULONG)j * (ULONG)w * 4, packed + (ULONG)j * row, (ULONG)w);
     lv = &g->lay.level[l];
     base = face_base(g, k);
     if (x == 0 && y == 0 && (ULONG)w == lv->width && (ULONG)h == lv->height) {
@@ -193,7 +217,7 @@ BOOL ogles2_vc4_tex_load(struct OGLES2Texture *t, int k, int l, int x, int y, in
     vc4_os_invalidate(lb, lv->stride * lv->padded_height);
     for (j = 0; j < h; j++)
         for (i = 0; i < w; i++)
-            unpack1(g->f, lb + vc4_texel_offset(lv, g->lay.cpp, (ULONG)(x + i), (ULONG)(y + j)),
+            unpack1(g->f, g->cls, lb + vc4_texel_offset(lv, g->lay.cpp, (ULONG)(x + i), (ULONG)(y + j)),
                     dst + (ULONG)j * stride + (ULONG)i * 4);
     return TRUE;
 }
@@ -221,6 +245,7 @@ BOOL ogles2_vc4_tex_upload(struct OGLES2Texture *t)
     if (!(g = AllocVec(sizeof(*g), MEMF_ANY | MEMF_CLEAR)))
         return FALSE;
     g->f = f;
+    g->cls = level_class(f0, 0);
     vc4_texture_layout(&g->lay, f0->w[0], f0->h[0], f->cpp, (uint32_t)n, faces(t));
     if (ogles2_mem_alloc(&g->mem, g->lay.size) < 0) {
         FreeVec(g);
@@ -290,14 +315,30 @@ BOOL ogles2_vc4_tex_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, 
     return TRUE;
 }
 
-/* No depth textures yet (Mesa samples Z24S8 as RGBA8888: left, §2.1). */
+/* A depth texture's level as a job's depth (and stencil) image, its GPU
+ * copy made first: the tile buffer stores Z24S8 into the level's own
+ * tiling, which the shader then samples (Mesa's depth textures). */
 BOOL ogles2_vc4_tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l, struct OGLES2Surface *s)
 {
+    const struct vc4_tex *g;
+    const struct vc4_level *lv;
+    UBYTE bits;
+    BOOL st;
     (void)ctx;
-    (void)t;
-    (void)l;
-    (void)s;
-    return FALSE;
+    if (!ogles2_texture_depth(t, l, &bits, &st) || !consistent(&t->f[0], l))
+        return FALSE;
+    if ((!VT(t) || l >= (int)VT(t)->lay.levels) && !ogles2_texture_upload(t))
+        return FALSE;
+    if (!(g = VT(t)) || l >= (int)g->lay.levels || g->lay.cpp != 4)
+        return FALSE;
+    lv = &g->lay.level[l];
+    s->addr = (ULONG)face_base(g, 0) + lv->offset;
+    s->bytes = lv->stride * lv->padded_height;
+    s->mem_format = lv->tiling;
+    s->format = 0;
+    s->force_alpha1 = FALSE;
+    s->ub = 0;
+    return TRUE;
 }
 
 static ULONG min_filter(GLenum f)
@@ -346,8 +387,11 @@ BOOL ogles2_vc4_sampler(struct OGLES2Context *ctx, int unit, int kind, ULONG p[3
     cube = faces(t) > 1;
     p[0] = vc4_tex_p0(g->mem.busaddr + g->lay.level[0].offset, g->f->hw_type,
                       mipmapped(t->min_filter) ? (ULONG)(last - first) : 0, cube);
+    /* a depth word is sampled whole: nearest (Mesa filters its bytes) */
     p[1] = vc4_tex_p1(g->f->hw_type, g->lay.width, g->lay.height,
-                      t->mag_filter == GL_NEAREST ? VC4_MAG_NEAREST : VC4_MAG_LINEAR, min_filter(t->min_filter),
+                      t->mag_filter == GL_NEAREST || g->cls != CLASS_RGBA8 ? VC4_MAG_NEAREST : VC4_MAG_LINEAR,
+                      g->cls != CLASS_RGBA8 ? (mipmapped(t->min_filter) ? VC4_MIN_NEAR_MIP_NEAR : VC4_MIN_NEAREST)
+                                            : min_filter(t->min_filter),
                       wrap(t->wrap_s), wrap(t->wrap_t));
     /* P2 (Mesa's vc4_uniforms.c): the cube map stride (PTYPE 1), the base level */
     p[2] = (cube ? 1UL << 30 | (g->lay.face_stride & 0x3ffff000UL) : 0) | ((ULONG)first & 1);

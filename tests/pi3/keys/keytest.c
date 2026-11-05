@@ -247,7 +247,7 @@ int main(int argc, char **argv)
     } else
         failures++;
 
-    printf("texture-texture.vc4p (-b pos,uv -s tex565,texlum,tex4444,tex5551,texla,etc1)\n");
+    printf("texture-texture.vc4p (-b pos,uv -s tex565,texlum,tex4444,tex5551,texla,etc1,texd24,texds,texd16)\n");
     if (load(&f, "texture-texture.vc4p") == 0) {
         static const struct { const char *what; GLenum format, type; } t[] = {
             {"sampler: RGBA, UNSIGNED_BYTE", GL_RGBA, GL_UNSIGNED_BYTE},
@@ -257,6 +257,9 @@ int main(int argc, char **argv)
             {"sampler: RGBA, UNSIGNED_SHORT_5_5_5_1", GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1},
             {"sampler: LUMINANCE_ALPHA", GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE},
             {"sampler: ETC1", GL_ETC1_RGB8_OES, 0},
+            {"sampler: DEPTH_COMPONENT, UNSIGNED_INT", GL_DEPTH_COMPONENT, GL_UNSIGNED_INT},
+            {"sampler: DEPTH_COMPONENT, UNSIGNED_SHORT", GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT},
+            {"sampler: DEPTH_STENCIL, UNSIGNED_INT_24_8", GL_DEPTH_STENCIL_OES, GL_UNSIGNED_INT_24_8_OES},
         };
         unsigned a[2] = {vc4_attr_format(GL_FLOAT, 2, 0), vc4_attr_format(GL_FLOAT, 2, 0)};
         int k;

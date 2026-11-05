@@ -496,6 +496,64 @@ static void case_pclear(void)
     vc4p_free(&p);
 }
 
+/* depthtex: the depth case's triangles into a depth texture (a target with
+ * only depth and stencil, stored in T format: the VC4 backend's depth
+ * textures, texture_vc4.c), then drawn from it as the textured quad: the
+ * fragment variant for an X8Z24 sampler (the shader scales the word's top
+ * 24 bits, Mesa's), NEAREST, CLAMP. */
+static struct vc4_mem zsbuf; /* below, with the jobs case */
+static int begin_target(const struct vc4_target *t);
+static int two_inputs(struct vc4p *p, uint32_t attr1_format, uint32_t tex0_format, const void *a0, uint32_t b0,
+                      uint32_t s0, const void *a1, uint32_t b1, uint32_t s1, uint32_t size, uint32_t mode,
+                      uint32_t count, struct vc4p_draw *d);
+
+static void case_depthtex(void)
+{
+    struct vc4_texture_layout lay;
+    struct vc4p p, tp;
+    struct vc4_target t;
+    struct vc4p_draw d;
+    int k, ok;
+    printf("depthtex (the depth case into a depth texture, then drawn from it)\n");
+    vc4_texture_layout(&lay, W, H, 4, 1, 1);
+    if (lay.size > zsbuf.size) {
+        printf("  a %dx%d depth texture is larger than %u bytes\n", W, H, zsbuf.size);
+        failures++;
+        return;
+    }
+    if (load_flat(&p, "flat-flat.vc4p") < 0 || load_flat(&tp, "texture-texture.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    memset(&t, 0, sizeof t);
+    t.width = W;
+    t.height = H;
+    t.zs.bus = zsbuf.bus + lay.level[0].offset;
+    t.zs.tiling = (uint8_t)lay.level[0].tiling;
+    t.store = VC4_ZS;
+    t.clear = VC4_COLOR | VC4_ZS;
+    t.clear_z = 0xffffffu;
+    vc4_mem_fill(&zsbuf, 0, lay.size, 0x12345678u);
+    ok = begin_target(&t) == 0;
+    for (k = 0; k < 3 && ok; k++)
+        ok = flat(&p, 0, 1, 0, depth_col[k], depth_tri[k], 3, VC4_PRIM_TRIANGLES, 0, 3) == 0;
+    ok = ok && vc4_job_run(&job, 1000000) == 0;
+    if (ok && job.errstat != 0x1000u)
+        printf("  first job: ERRSTAT %08x\n", job.errstat);
+    ok = ok && begin_case(0) == 0 &&
+         two_inputs(&tp, VC4P_FORMAT_R32G32_FLOAT, VC4P_FORMAT_X8Z24_UNORM, tq_pos, 8, 8, tq_uv, 8, 8, sizeof tq_pos,
+                    VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+    if (ok) {
+        d.tex[0][0] = vc4_tex_p0(zsbuf.bus + lay.level[0].offset, VC4_TEX_RGBA8888, 0, 0);
+        d.tex[0][1] = vc4_tex_p1(VC4_TEX_RGBA8888, W, H, VC4_MAG_NEAREST, VC4_MIN_NEAREST, VC4_WRAP_CLAMP,
+                                 VC4_WRAP_CLAMP);
+        ok = vc4p_emit(&job, &d, W, H) == 0;
+    }
+    end_case("depthtex", ok);
+    vc4p_free(&p);
+    vc4p_free(&tp);
+}
+
 static void case_lines(void)
 {
     struct vc4p p;
@@ -1123,7 +1181,7 @@ static void case_overflow(void)
 static const char *const all_cases[] = {"triangle", "texture", "depth",  "blend", "indices", "indices8",
                                         "scissor",  "lines",    "points",  "stencil", "attrib", "textures", "rgb565",
                                         "cube",     "padded",  "msaa",    "jobs",    "rtt",    "overflow",
-                                        "pclear"};
+                                        "pclear",   "depthtex"};
 #define NCASES (int)(sizeof all_cases / sizeof all_cases[0])
 
 /* One case by name; the jobs it ran (0: unknown). */
@@ -1146,6 +1204,10 @@ static int run_case(const char *name)
         case_scissor();
     else if (!strcmp(name, "pclear"))
         case_pclear();
+    else if (!strcmp(name, "depthtex")) {
+        case_depthtex();
+        return 2;
+    }
     else if (!strcmp(name, "lines"))
         case_lines();
     else if (!strcmp(name, "points"))

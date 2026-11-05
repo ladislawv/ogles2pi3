@@ -86,6 +86,7 @@ const struct vc4p_variant *vc4p_find(const struct vc4p *p, uint32_t stage, int p
 #define VC4P_FORMAT_B4G4R4A4_UNORM 304
 #define VC4P_FORMAT_L8A8_UNORM 319
 #define VC4P_FORMAT_ETC1_RGB8 186
+#define VC4P_FORMAT_X8Z24_UNORM 278
 /* The vertex or coordinate variant (not for points) whose attribute slot
  * has format; the fragment variant for triangles (no depth test, blending,
  * stencil test) whose sampler unit has format. */
