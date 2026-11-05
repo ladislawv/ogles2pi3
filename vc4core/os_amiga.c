@@ -112,6 +112,39 @@ static ULONG bus_of(const void *cpu)
     return (ULONG)cpu - dma_cpu + dma_bus;
 }
 
+/* The library has no strcmp. */
+static int same(const char *a, const char *b)
+{
+    while (*a && *a == *b)
+        a++, b++;
+    return *a == *b;
+}
+
+int vc4_os_present(void)
+{
+    static const char *const socs[] = {"brcm,bcm2835", "brcm,bcm2836", "brcm,bcm2837", "brcm,bcm2710"};
+    APTR dt = dtbase, key, p;
+    const char *s;
+    ULONG len, at, k;
+    int found = 0;
+    if (!dt && !(dt = OpenResource((CONST_STRPTR) "devicetree.resource")))
+        return 0;
+    dtbase = dt;
+    if (!(key = DT_OpenKey("/")))
+        return 0;
+    if ((p = DT_FindProperty(key, "compatible")) != 0) {
+        s = (const char *)DT_GetPropValue(p);
+        len = DT_GetPropLen(p);
+        /* a list of NUL-terminated strings */
+        for (at = 0; s && at < len && !found; at += strlen(s + at) + 1)
+            for (k = 0; k < sizeof(socs) / sizeof(socs[0]); k++)
+                if (same(s + at, socs[k]))
+                    found = 1;
+    }
+    DT_CloseKey(key);
+    return found;
+}
+
 uint32_t vc4_os_bus(const void *p)
 {
     return bus_of(p);

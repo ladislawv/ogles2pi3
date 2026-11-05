@@ -32,6 +32,7 @@
 #include "ogles2_internal.h"
 #include "backend.h"
 #include "blake3.h"
+#include "../v3dp/v3dglsl_port.h"
 
 /* The backend's built-in image (backend.h; V3D 4.2's: PiStorm3D's
  * smooth-shaded shaders, ogles2/v3d/program_v3d.c), for clears drawn as
@@ -939,6 +940,8 @@ static struct OGLES2Image *extra_image(struct OGLES2Image *im, struct OGLES2Imag
     if (*slot || *tried)
         return *slot;
     *tried = TRUE;
+    if (ogles2_backend->device != V3DGLSL_DEVICE_V3D42)
+        return 0; /* VC4: the fragment key holds these states (ogles2_image_keyed) */
     for (k = 0; k < FILE_HASH_DIGITS / 2; k++) {
         hex[2 * k] = digits[im->hash[k] >> 4];
         hex[2 * k + 1] = digits[im->hash[k] & 15];
@@ -986,6 +989,132 @@ const struct OGLES2Image *ogles2_image_a2c(struct OGLES2Image *im)
 {
     return extra_image(im, &im->a2c, &im->a2c_tried, ".v3da", "alpha-to-coverage variants",
                        ogles2_compile_program_a2c);
+}
+
+/* A .vc4k of the program `hash`, kept with its file (its variants' keys
+ * point into it), or 0. */
+static struct OGLES2Image *try_keyed(const UBYTE *hash, const char *path)
+{
+    char why[120];
+    struct OGLES2Image *k;
+    UBYTE *file;
+    ULONG len = 0;
+    if (!(file = read_file(path, &len)))
+        return 0;
+    if (!(k = ogles2_v3dp_load(file, len, why, sizeof(why)))) {
+        ogles2_log("draw: %s refused: %s", (ULONG)path, (ULONG)why);
+        FreeVec(file);
+        return 0;
+    }
+    if (memcmp(k->hash, hash, 32)) {
+        ogles2_image_free(k, 0);
+        FreeVec(file);
+        return 0;
+    }
+    k->binary = file;
+    k->binary_len = len;
+    return k;
+}
+
+/* A variant's key as a -k record: the stage (u32, little-endian), then
+ * its key; a vertex one's fs_inputs as a count of 0 (the compiler pairs
+ * it with the fragment variant: tools/v3dglslc/vc4_variants.c). */
+#define VC4_FS_RECORD (4 + 292)
+#define VC4_VS_RECORD (4 + 296)
+static UBYTE *key_record(UBYTE *o, const struct OGLES2Variant *v)
+{
+    ULONG n = 292, k; /* the fragment key; the vertex key up to its fs_inputs */
+    o[0] = v->stage;
+    o[1] = o[2] = o[3] = 0;
+    for (k = 0; k < n; k++)
+        o[4 + k] = v->key[k];
+    if (v->stage == OGLES2_VARIANT_FS)
+        return o + VC4_FS_RECORD;
+    o[4 + 292] = o[4 + 293] = o[4 + 294] = o[4 + 295] = 0;
+    return o + VC4_VS_RECORD;
+}
+
+const struct OGLES2Image *ogles2_image_keyed(struct OGLES2Context *ctx, struct OGLES2Image *im, const UBYTE *keys,
+                                             ULONG size)
+{
+    static const char digits[] = "0123456789abcdef";
+    char hex[FILE_HASH_DIGITS + 1], path[96];
+    struct OGLES2Image *k;
+    const char *dirs[3];
+    UBYTE *recs, *o;
+    char *log;
+    ULONG h = 2166136261UL, n, i;
+    int d;
+    for (i = 0; i < FILE_HASH_DIGITS / 2; i++) {
+        hex[2 * i] = digits[im->hash[i] >> 4];
+        hex[2 * i + 1] = digits[im->hash[i] & 15];
+    }
+    hex[FILE_HASH_DIGITS] = 0;
+    dirs[0] = "PROGDIR:shaders/";
+    dirs[1] = "PROGDIR:";
+    dirs[2] = ogles2_cache_dir();
+    if (!im->keyed && !im->keyed_tried) {
+        im->keyed_tried = TRUE;
+        for (d = 0; d < 3 && !im->keyed; d++) {
+            strcpy(path, dirs[d]);
+            strcat(path, hex);
+            strcat(path, ".vc4k");
+            im->keyed = try_keyed(im->hash, path);
+        }
+        if (im->keyed)
+            ogles2_log("draw: program %s: %ld variants for other draws (%s)", (ULONG)hex,
+                       (LONG)im->keyed->nvariants, (ULONG)path);
+    }
+    if (!keys)
+        return im->keyed;
+    /* Each set of keys once: a compile that did not give the variant is not
+     * tried again (the draw uses the closest, logged). */
+    for (i = 0; i < size; i++)
+        h = (h ^ keys[i]) * 16777619UL;
+    for (i = 0; i < im->nkeyed_req; i++)
+        if (im->keyed_req[i] == h)
+            return im->keyed;
+    if (im->nkeyed_req < 16)
+        im->keyed_req[im->nkeyed_req++] = h;
+    if (!im->vs_src || !im->fs_src || !ogles2_compiler_installed())
+        return im->keyed;
+    /* The keys of the variants it has (fragment and vertex: the compiler
+     * makes each coordinate twin), then the new ones. */
+    n = 0;
+    if (im->keyed)
+        for (i = 0; i < im->keyed->nvariants; i++)
+            if (im->keyed->variants[i].key && im->keyed->variants[i].stage != OGLES2_VARIANT_CS)
+                n++;
+    if (!(recs = AllocVec(n * VC4_VS_RECORD + size + 4, MEMF_ANY)) ||
+        !(log = AllocVec(1024, MEMF_ANY | MEMF_CLEAR))) {
+        if (recs)
+            FreeVec(recs);
+        return im->keyed;
+    }
+    o = recs;
+    if (im->keyed)
+        for (i = 0; i < im->keyed->nvariants; i++)
+            if (im->keyed->variants[i].key && im->keyed->variants[i].stage != OGLES2_VARIANT_CS)
+                o = key_record(o, &im->keyed->variants[i]);
+    memcpy(o, keys, size);
+    o += size;
+    strcpy(path, dirs[2]);
+    strcat(path, hex);
+    strcat(path, ".vc4k");
+    k = 0;
+    if (ogles2_compile_program_keys(im->vs_src, im->fs_src, im->bind_src, path, recs, (ULONG)(o - recs), log, 1024))
+        k = try_keyed(im->hash, path);
+    else
+        ogles2_log("draw: the compiler made no variants for program %s's draw: %s", (ULONG)hex, (ULONG)log);
+    FreeVec(log);
+    FreeVec(recs);
+    if (k) {
+        ogles2_log("draw: program %s: %ld variants for other draws, compiled (%s)", (ULONG)hex, (LONG)k->nvariants,
+                   (ULONG)path);
+        ogles2_image_free(im->keyed, ctx); /* its code: after the open job */
+        im->keyed = k;
+    }
+    return im->keyed;
 }
 
 /* After an image is set: attribute locations, uniform locations, constant
@@ -1104,6 +1233,8 @@ void ogles2_glLinkProgram(struct OGLES2Context *ctx, GLuint program)
         ;
     if (!im) {
         im = load_image(p, hash, hex, bindings);
+        if (im && bindings && ogles2_backend->device != V3DGLSL_DEVICE_V3D42)
+            im->bind_src = dup_text(bindings, str_len(bindings)); /* ogles2_image_keyed's compiles */
         if (bindings)
             FreeVec(bindings);
         bindings = 0;
@@ -1181,7 +1312,8 @@ BOOL ogles2_program_image(struct OGLES2Program *p, const struct OGLES2Image *im)
 
 BOOL ogles2_program_builtin(struct OGLES2Program *p)
 {
-    return ogles2_program_image(p, ogles2_builtin_image());
+    const struct OGLES2Image *im = ogles2_builtin_image();
+    return im && ogles2_program_image(p, im); /* VC4's: none before the device is open */
 }
 
 void ogles2_program_builtin_free(struct OGLES2Program *p)
@@ -1351,7 +1483,15 @@ void ogles2_glProgramBinaryOES(struct OGLES2Context *ctx, GLuint program, GLenum
         set_log(p, "the program binary was refused: ", "empty");
         return;
     }
-    if (!(im = ogles2_v3dp_load((const UBYTE *)binary, (ULONG)length, why, sizeof(why)))) {
+    /* Loaded from the copy it keeps (a VC4 image's variants point into
+     * their file: their keys). */
+    if (!(copy = AllocVec((ULONG)length, MEMF_ANY))) {
+        set_log(p, "out of memory", 0);
+        return;
+    }
+    memcpy(copy, binary, (ULONG)length);
+    if (!(im = ogles2_v3dp_load(copy, (ULONG)length, why, sizeof(why)))) {
+        FreeVec(copy);
         ogles2_log("glProgramBinaryOES: refused: %s", (ULONG)why);
         set_log(p, "the program binary was refused: ", why);
         return;
@@ -1361,17 +1501,13 @@ void ogles2_glProgramBinaryOES(struct OGLES2Context *ctx, GLuint program, GLenum
         ;
     if (c) {
         ogles2_image_free(im, 0);
+        FreeVec(copy);
         im = c;
-    } else if ((copy = AllocVec((ULONG)length, MEMF_ANY))) {
-        memcpy(copy, binary, (ULONG)length);
+    } else {
         im->binary = copy;
         im->binary_len = (ULONG)length;
         im->next = ctx->share->images;
         ctx->share->images = im;
-    } else {
-        ogles2_image_free(im, 0);
-        set_log(p, "out of memory", 0);
-        return;
     }
     if (!bind_image(p, im)) {
         unlink_program(ctx, p);

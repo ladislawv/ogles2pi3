@@ -5,8 +5,10 @@
  *
  *  - the draw's shader keys (key_vc4.c) from the GL state, and the
  *    program's variants with those keys (wraps and the comparison function
- *    aside: §4.2); a key the program has no variant for draws with the
- *    closest one, logged once a program (compiling it on the miss: left);
+ *    aside: §4.2): from its file, else from its keyed image (program.c:
+ *    the program's .vc4k, compiled anew by the on-target compiler with the
+ *    draw's keys added, which the draw waits for); a key no compile gives
+ *    draws with the front end's choice, logged once a program;
  *  - each stage's uniform stream from its recipe (vc4's quniform types:
  *    blending, the colour mask and the stencil test are the fragment
  *    shader's on VC4, the TMU's configuration words too);
@@ -40,7 +42,7 @@
 /* The context's draw state (ctx->be_draw). */
 struct vc4_draw
 {
-    const struct OGLES2Image *missed[3]; /* a stage's key missed: logged once a program */
+    const struct OGLES2Image *missed[1]; /* a draw's keys missed: logged once a program */
     const struct OGLES2Image *told_big;  /* a draw VC4 cannot do whole: logged once a program */
 };
 
@@ -472,21 +474,60 @@ static void emit_state(struct OGLES2Context *ctx, struct vc4_ctx *c, const struc
 
 /* ---- one draw ---- */
 
-/* The variant of a stage: by the key, else the front end's (logged once). */
-static const struct OGLES2Variant *pick(struct vc4_draw *d, const struct OGLES2Image *im, UBYTE stage, int k,
-                                        const UBYTE *rec, const struct OGLES2Variant *fs, BOOL points,
-                                        const struct OGLES2Variant *fallback)
+/* The draw's three variants and the images they are in ([0] coordinate,
+ * [1] vertex, [2] fragment): from the program's image or its keyed one. */
+struct chosen
 {
-    static const char *const names[3] = {"coordinate", "vertex", "fragment"};
-    const struct OGLES2Variant *v = ogles2_vc4_variant_find(im, stage, rec + 4, fs, points);
-    if (v)
-        return v;
-    if (d->missed[k] != im) {
-        d->missed[k] = im;
-        ogles2_log("draw: the program has no %s shader variant for this draw's state; the closest is used "
-                   "(logged once a program)", (ULONG)names[k]);
+    const struct OGLES2Variant *v[3];
+    const struct OGLES2Image *in[3];
+};
+
+static BOOL find_all(const struct OGLES2Image *a, const struct OGLES2Image *b, const UBYTE *kfs, const UBYTE *kvs,
+                     BOOL points, struct chosen *ch)
+{
+    static const UBYTE stages[3] = {OGLES2_VARIANT_CS, OGLES2_VARIANT_VS, OGLES2_VARIANT_FS};
+    int k, j;
+    for (k = 2; k >= 0; k--) { /* the fragment variant first: the vertex one pairs with it */
+        const struct OGLES2Image *ims[2];
+        ims[0] = a;
+        ims[1] = b;
+        ch->v[k] = 0;
+        for (j = 0; j < 2 && !ch->v[k]; j++)
+            if (ims[j] && (ch->v[k] = ogles2_vc4_variant_find(ims[j], stages[k], (k == 2 ? kfs : kvs) + 4,
+                                                                 ch->v[2], points)) != 0)
+                ch->in[k] = ims[j];
+        if (!ch->v[k])
+            return FALSE;
     }
-    return fallback;
+    return TRUE;
+}
+
+/* By the keys; else the keyed image, loaded, then compiled with them; else
+ * the front end's choice (logged once a program). */
+static void choose(struct OGLES2Context *ctx, struct vc4_draw *d, const struct OGLES2DrawCall *dc,
+                   const UBYTE *kfs, const UBYTE *kvs, BOOL points, struct chosen *ch)
+{
+    struct OGLES2Image *im = (struct OGLES2Image *)dc->p->image;
+    const struct OGLES2Image *k;
+    UBYTE recs[VC4_KEY_FS_BYTES + VC4_KEY_VS_BYTES];
+    int j;
+    if (find_all(im, 0, kfs, kvs, points, ch))
+        return;
+    if ((k = ogles2_image_keyed(ctx, im, 0, 0)) != 0 && find_all(im, k, kfs, kvs, points, ch))
+        return;
+    memcpy(recs, kfs, VC4_KEY_FS_BYTES);
+    memcpy(recs + VC4_KEY_FS_BYTES, kvs, VC4_KEY_VS_BYTES);
+    if ((k = ogles2_image_keyed(ctx, im, recs, sizeof(recs))) != 0 && find_all(im, k, kfs, kvs, points, ch))
+        return;
+    if (d->missed[0] != im) {
+        d->missed[0] = im;
+        ogles2_log("draw: the program has no shader variants for this draw's state, and none were compiled; "
+                   "the closest are used (logged once a program)");
+    }
+    for (j = 0; j < 3; j++) {
+        ch->v[j] = dc->var[j];
+        ch->in[j] = im;
+    }
 }
 
 static ULONG code_bus(const struct OGLES2Image *im, const struct OGLES2Variant *v)
@@ -508,6 +549,7 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     struct draw_info di;
     struct attr_src src[16];
     const struct OGLES2Variant *cs, *vs, *fs;
+    struct chosen ch;
     UBYTE kfs[VC4_KEY_FS_BYTES], kvs[VC4_KEY_VS_BYTES];
     ULONG code[3], unif[3], rec;
     GLenum mode = dc->mode, fsmode;
@@ -570,12 +612,15 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
         vss.samp[k] = sm.key[0][k];
     vc4_key_fs(kfs, &fss, 1);
     vc4_key_vs(kvs, &vss, 1);
-    fs = pick(d, im, OGLES2_VARIANT_FS, 2, kfs, 0, FALSE, dc->var[2]);
-    vs = pick(d, im, OGLES2_VARIANT_VS, 1, kvs, fs, points, dc->var[1]);
-    cs = pick(d, im, OGLES2_VARIANT_CS, 0, kvs, 0, points, dc->var[0]);
-    code[0] = code_bus(im, cs);
-    code[1] = code_bus(im, vs);
-    code[2] = code_bus(im, fs);
+    choose(ctx, d, dc, kfs, kvs, points, &ch);
+    cs = ch.v[0];
+    vs = ch.v[1];
+    fs = ch.v[2];
+    code[0] = code_bus(ch.in[0], cs);
+    code[1] = code_bus(ch.in[1], vs);
+    code[2] = code_bus(ch.in[2], fs);
+    if (!code[0] || !code[1] || !code[2])
+        goto nomem;
     mark(ctx, 1);
 
     /* the uniform streams */

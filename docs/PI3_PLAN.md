@@ -1227,8 +1227,20 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    - draw (`draw_vc4.c`): the draw's keys built (`key_vc4.c`) and the program's variants
      chosen by them (`ogles2_vc4_variant_find`: wraps and the comparison function aside, a vertex
      variant paired with its fragment variant by the inputs it writes, gl_PointSize's flag tried
-     both ways since the front end does not know it); a key the program has no variant for draws
-     with the front end's choice, logged once a program (compiling it on the miss: left); the
+     both ways since the front end does not know it); **a key the program's file lacks is
+     compiled on the miss**: the program's keyed image (`program.c`, `ogles2_image_keyed`: its
+     `<hash>.vc4k` in `PROGDIR:shaders/`, `PROGDIR:` or the disk cache, loaded at the first miss;
+     else compiled into the cache by a version-2 `LINK` or `LINK_BOUND` request, §4.5, with the
+     records of every variant it held and the draw's two, the bindings kept for it), the draw
+     waiting for the compile; each set of keys requested once (FNV-1a), a key no compile gives
+     drawn with the front end's choice, logged once a program. The records as the library makes
+     them (the file's order, coordinate variants left out, a vertex key's fs_inputs as none)
+     give the same variants as drawing in those states, 5 of 5 programs
+     (`tools/v3dglslc/test/vc4_keys.py`, its second check). The compiler's requests carry the
+     device on the Pi 3 (version 2); the Pi 4's stay version 1. A program from
+     glProgramBinaryOES is loaded from the copy the library keeps (a VC4 image's keys point into
+     its file); no `.v3dw` or `.v3da` is looked for on VC4 (its fragment key holds those states);
+     the
      uniform streams of all of vc4's recipe types GLES2 uses (stencil words as Mesa's
      `vc4_state.c`, the blend colour in the target's byte order, the sample mask, the stream's
      own address); vertex data in the GPU's byte order (the key holds the types; a disabled
@@ -1244,10 +1256,20 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    - framebuffer targets (`fbo_vc4.c`): every depth or stencil renderbuffer a Z24S8 T image
      (the tile buffer loads and stores the two together), a framebuffer object's own pools when
      its frame has more tiles across or down than the context's (`vc4_pools_layout`);
+   - the built-in image (clears of part of a framebuffer, `ogles2_draw_clear`): a program with
+     the V3D one's interface (a matrix uniform, position and colour), compiled for the Pi 3 with
+     the variants of the usual clear states (`tools/clear_vc4`: RGBA8 and BGRA8 targets, depth
+     and stencil tests on or off, colour written or not; keys made by the backend's key builder)
+     and embedded as a `.vc4p` image (`ogles2/vc4/builtin_vc4p.h`, 9,768 bytes) with its
+     sources, so a clear in another state compiles its variants like any program's;
+   - **the choice at device open** (`device.c`): the VC4 backend when the device tree's root
+     `compatible` names a BCM2835, 2836, 2837 or 2710 (`vc4_os_present`), else the V3D one as
+     before (the Pi 4's BCM2711, or a tree that does not say);
    - refused still: glGenerateMipmap and glCopyTex* on the GPU (the front end's CPU paths
-     run), the built-in image (clears of part of a framebuffer: nothing drawn), the internal
-     programs.
+     run), the internal programs.
    vc4core's cases on the Pi 3 still all pass after the split (500-round soak, 13,100 jobs).
-   Next in P5: variants compiled on a miss (version-2 requests with the program's keys, the
-   file written anew and reloaded), the built-in image's clear, then the choice at device open
-   (by the device tree's compatible string) and the first run on the A1200 with the Pi 3.
+   The library is 301,740 bytes. To verify at the first run with the Pi 3 card: that Emu68 maps
+   the peripherals at 0xF2000000 there too (the front end's clock reads the system timer at a
+   fixed address), the winding bit (the V3D backend's rule), the point coordinates' origin.
+   Next in P5: the first run on the A1200 with the Pi 3 card (Emu68's facts, §7; then the test
+   packages); meanwhile the GPU paths of glGenerateMipmap and glCopyTex*.

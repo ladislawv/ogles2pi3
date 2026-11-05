@@ -2,8 +2,9 @@
  * The library's GPU device (docs/PI3_PLAN.md §5.1, P2 step 7): the clock
  * for the timing statistics, and the device's calls through the backend's
  * table (backend.h; V3D 4.2: ogles2/v3d/device_v3d.c). The device open is
- * where a backend is chosen: the V3D 4.2 one (the Pi 4) until the Pi 3's
- * VC4 backend exists (P5: the device tree's V3D node decides).
+ * where a backend is chosen, once: the VC4 one when the device tree names a
+ * VideoCore IV SoC (the Pi 3: ogles2/vc4/), else the V3D 4.2 one (the Pi 4,
+ * and whatever the tree does not tell).
  */
 #include <exec/execbase.h>
 #include <proto/exec.h>
@@ -25,6 +26,14 @@ ULONG ogles2_clock_us(void)
 
 BOOL ogles2_device_open(void)
 {
+    static BOOL chosen;
+    if (!chosen) {
+        chosen = TRUE;
+        if (ogles2_vc4_present()) {
+            ogles2_backend = &ogles2_backend_vc4;
+            ogles2_log("device: a VideoCore IV (the device tree): the VC4 backend");
+        }
+    }
     return ogles2_backend->open();
 }
 

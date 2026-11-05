@@ -2,10 +2,11 @@
  * The VC4 backend's table (ogles2/backend.h, docs/PI3_PLAN.md §5.1, P5):
  * the Raspberry Pi 3's VideoCore IV on vc4core. Here the capabilities, the
  * device, GPU memory and the contexts; the groups in job_vc4.c, draw_vc4.c,
- * texture_vc4.c, fbo_vc4.c and program_vc4.c. Not written yet, and refused:
+ * texture_vc4.c, fbo_vc4.c and program_vc4.c; the built-in image (clears of
+ * part of a framebuffer: tools/clear_vc4). Not written yet, and refused:
  * glGenerateMipmap and glCopyTex* on the GPU (the front end's CPU paths run
- * instead), the built-in image (clears of part of a framebuffer), the
- * internal programs. The device open does not choose this backend yet: the
+ * instead), the internal programs (none needed with one draw buffer: the
+ * copy program comes with glCopyTex* on the GPU). The device open does not choose this backend yet: the
  * Pi 4 runs as before until the A1200 has the Pi 3 card for the first time.
  *
  * Contexts: the front end keeps a context's backend object in ctx->v3d, the
@@ -17,12 +18,14 @@
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <proto/exec.h>
+#include <string.h>
 #include "../ogles2_internal.h"
 #include "../backend.h"
 #include "vc4core.h"
 #include "vc4_os.h"
 #include "v3d_types.h" /* struct v3d_mem: the front end's GPU block */
 #include "backend_vc4.h"
+#include "builtin_vc4p.h"
 
 /* ---- capabilities: §2's limits, §2.1's extensions as far as done ---- */
 
@@ -84,6 +87,11 @@ static struct SignalSemaphore *lock_get(void)
 static const char *renderer(void)
 {
     return "VideoCore IV V3D 2.1 (PiStorm)";
+}
+
+BOOL ogles2_vc4_present(void)
+{
+    return vc4_os_present() ? TRUE : FALSE;
 }
 
 static BOOL dev_open(void)
@@ -230,8 +238,41 @@ static void context_free(struct V3DContext *v)
 static BOOL tex_can_generate(const struct OGLES2Texture *t, int n) { (void)t; (void)n; return FALSE; }
 static int tex_generate(struct OGLES2Texture *t, int n) { (void)t; (void)n; return GL_INVALID_OPERATION; }
 static int tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra) { (void)t; (void)src; (void)stride; (void)w; (void)h; (void)bgra; return GL_INVALID_OPERATION; }
-static const struct OGLES2Image *builtin_image(void) { return 0; }
 static const UBYTE *internal_program(int which, ULONG *len) { (void)which; *len = 0; return 0; }
+
+/* ---- the built-in image: tools/clear_vc4's program, loaded at its first
+ * use (its code in GPU memory, kept while the library is), with its sources
+ * for the variants of clear states it does not hold (ogles2_image_keyed) ---- */
+
+static struct OGLES2Image *builtin;
+static BOOL builtin_failed;
+
+static char *dup_str(const char *s)
+{
+    ULONG n = 0;
+    char *d;
+    while (s[n])
+        n++;
+    if ((d = AllocVec(n + 1, MEMF_ANY)) != 0)
+        memcpy(d, s, n + 1);
+    return d;
+}
+
+static const struct OGLES2Image *builtin_image(void)
+{
+    char why[96];
+    if (!builtin && !builtin_failed && state == 1) {
+        if (!(builtin = ogles2_v3dp_load(builtin_vc4p, sizeof(builtin_vc4p), why, sizeof(why)))) {
+            builtin_failed = TRUE;
+            ogles2_log("device: the built-in clear program was refused: %s", (ULONG)why);
+        } else {
+            builtin->name = "built-in clear (tools/clear_vc4)";
+            builtin->vs_src = dup_str(builtin_vc4_vs);
+            builtin->fs_src = dup_str(builtin_vc4_fs);
+        }
+    }
+    return builtin;
+}
 
 const struct OGLES2Backend ogles2_backend_vc4 = {
     "VC4 (V3D 2.1)",

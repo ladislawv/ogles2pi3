@@ -214,6 +214,9 @@ extern ULONG ogles2_job_gen;
 extern const struct OGLES2Backend *ogles2_backend;
 
 extern const struct OGLES2Backend ogles2_backend_v3d; /* ogles2/v3d/backend_v3d.c */
-extern const struct OGLES2Backend ogles2_backend_vc4; /* ogles2/vc4/backend_vc4.c (P5: not chosen yet) */
+extern const struct OGLES2Backend ogles2_backend_vc4; /* ogles2/vc4/backend_vc4.c */
+/* The machine's GPU is a VideoCore IV (the device tree says so): device.c
+ * chooses the VC4 backend at the first device open. */
+BOOL ogles2_vc4_present(void);
 
 #endif

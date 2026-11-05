@@ -11,6 +11,10 @@
 
 struct vc4_mem;
 
+/* 1 if the machine's GPU is a VideoCore IV (the device tree's root
+ * compatible names a BCM2835, 2836, 2837 or 2710: the Pi 1 to 3, Zero 2),
+ * 0 if not or unknown (a Pi 4's BCM2711 has the V3D 4.2). Touches nothing. */
+int vc4_os_present(void);
 /* The registers mapped and the firmware's mailbox open; the core untouched. */
 int vc4_os_open(void);
 void vc4_os_close(void);

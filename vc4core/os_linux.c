@@ -156,6 +156,11 @@ int vc4_os_gpu_reachable(uint32_t addr, uint32_t size)
     return 1;
 }
 
+int vc4_os_present(void)
+{
+    return 1; /* the tests run on the Pi 3 */
+}
+
 uint32_t vc4_os_bus(const void *p)
 {
     (void)p;

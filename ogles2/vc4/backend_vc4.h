@@ -87,7 +87,7 @@ struct vc4_ctx
 
 #define VC4_CTX(ctx) ((struct vc4_ctx *)(ctx)->v3d)
 
-/* backend_vc4.c */
+/* backend_vc4.c (ogles2_vc4_present: backend.h) */
 void ogles2_vc4_mem_free_after(struct OGLES2Context *user, struct v3d_mem *m);
 ULONG ogles2_vc4_bus(ULONG cpu); /* a CPU address in memory the GPU reaches, as its bus address */
 

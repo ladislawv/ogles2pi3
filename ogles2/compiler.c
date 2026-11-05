@@ -20,6 +20,7 @@
 #include <proto/dos.h>
 #include <string.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 #include "../v3dp/v3dglsl_port.h"
 
 /* Where the compiler is looked for: installed, then beside the program
@@ -206,7 +207,7 @@ static BOOL send(struct V3DGLSLRequest *r)
 /* One request, start to reply: FALSE if the compiler could not be run;
  * else *result is the server's. */
 static BOOL request(ULONG op, const char *vs, const char *fs, const char *bindings, const char *path,
-                    char *log, ULONG log_size, LONG *result)
+                    const void *keys, ULONG keys_size, char *log, ULONG log_size, LONG *result)
 {
     struct V3DGLSLRequest r;
     struct MsgPort *reply;
@@ -222,6 +223,14 @@ static BOOL request(ULONG op, const char *vs, const char *fs, const char *bindin
     r.msg.mn_Length = sizeof(r);
     r.msg.mn_ReplyPort = reply;
     r.version = V3DGLSL_VERSION;
+    if (ogles2_backend->device != V3DGLSL_DEVICE_V3D42) {
+        /* another GPU (the Pi 3): the request names it (V3DGLSL_VERSION_DEVICE);
+         * the Pi 4's stays version 1, as since 1.0 */
+        r.version = V3DGLSL_VERSION_DEVICE;
+        r.device = ogles2_backend->device;
+        r.vc4_keys = keys;
+        r.vc4_keys_size = keys_size;
+    }
     r.op = op;
     r.vs = vs;
     r.fs = fs;
@@ -268,7 +277,16 @@ BOOL ogles2_compile_program(const char *vs, const char *fs, const char *path, ch
                             ULONG log_size)
 {
     LONG result;
-    return request(V3DGLSL_LINK, vs, fs, 0, path, log, log_size, &result) && result == 0;
+    return request(V3DGLSL_LINK, vs, fs, 0, path, 0, 0, log, log_size, &result) && result == 0;
+}
+
+BOOL ogles2_compile_program_keys(const char *vs, const char *fs, const char *bindings, const char *path,
+                                 const void *keys, ULONG keys_size, char *log, ULONG log_size)
+{
+    LONG result;
+    return request(bindings ? V3DGLSL_LINK_BOUND : V3DGLSL_LINK, vs, fs, bindings, path, keys, keys_size, log,
+                   log_size, &result) &&
+           result == 0;
 }
 
 /* As ogles2_compile_program, with glBindAttribLocation's bindings applied
@@ -278,7 +296,7 @@ BOOL ogles2_compile_program_bound(const char *vs, const char *fs, const char *bi
                                   char *log, ULONG log_size)
 {
     LONG result;
-    return request(V3DGLSL_LINK_BOUND, vs, fs, bindings, path, log, log_size, &result) && result == 0;
+    return request(V3DGLSL_LINK_BOUND, vs, fs, bindings, path, 0, 0, log, log_size, &result) && result == 0;
 }
 
 /* The variants for samplers that return 32 bits (the program's .v3dw). A
@@ -287,7 +305,7 @@ BOOL ogles2_compile_program_wide(const char *vs, const char *fs, const char *pat
                                  ULONG log_size)
 {
     LONG result;
-    return request(V3DGLSL_LINK32, vs, fs, 0, path, log, log_size, &result) && result == 0;
+    return request(V3DGLSL_LINK32, vs, fs, 0, path, 0, 0, log, log_size, &result) && result == 0;
 }
 
 /* The alpha-to-coverage variants (the program's .v3da). A compiler older
@@ -296,13 +314,13 @@ BOOL ogles2_compile_program_a2c(const char *vs, const char *fs, const char *path
                                 ULONG log_size)
 {
     LONG result;
-    return request(V3DGLSL_LINK_A2C, vs, fs, 0, path, log, log_size, &result) && result == 0;
+    return request(V3DGLSL_LINK_A2C, vs, fs, 0, path, 0, 0, log, log_size, &result) && result == 0;
 }
 
 int ogles2_compile_shader(BOOL fragment, const char *src, char *log, ULONG log_size)
 {
     LONG result;
-    if (!request(V3DGLSL_COMPILE, fragment ? 0 : src, fragment ? src : 0, 0, 0, log, log_size, &result))
+    if (!request(V3DGLSL_COMPILE, fragment ? 0 : src, fragment ? src : 0, 0, 0, 0, 0, log, log_size, &result))
         return -1;
     return result == 0 ? 1 : result == 1 ? 0 : -1;
 }

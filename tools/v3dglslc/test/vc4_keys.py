@@ -9,6 +9,12 @@ coordinate variants come with their vertex ones), compiled again with -k
 and no -s, and the two files' variant sections compared as sets, byte for
 byte (the other sections too).
 
+Then the same with the records as ogles2.library makes them from a file it
+holds (program.c, key_record: a program's .vc4k compiled anew with its keys
+and a draw's): the fragment and vertex variants' keys in the file's order,
+a vertex record's fs_inputs given as none (the compiler pairs it with the
+fragment record before it).
+
     python3 tools/v3dglslc/test/vc4_keys.py [--compiler PATH]
 
 MIT licence (LICENSE: tools/v3dglslc).
@@ -79,6 +85,24 @@ def key_file(path, out):
     return len(fs), len(vs)
 
 
+def key_file_library(path, out):
+    """The records program.c's key_record writes: file order, coordinate
+    variants left out, a vertex key's fs_inputs as a count of 0."""
+    rec, nf, nv = b"", 0, 0
+    for t, b in sections(path):
+        if t != 7:
+            continue
+        stage = struct.unpack("<I", b[:4])[0]
+        if stage == 4:
+            rec += b[:4 + FS_KEY]
+            nf += 1
+        elif stage == 0:
+            rec += b[:4 + 256 + 32 + 4] + struct.pack("<I", 0)
+            nv += 1
+    open(out, "wb").write(rec)
+    return nf, nv
+
+
 def compile_(v, outdir, bindings, states, keys, vert, frag):
     cmd = [v, "-g", "21"]
     if bindings:
@@ -105,19 +129,20 @@ def main():
             os.makedirs(a, exist_ok=True)
             os.makedirs(b, exist_ok=True)
             fa = compile_(v, a, bindings, states, None, vert, frag)
-            keys = os.path.join(tmp, "keys.bin")
-            nf, nv = key_file(fa, keys)
-            fb = compile_(v, b, bindings, None, keys, vert, frag)
-            sa, sb = sections(fa), sections(fb)
-            va = sorted(x for t, x in sa if t == 7)
-            vb = sorted(x for t, x in sb if t == 7)
-            others_same = [x for x in sa if x[0] != 7] == [x for x in sb if x[0] != 7]
-            same = va == vb and others_same
-            print("%-12s -s %-40s %2d fragment, %2d vertex keys: %d variants with -s, %d with -k: %s" %
-                  (vert + "+" + frag.split(".")[0], states or "(none)", nf, nv, len(va), len(vb),
-                   "identical" if same else "DIFFERENT"))
-            bad += not same
-    print("all identical" if not bad else "%d program(s) differ" % bad)
+            for how, make in (("-k", key_file), ("library's", key_file_library)):
+                keys = os.path.join(tmp, "keys.bin")
+                nf, nv = make(fa, keys)
+                fb = compile_(v, b, bindings, None, keys, vert, frag)
+                sa, sb = sections(fa), sections(fb)
+                va = sorted(x for t, x in sa if t == 7)
+                vb = sorted(x for t, x in sb if t == 7)
+                others_same = [x for x in sa if x[0] != 7] == [x for x in sb if x[0] != 7]
+                same = va == vb and others_same
+                print("%-12s -s %-40s %2d fragment, %2d vertex keys (%s): %d variants with -s, %d from keys: %s" %
+                      (vert + "+" + frag.split(".")[0], states or "(none)", nf, nv, how, len(va), len(vb),
+                       "identical" if same else "DIFFERENT"))
+                bad += not same
+    print("all identical" if not bad else "%d compile(s) differ" % bad)
     return 1 if bad else 0
 
 

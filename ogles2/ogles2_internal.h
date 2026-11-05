@@ -298,6 +298,17 @@ struct OGLES2Image
     struct OGLES2Image *a2c;
     BOOL a2c_tried;
     char *vs_src, *fs_src;
+    /* VC4 (docs/PI3_PLAN.md §4.5): the variants for draws whose keys the
+     * program's file does not hold, the program's .vc4k (ogles2_image_keyed):
+     * loaded at the first such draw, compiled anew with every key so far at
+     * each new one; the requests made (FNV-1a of their keys), so none is
+     * made twice; glBindAttribLocation's aliases the program was linked with
+     * (the hash holds them: the compile needs them again). */
+    struct OGLES2Image *keyed;
+    BOOL keyed_tried;
+    UBYTE nkeyed_req;
+    ULONG keyed_req[16];
+    char *bind_src;
     struct OGLES2Image *next;             /* the context's program cache (program.c) */
 };
 
@@ -389,6 +400,11 @@ const struct OGLES2Variant *ogles2_image_variant(const struct OGLES2Image *im, U
 const struct OGLES2Image *ogles2_image_wide(struct OGLES2Image *im);
 /* program.c: its alpha-to-coverage variants (im->a2c), the same way. */
 const struct OGLES2Image *ogles2_image_a2c(struct OGLES2Image *im);
+/* VC4: the program's keyed image (see above): with keys NULL the one loaded
+ * or found on disk; else compiled now with `keys` (key records as
+ * `v3dglslc -k` reads them) added to its own. NULL: none. */
+const struct OGLES2Image *ogles2_image_keyed(struct OGLES2Context *ctx, struct OGLES2Image *im, const UBYTE *keys,
+                                             ULONG size);
 
 /* The default framebuffer's surface (display.c). */
 struct OGLES2Display
@@ -723,6 +739,10 @@ BOOL ogles2_compile_program(const char *vs, const char *fs, const char *path, ch
 /* The same program's variants for samplers returning 32 bits (its .v3dw). */
 BOOL ogles2_compile_program_bound(const char *vs, const char *fs, const char *bindings, const char *path,
                                   char *log, ULONG log_size);
+/* VC4's link with the variants for `keys` besides the reference draw's
+ * (bindings NULL: none; V3DGLSL_VERSION_DEVICE's vc4_keys). */
+BOOL ogles2_compile_program_keys(const char *vs, const char *fs, const char *bindings, const char *path,
+                                 const void *keys, ULONG keys_size, char *log, ULONG log_size);
 BOOL ogles2_compile_program_wide(const char *vs, const char *fs, const char *path, char *log,
                                  ULONG log_size);
 BOOL ogles2_compile_program_a2c(const char *vs, const char *fs, const char *path, char *log,

@@ -74,6 +74,7 @@ static const struct OGLES2Image builtin_smooth = {
     0, 0,       /* no 32-bit-sampler variants */
     0, 0,       /* no alpha-to-coverage variants */
     0, 0,       /* no sources */
+    0, 0, 0, {0}, 0, /* no keyed variants (VC4's), no bindings */
     0,          /* in no program cache */
 };
 
