@@ -152,6 +152,9 @@ of hours): start `python3 tools/amictl/compile_bridge.py` in WSL first (it runs 
 `v3dglslc SERVE`; `--check` tests it without the Amiga), and the script starts the package's
 `v3dglslc-remote` on the station, which takes the compiler's port and forwards each request
 (`NOFALLBACK`: nothing compiles on the Amiga). `PC=0` uses the Amiga's compiler instead.
+Any other package can use the bridge the same way: `bash tests/a1200/bridge.sh start <package>`
+before `amictl runpkg`, `bash tests/a1200/bridge.sh stop <job>` after (on the Pi 3 card every
+program needs its VC4 variants compiled).
 
 ### Probes
 

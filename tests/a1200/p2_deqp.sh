@@ -53,17 +53,9 @@ echo "P2 acceptance, dEQP-GLES2 must-pass, $(date)" > "$SUM"
 JOB=""
 if [ "${PC:-1}" = 1 ]; then
     [ -f "$PKG/bin/v3dglslc-remote" ] || { echo "no $PKG/bin/v3dglslc-remote: build the package again"; exit 1; }
-    wsl -d Ubuntu-24.04 pgrep -f compile_bridge.py > /dev/null ||
-        { echo "no compile_bridge.py running: start python3 tools/amictl/compile_bridge.py in WSL first"; exit 1; }
-    # the package's drawer on the station (runpkg's: the server's work directory)
-    P="$(amictl run CD | tr -d '\r' | tail -1)/ogles2-m7-1"
-    amictl mkdir "$P" > /dev/null 2>&1
-    amictl mkdir "$P/bin" > /dev/null 2>&1
-    amictl mkdir "$P/libs" > /dev/null 2>&1
-    amictl put "$PKG/bin/v3dglslc-remote" "$P/bin/v3dglslc-remote" > /dev/null || { echo "cannot put v3dglslc-remote"; exit 1; }
-    JOB=$(amictl start -d "$P" bin/v3dglslc-remote WAIT NOFALLBACK "COMPILER=$P/libs/v3dglslc" | tail -1)
+    JOB=$(bash "$HERE/bridge.sh" start m7-1) || { echo "$JOB"; exit 1; }
     echo "shaders compiled on the PC (v3dglslc-remote job $JOB)" | tee -a "$SUM"
-    trap '[ -n "$JOB" ] && { amictl abort "$JOB" > /dev/null 2>&1; amictl wait "$JOB" 30 > /dev/null 2>&1; }' EXIT
+    trap '[ -n "$JOB" ] && bash "$HERE/bridge.sh" stop "$JOB" > /dev/null' EXIT
 fi
 for g in $GROUPS_; do
     run "$g" "" "$g"
