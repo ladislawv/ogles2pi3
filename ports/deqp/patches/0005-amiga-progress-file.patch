@@ -1,0 +1,77 @@
+diff --git a/framework/qphelper/qpTestLog.c b/framework/qphelper/qpTestLog.c
+index b452949..a36e858 100644
+--- a/framework/qphelper/qpTestLog.c
++++ b/framework/qphelper/qpTestLog.c
+@@ -243,6 +243,48 @@ static const qpKeyStringMap s_qpShaderTypeMap[] = {{QP_SHADER_TYPE_VERTEX, "Vert
+ 
+ DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(s_qpShaderTypeMap) == QP_SHADER_TYPE_LAST + 1);
+ 
++/* Amiga port (ports/deqp): each case's start and end appended to the file
++ * the environment variable DEQP_PROGRESS names, opened and closed each time,
++ * so that the PC (tools/amictl/deqp_watch.py) can read it while the run goes
++ * on and knows the case a crash or a hang happened in. */
++#if defined(__amigaos__)
++#include <proto/dos.h>
++/* through AmigaDOS (the global variable, a shared open), as ogles2.library's
++ * log: libnix's getenv and fopen("a") wrote nothing */
++static void qpTestLog_progress(const char *kind, const char *text)
++{
++    char path[256], line[600];
++    BPTR fh;
++    int n;
++    if (GetVar((STRPTR) "DEQP_PROGRESS", (STRPTR)path, sizeof(path), GVF_GLOBAL_ONLY) <= 0)
++        return;
++    n = snprintf(line, sizeof(line), "%s %s\n", kind, text);
++    if (n <= 0)
++        return;
++    if (n >= (int)sizeof(line))
++        n = (int)sizeof(line) - 1;
++    fh = Open((STRPTR)path, MODE_READWRITE);
++    if (!fh)
++        return;
++    Seek(fh, 0, OFFSET_END);
++    Write(fh, line, n);
++    Close(fh);
++}
++#else
++static void qpTestLog_progress(const char *kind, const char *text)
++{
++    const char *path = getenv("DEQP_PROGRESS");
++    FILE *f;
++    if (!path || !*path)
++        return;
++    f = fopen(path, "a");
++    if (!f)
++        return;
++    fprintf(f, "%s %s\n", kind, text);
++    fclose(f);
++}
++#endif
++
+ static void qpTestLog_flushFile(qpTestLog *log)
+ {
+     DE_ASSERT(log && log->outputFile);
+@@ -448,6 +490,7 @@ bool qpTestLog_startCase(qpTestLog *log, const char *testCasePath, qpTestCaseTyp
+         qpTestLog_flushFile(log);
+ 
+     log->isCaseOpen = true;
++    qpTestLog_progress("S", testCasePath);
+ 
+     /* Fill in attributes. */
+     resultAttribs[numResultAttribs++] = qpSetStringAttrib("CasePath", testCasePath);
+@@ -511,6 +554,7 @@ bool qpTestLog_endCase(qpTestLog *log, qpTestResult result, const char *resultDe
+         qpTestLog_flushFile(log);
+ 
+     log->isCaseOpen = false;
++    qpTestLog_progress("E", statusStr);
+ 
+     deMutex_unlock(log->lock);
+     return true;
+@@ -590,6 +634,7 @@ bool qpTestLog_terminateCase(qpTestLog *log, qpTestResult result)
+     qpTestLog_flushFile(log);
+ 
+     log->isCaseOpen = false;
++    qpTestLog_progress("T", resultStr);
+ 
+ #if defined(DE_DEBUG)
+     ContainerStack_reset(&log->containerStack);

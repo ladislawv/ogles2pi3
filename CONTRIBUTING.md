@@ -128,7 +128,9 @@ run.
 
 ### The remote test station
 
-`tools/amictl` lets the PC upload a package, run it, fetch its results and take screenshots,
+`tools/amictl` (the git submodule [ladislawv/amictl](https://github.com/ladislawv/amictl), shared
+with ogles2 and ogles3: `git submodule update --init` after cloning) lets the PC upload a
+package, run it, fetch its results and take screenshots,
 so nobody has to copy files by hand.
 
 1. Make `tools/amictl/station.local` from `station.local.example`: the Amiga's address, a
@@ -148,7 +150,7 @@ changing its system files.
 dEQP-GLES2's must-pass list runs on the Amiga as package `m7-1` (`tests/a1200/p2_deqp.sh`
 runs it a group at a time, with a summary beside the last run of each group). Its programs'
 shaders are compiled on the PC, not by the Amiga's `v3dglslc` (about 80 minutes a run instead
-of hours): start `python3 tools/amictl/compile_bridge.py` in WSL first (it runs the host
+of hours): start `python3 tools/compile_bridge/compile_bridge.py` in WSL first (it runs the host
 `v3dglslc SERVE`; `--check` tests it without the Amiga), and the script starts the package's
 `v3dglslc-remote` on the station, which takes the compiler's port and forwards each request
 (`NOFALLBACK`: nothing compiles on the Amiga). `PC=0` uses the Amiga's compiler instead.

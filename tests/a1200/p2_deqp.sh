@@ -13,14 +13,21 @@
 # compiler is about 80 minutes so): the package's v3dglslc-remote is started
 # on the station first, with NOFALLBACK (nothing compiles on the A1200), and
 # needs the PC's side running in WSL beforehand:
-#   python3 tools/amictl/compile_bridge.py       (WSL; --check tests it alone)
+#   python3 tools/compile_bridge/compile_bridge.py       (WSL; --check tests it alone)
 # PC=0 compiles on the A1200 instead (to exercise the on-target compiler).
+# Each group runs under tools/amictl/deqp_watch.py (amictld 1.4 on the
+# station, a package with dEQP's progress patch): every 15 s a line with the
+# cases done, the case running and for how long, the library's new log lines
+# and the free memory, into $RES/p2-deqp-<date>-watch.txt; a hang or reset is
+# reported with the case it happened in (35 s without an answer), given up
+# after 5 minutes. WATCH=0 runs a group with amictl runpkg instead (blind).
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
 RES=$HERE/results
 PKG=$HERE/out/ogles2-m7-1
 SUM=$RES/p2-deqp-$(date +%Y%m%d-%H%M).txt
+WLOG=${SUM%.txt}-watch.txt
 amictl() { python "$REPO/tools/amictl/amictl.py" "$@"; }
 
 totals() { # a group's result .txt -> "passed/total failed notsup warnings"
@@ -39,7 +46,17 @@ run() { # group, extra Run-M1 arguments, name
     local start new
     start=$(ls -d "$RES"/ogles2-m7-1-* 2>/dev/null | tail -1)
     old=$(before "$3")
-    amictl runpkg "$PKG" -t 14400 -a "LIST=$1 NAME=$3${2:+ $2}" > /dev/null
+    if [ "${WATCH:-1}" = 1 ]; then
+        python "$REPO/tools/amictl/deqp_watch.py" "$PKG" "LIST=$1 NAME=$3${2:+ $2}" --timeout 14400 >> "$WLOG" 2>&1
+        case $? in
+        3) echo "$3: the A1200 hung or reset; the watch's last lines:" | tee -a "$SUM"
+           tail -4 "$WLOG" | tee -a "$SUM"
+           exit 1 ;;
+        4) echo "$3: timed out (4 hours)" | tee -a "$SUM"; exit 1 ;;
+        esac
+    else
+        amictl runpkg "$PKG" -t 14400 -a "LIST=$1 NAME=$3${2:+ $2}" > /dev/null
+    fi
     new=$(ls -d "$RES"/ogles2-m7-1-* 2>/dev/null | tail -1)
     if [ "$new" = "$start" ] || ! grep -q "Test run totals" "$new/results/$3.txt" 2>/dev/null; then
         echo "$3: the run did not finish ($new)" | tee -a "$SUM"
@@ -60,5 +77,6 @@ fi
 for g in $GROUPS_; do
     run "$g" "" "$g"
 done
-[ -z "${*:-}" ] && run multisample "MSAA=1" multisample-msaa
+# the MSAA run: after every group, or with MSAA_TOO=1 after the ones named (a resumed run)
+{ [ -z "${*:-}" ] || [ "${MSAA_TOO:-0}" = 1 ]; } && run multisample "MSAA=1" multisample-msaa
 echo "done: $SUM"

@@ -7,16 +7,21 @@
 ;   With 4x multisampling:         Execute Run-M1 MSAA=1
 ;   Result images in the log:      Execute Run-M1 CASES=... IMAGES=1
 ;   ogles2's own point size test:  Execute Run-M1 TEST=points
+;   Watched from the PC:           Execute Run-M1 CASES=... PROGRESS=1
+;     (tools/amictl/deqp_watch.py): each case's start and end in
+;     RAM:deqp-progress.txt, the library's log in RAM:ogles2.log, both read
+;     while it runs and copied into results/ after.
 ; Nothing is installed. Output goes to results/: <NAME>.txt (what dEQP
 ; prints, with the totals at the end) and <NAME>.qpa (its full log); NAME
 ; is LIST's, else "deqp".
-.key CASES/K,LIST/K,NAME/K,MSAA/K,IMAGES/K,TEST/K
+.key CASES/K,LIST/K,NAME/K,MSAA/K,IMAGES/K,TEST/K,PROGRESS/K
 .def CASES dEQP-GLES2.info.*
 .def LIST ""
 .def NAME ""
 .def MSAA 0
 .def IMAGES 0
 .def TEST ""
+.def PROGRESS 0
 .bra {
 .ket }
 
@@ -65,6 +70,12 @@ Assign LIBS: M7R1:libs ADD
 Assign OGLES2Cache: M7R1:cache
 Avail FLUSH >NIL:
 SetEnv OGLES2/LogFile M7R1:results/ogles2.log
+If {PROGRESS} EQ 1 VAL
+  Delete RAM:deqp-progress.txt RAM:ogles2.log QUIET >NIL:
+  Echo "R $DEQPNAME" >RAM:deqp-progress.txt
+  SetEnv DEQP_PROGRESS RAM:deqp-progress.txt
+  SetEnv OGLES2/LogFile RAM:ogles2.log
+EndIf
 ; C++ with exceptions and deep test code: more stack than the Shell's.
 Stack 1048576
 ; dEQP reads its data from gles2/ in --deqp-archive-dir (its default, ".",
@@ -81,6 +92,11 @@ Echo "  test's shaders are compiled on the Amiga the first time (a pause; kept"
 Echo "  in cache/). Ctrl-C stops it after the current test."
 M7R1:bin/deqp-gles2 $DEQPSEL --deqp-archive-dir=M7R1:bin --deqp-log-filename=M7R1:results/$DEQPNAME.qpa --deqp-log-images=$DEQPIMG --deqp-log-shader-sources=disable --deqp-surface-width=256 --deqp-surface-height=256 --deqp-gl-config-name=$DEQPCFG >M7R1:results/$DEQPNAME.txt
 Echo "$DEQPNAME done" >>M7R1:results/00-progress.txt
+If {PROGRESS} EQ 1 VAL
+  Copy RAM:deqp-progress.txt M7R1:results/ QUIET
+  Copy RAM:ogles2.log M7R1:results/ QUIET
+  UnSetEnv DEQP_PROGRESS
+EndIf
 Lab done
 UnSet DEQPSEL
 UnSet DEQPNAME

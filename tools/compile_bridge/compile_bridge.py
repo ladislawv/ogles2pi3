@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""The PC's side of v3dglslc-remote (tools/amictl/server/v3dglslc_remote.c):
+"""The PC's side of v3dglslc-remote (tools/compile_bridge/v3dglslc_remote.c):
 connects to it on the A1200, compiles each request ogles2.library sends
 there with the host v3dglslc (SERVE: the same requests as frames on its
 stdin, the same files byte for byte) and sends the written files back.
 Ported from ogles3 (its frames carry other fields: these are "V2").
 
-    python3 tools/amictl/compile_bridge.py [--port 6803] [--compiler PATH]
-    python3 tools/amictl/compile_bridge.py --check
+    python3 tools/compile_bridge/compile_bridge.py [--port 6803] [--compiler PATH]
+    python3 tools/compile_bridge/compile_bridge.py --check
 
 Port 6803: ogles3's bridge to the same station uses 6802, and the two must
 not take each other's links. The station's address and token are amictl's
@@ -23,7 +23,7 @@ Frames (big-endian u32s; a string is its length, 0xffffffff for NULL):
   A1200:   "V2R1", version, op, device, vs, fs, bindings, keys, file name
   bridge:  "V2S1", result, log, file count, then each file's name and bytes
 
-MIT licence (tools/amictl/LICENSE).
+MIT licence (tools/amictl/LICENSE, as the station's).
 """
 import os
 import shutil
@@ -36,7 +36,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
-sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "amictl"))  # the station (submodule ladislawv/amictl)
 import amictl  # noqa: E402  (its config: the station's address and token)
 
 # v3dp/v3dglsl_port.h
@@ -70,9 +70,18 @@ class Compiler:
         self.log = open(os.path.join(tempfile.gettempdir(), "compile_bridge.log"), "ab")
 
     def start(self):
-        self.mtime = os.path.getmtime(self.path)
-        self.p = subprocess.Popen([self.path, "SERVE"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                  stderr=self.log)
+        # A compiler being linked again cannot be started for a moment (the
+        # link of 2026-11-05 dropped a dEQP run's link): waited for, up to a
+        # minute, not taken for the end of the link.
+        for _ in range(60):
+            try:
+                self.mtime = os.path.getmtime(self.path)
+                self.p = subprocess.Popen([self.path, "SERVE"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                          stderr=self.log)
+                return
+            except OSError:
+                time.sleep(1)
+        raise OSError("the host compiler %s cannot be started" % self.path)
 
     def restart(self):
         """Ended; the next request starts it again."""

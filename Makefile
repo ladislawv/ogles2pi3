@@ -316,11 +316,11 @@ $(B)/tests/vc4_draw: tests/pi3/vc4core/draw.c tests/pi3/vc4core/vc4p.c tests/pi3
                      $(VC4_SRC:%=vc4core/%.c) $(VC4_HDR) Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(VC4_INC) -o $@ tests/pi3/vc4core/draw.c tests/pi3/vc4core/vc4p.c $(VC4_SRC:%=vc4core/%.c)
-# The shader compiler on the PC (tools/amictl/compile_bridge.py's peer).
-$(B)/amictl/v3dglslc-remote: tools/amictl/server/v3dglslc_remote.c v3dp/v3dglsl_port.h Makefile
+# The shader compiler on the PC (tools/compile_bridge/compile_bridge.py's peer).
+$(B)/amictl/v3dglslc-remote: tools/compile_bridge/v3dglslc_remote.c v3dp/v3dglsl_port.h Makefile
 	@mkdir -p $(dir $@)
 	$(CC) -std=gnu99 -O2 -Wall -Wno-pointer-sign -mcpu=68020 -mcrt=nix20 -fbbb=abcfhilmnprsz0 -Iv3dp \
-	    -o $@ tools/amictl/server/v3dglslc_remote.c
+	    -o $@ tools/compile_bridge/v3dglslc_remote.c
 $(B)/amictl/amictld_host: $(AMICTL_SRC) tools/amictl/server/os_posix.c Makefile
 	@mkdir -p $(dir $@)
 	gcc -std=c99 -O2 -Wall -Wextra -o $@ tools/amictl/server/amictld.c tools/amictl/server/os_posix.c

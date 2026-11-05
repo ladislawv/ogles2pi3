@@ -9,7 +9,7 @@
 # when the package has none) into the package's drawer on the station and
 # starts it there (WAIT NOFALLBACK: nothing compiles on the Amiga, the
 # package's libs/v3dglslc only if the bridge is gone). compile_bridge.py must
-# run in WSL first:  python3 tools/amictl/compile_bridge.py
+# run in WSL first:  python3 tools/compile_bridge/compile_bridge.py
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
@@ -24,7 +24,7 @@ start)
         [ -n "$BIN" ] && [ -f "$BIN" ] || { echo "no v3dglslc-remote: make (it is in the Makefile's all)"; exit 1; }
     fi
     wsl -d Ubuntu-24.04 pgrep -f compile_bridge.py > /dev/null ||
-        { echo "no compile_bridge.py running: start python3 tools/amictl/compile_bridge.py in WSL first"; exit 1; }
+        { echo "no compile_bridge.py running: start python3 tools/compile_bridge/compile_bridge.py in WSL first"; exit 1; }
     P="$(amictl run CD | tr -d '\r' | tail -1)/$NAME" # runpkg's drawer: the server's work directory
     amictl mkdir "$P" > /dev/null 2>&1
     amictl mkdir "$P/bin" > /dev/null 2>&1

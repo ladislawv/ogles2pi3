@@ -4,7 +4,7 @@
  * PC, about 80 minutes a run instead of hours). It owns the compiler's public
  * port (v3dp/v3dglsl_port.h, "v3dglsl compiler"), so the library sends its
  * requests here instead of starting "v3dglslc SERVER";
- * tools/amictl/compile_bridge.py connects on TCP with amictld's token and
+ * tools/compile_bridge/compile_bridge.py connects on TCP with amictld's token and
  * compiles them with the host v3dglslc (SERVE), which writes the same files
  * byte for byte (compile_bridge.py --check). The file comes back and is
  * written where the request says, then the request is replied. Requests of
