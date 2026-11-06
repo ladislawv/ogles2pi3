@@ -23,6 +23,11 @@
  *    65535-vertex part, the attributes moved on); indices must stay below
  *    65536 after the front end's rebasing.
  *
+ * With several colour attachments (EXT_draw_buffers, job_vc4.c) all but the
+ * vertex data and indices is done once a pass, into its binning list: each
+ * pass's fragment variant writes its own output, and may read other varyings,
+ * so its vertex and coordinate variants and its uniform streams are its own.
+ *
  * MIT licence (LICENSE).
  */
 #include <exec/memory.h>
@@ -103,7 +108,8 @@ static BOOL y_down(const struct OGLES2Context *ctx)
 struct samplers
 {
     struct vc4_key_sampler key[2][OGLES2_MAX_STAGE_SAMPLERS];
-    ULONG p[2][OGLES2_MAX_STAGE_SAMPLERS][4]; /* P0, P1, P2; the S16F planes' stride (patch 0018) */
+    ULONG p[2][OGLES2_MAX_STAGE_SAMPLERS][5]; /* P0, P1, P2; the S16F planes' stride (patch 0018);
+                                               * the negative planes' P0 (patch 0022) */
     ULONG first[2][OGLES2_MAX_STAGE_SAMPLERS];
     GLfloat emu[2][OGLES2_MAX_STAGE_SAMPLERS][5]; /* patch 0019's uniforms (ogles2_vc4_sampler) */
     UBYTE n[2];
@@ -183,9 +189,12 @@ static ULONG write_uniforms(struct OGLES2Context *ctx, struct vc4_ctx *c, const 
         case VC4_U_VIEWPORT_Y_SCALE: w = fbits(di->vp_ys); break;
         case VC4_U_VIEWPORT_Z_OFFSET: w = fbits(di->vp_zo); break;
         case VC4_U_VIEWPORT_Z_SCALE: w = fbits(di->vp_zs); break;
-        case VC4_U_TEXTURE_CONFIG_P0: /* patch 0018: a plane in bits 16 and up */
-            w = di->sm->p[si][x][0] + ((d >> 16) & 3) * di->sm->p[si][x][3];
+        case VC4_U_TEXTURE_CONFIG_P0: { /* patch 0018: a plane in bits 16 and up; 0022: 4 to 7 the negatives' */
+            const ULONG *tp = di->sm->p[si][x];
+            ULONG pl = (d >> 16) & 7;
+            w = pl < 4 ? tp[0] + pl * tp[3] : tp[4] + (pl - 4) * tp[3];
             break;
+        }
         case VC4_U_TEXTURE_CONFIG_P1: w = di->sm->p[si][x][1]; break;
         case VC4_U_TEXTURE_CONFIG_P2: /* BSLOD: an explicit LOD (Mesa's: the recipe's bit 16) */
             w = di->sm->p[si][x][2] | ((d >> 16) & 1);
@@ -373,10 +382,9 @@ static ULONG shader_record(struct vc4_ctx *c, const ULONG code[3], const ULONG u
 
 /* ---- state packets ---- */
 
-static void emit_state(struct OGLES2Context *ctx, struct vc4_ctx *c, const struct OGLES2Variant *fs,
+static void emit_state(struct OGLES2Context *ctx, struct vc4_cl *cl, const struct OGLES2Variant *fs,
                        const struct draw_info *di)
 {
-    struct vc4_cl *cl = &c->job[c->build].bcl;
     const struct OGLES2State *s = &ctx->state;
     BOOL flip = ctx->fb_flip, depth_on = (s->caps & OGLES2_CAP_DEPTH_TEST) && ctx->fb_depth_bits;
     BOOL stencil_on = (s->caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits;
@@ -581,10 +589,10 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     struct chosen ch;
     UBYTE kfs[VC4_KEY_FS_BYTES], kvs[VC4_KEY_VS_BYTES];
     ULONG code[3], unif[3], rec;
+    ULONG ib = 0, ilen = 0, imax = 0; /* the draw's 16-bit (or 8-bit) indices, shared by its passes */
     GLenum mode = dc->mode, poly = 0;
     BOOL twoside = FALSE, full = FALSE, points = mode == GL_POINTS;
-    int nslots = p->nslots == 0xff ? 0 : p->nslots, i, k;
-    struct vc4_cl *cl = &c->job[c->build].bcl;
+    int nslots = p->nslots == 0xff ? 0 : p->nslots, i, k, pass;
 
     if (c->bad)
         return FALSE;
@@ -609,7 +617,6 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
             ogles2_job_begin(ctx);
             if (c->bad)
                 return FALSE;
-            cl = &c->job[c->build].bcl;
         }
     }
     if (!(d = draw_state(ctx)) || !im->code_mem)
@@ -620,153 +627,167 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
         goto nomem;
     mark(ctx, 2);
 
-    /* the keys (drawkey_vc4.c); gl_PointSize's flag: points (the variant
-     * search tries both) */
+    /* gl_PointSize's flag in the keys: points (the variant search tries both) */
     if ((s->caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits)
         ogles2_vc4_stencil_words(s, di.stencil, &twoside, &full);
-    ogles2_vc4_draw_keys(ctx, p, mode, c->color_format,
-                         (const struct vc4_key_sampler(*)[OGLES2_MAX_STAGE_SAMPLERS])sm.key, sm.n, points, kfs, kvs);
-    choose_cached(ctx, d, dc, kfs, kvs, points, &ch);
-    cs = ch.v[0];
-    vs = ch.v[1];
-    fs = ch.v[2];
-    code[0] = code_bus(ch.in[0], cs);
-    code[1] = code_bus(ch.in[1], vs);
-    code[2] = code_bus(ch.in[2], fs);
-    if (!code[0] || !code[1] || !code[2])
-        goto nomem;
-    mark(ctx, 1);
-
-    /* the uniform streams */
     di.p = p;
     di.sm = &sm;
-    di.color_format = c->color_format;
     di.vp_xs = (float)ctx->viewport[2] * 0.5f * 16.0f;
     di.vp_ys = (float)ctx->viewport[3] * (y_down(ctx) ? -0.5f : 0.5f) * 16.0f;
     di.vp_zs = (s->depth_range[1] - s->depth_range[0]) * 0.5f;
     di.vp_zo = (s->depth_range[1] + s->depth_range[0]) * 0.5f;
-    for (k = 0; k < 2; k++)
-        if ((k ? fs : vs)->uses_ubo || (!k && cs->uses_ubo))
-            if (!ubo_copy(c, p, k, &di.ubo[k]))
-                goto nomem;
-    unif[0] = write_uniforms(ctx, c, &di, cs);
-    unif[1] = write_uniforms(ctx, c, &di, vs);
-    unif[2] = write_uniforms(ctx, c, &di, fs);
-    if (!unif[0] || !unif[1] || !unif[2])
-        goto nomem;
-    mark(ctx, 3);
-
-    /* the vertex data */
     if (nslots > 8)
         nslots = 8; /* VC4's 8 attributes (caps) */
-    for (i = 0; i < nslots; i++) {
-        GLuint g = p->slot_attrib[i];
-        BOOL ok = g < OGLES2_MAX_VERTEX_ATTRIBS && ctx->array[g].enabled
-                      ? copy_array(ctx, c, &ctx->array[g], dc->first, dc->count, &src[i])
-                      : constant_attrib(ctx, c, g, &src[i]);
-        if (!ok)
-            goto nomem;
-    }
-    mark(ctx, 4);
-    if (!(rec = shader_record(c, code, unif, cs, vs, fs, src, nslots, 0)))
-        goto nomem;
-    mark(ctx, 5);
 
-    emit_state(ctx, c, fs, &di);
-    if (poly && mode == GL_LINES) {
-        /* each triangle's three edges, as 16-bit indices */
-        ULONG n = el ? (ULONG)el->count : (ULONG)dc->count, ntri, t, j = 0, ib, max = 0;
-        UBYTE *x;
-        ntri = poly == GL_TRIANGLES ? n / 3 : n >= 3 ? n - 2 : 0;
-        if (ntri) {
-            if (!(x = claim(c, ntri * 12 + 4, 16, &ib)))
-                goto nomem;
-            for (t = 0; t < ntri; t++) {
-                ULONG v[3], q;
-                v[0] = poly_index(el, poly == GL_TRIANGLES ? 3 * t : poly == GL_TRIANGLE_FAN ? 0 : t);
-                v[1] = poly_index(el, poly == GL_TRIANGLES ? 3 * t + 1 : t + 1);
-                v[2] = poly_index(el, poly == GL_TRIANGLES ? 3 * t + 2 : t + 2);
-                for (q = 0; q < 6; q++, j++) {
-                    ULONG e = v[((q + 1) >> 1) % 3]; /* 0 1, 1 2, 2 0 */
-                    if (e > max)
-                        max = e;
-                    x[2 * j] = (UBYTE)e;
-                    x[2 * j + 1] = (UBYTE)(e >> 8);
+    for (pass = 0; pass < c->npass; pass++) {
+        struct vc4_cl *cl = &ogles2_vc4_pass_job(c, pass)->bcl;
+
+        /* the keys (drawkey_vc4.c) */
+        ogles2_vc4_draw_keys(ctx, p, mode, c->pass_format[pass],
+                             c->npass > 1 ? ogles2_vc4_output_for(im, c->pass_att[pass]) : 0,
+                             (const struct vc4_key_sampler(*)[OGLES2_MAX_STAGE_SAMPLERS])sm.key, sm.n, points, kfs,
+                             kvs);
+        choose_cached(ctx, d, dc, kfs, kvs, points, &ch);
+        cs = ch.v[0];
+        vs = ch.v[1];
+        fs = ch.v[2];
+        code[0] = code_bus(ch.in[0], cs);
+        code[1] = code_bus(ch.in[1], vs);
+        code[2] = code_bus(ch.in[2], fs);
+        if (!code[0] || !code[1] || !code[2])
+            goto nomem;
+        mark(ctx, 1);
+
+        /* the uniform streams */
+        di.color_format = c->pass_format[pass];
+        for (k = 0; k < 2; k++)
+            if (!di.ubo[k] && ((k ? fs : vs)->uses_ubo || (!k && cs->uses_ubo)))
+                if (!ubo_copy(c, p, k, &di.ubo[k]))
+                    goto nomem;
+        unif[0] = write_uniforms(ctx, c, &di, cs);
+        unif[1] = write_uniforms(ctx, c, &di, vs);
+        unif[2] = write_uniforms(ctx, c, &di, fs);
+        if (!unif[0] || !unif[1] || !unif[2])
+            goto nomem;
+        mark(ctx, 3);
+
+        /* the vertex data, once a draw */
+        if (!pass)
+            for (i = 0; i < nslots; i++) {
+                GLuint g = p->slot_attrib[i];
+                BOOL ok = g < OGLES2_MAX_VERTEX_ATTRIBS && ctx->array[g].enabled
+                              ? copy_array(ctx, c, &ctx->array[g], dc->first, dc->count, &src[i])
+                              : constant_attrib(ctx, c, g, &src[i]);
+                if (!ok)
+                    goto nomem;
+            }
+        mark(ctx, 4);
+        if (!(rec = shader_record(c, code, unif, cs, vs, fs, src, nslots, 0)))
+            goto nomem;
+        mark(ctx, 5);
+
+        emit_state(ctx, cl, fs, &di);
+        if (poly && mode == GL_LINES) {
+            /* each triangle's three edges, as 16-bit indices */
+            if (!pass) {
+                ULONG n = el ? (ULONG)el->count : (ULONG)dc->count, ntri, t;
+                UBYTE *x;
+                ntri = poly == GL_TRIANGLES ? n / 3 : n >= 3 ? n - 2 : 0;
+                if (ntri) {
+                    if (!(x = claim(c, ntri * 12 + 4, 16, &ib)))
+                        goto nomem;
+                    for (t = 0; t < ntri; t++) {
+                        ULONG v[3], q;
+                        v[0] = poly_index(el, poly == GL_TRIANGLES ? 3 * t : poly == GL_TRIANGLE_FAN ? 0 : t);
+                        v[1] = poly_index(el, poly == GL_TRIANGLES ? 3 * t + 1 : t + 1);
+                        v[2] = poly_index(el, poly == GL_TRIANGLES ? 3 * t + 2 : t + 2);
+                        for (q = 0; q < 6; q++, ilen++) {
+                            ULONG e = v[((q + 1) >> 1) % 3]; /* 0 1, 1 2, 2 0 */
+                            if (e > imax)
+                                imax = e;
+                            x[2 * ilen] = (UBYTE)e;
+                            x[2 * ilen + 1] = (UBYTE)(e >> 8);
+                        }
+                    }
+                    if (imax > MAX_VERTS)
+                        return TRUE; /* nothing drawn (as the indexed path) */
                 }
             }
-            if (max > MAX_VERTS)
-                return TRUE; /* nothing drawn (as the indexed path) */
-            vc4_gl_shader_state(cl, rec, nslots ? nslots : 1);
-            VC4_EMIT(cl, INDEXED_PRIMITIVE_LIST, .primitive_mode = GL_LINES, .index_type = 1u, .length = j,
-                     .address_of_indices_list = ib, .maximum_index = max);
-        }
-    } else if (el) {
-        /* indices rebased by the front end: 8-bit as they are, 16-bit
-         * little-endian, 32-bit as 16-bit while they fit */
-        ULONG n = (ULONG)el->count, ib, max = 0, j;
-        BOOL bytes = el->type == GL_UNSIGNED_BYTE;
-        UBYTE *x = claim(c, (bytes ? n : 2 * n) + 4, 16, &ib);
-        if (!x)
-            goto nomem;
-        for (j = 0; j < n; j++) {
-            ULONG v = el->type == GL_UNSIGNED_INT    ? ((const ULONG *)el->indices)[j] - el->min
-                    : el->type == GL_UNSIGNED_SHORT ? (ULONG)(UWORD)(((const UWORD *)el->indices)[j] - el->min)
-                                                    : (ULONG)(UBYTE)(((const UBYTE *)el->indices)[j] - el->min);
-            if (v > max)
-                max = v;
-            if (bytes) {
-                x[j] = (UBYTE)v;
-            } else {
-                x[2 * j] = (UBYTE)v;
-                x[2 * j + 1] = (UBYTE)(v >> 8);
+            if (ilen) {
+                vc4_gl_shader_state(cl, rec, nslots ? nslots : 1);
+                VC4_EMIT(cl, INDEXED_PRIMITIVE_LIST, .primitive_mode = GL_LINES, .index_type = 1u, .length = ilen,
+                         .address_of_indices_list = ib, .maximum_index = imax);
             }
-        }
-        if (max > MAX_VERTS) {
-            if (d->told_big != im) {
-                d->told_big = im;
-                ogles2_log("draw: indices span more than 65536 vertices: VC4 cannot draw them (logged once a program)");
-            }
-            return TRUE; /* nothing drawn */
-        }
-        ctx->n_indices += el->count;
-        vc4_gl_shader_state(cl, rec, nslots ? nslots : 1);
-        VC4_EMIT(cl, INDEXED_PRIMITIVE_LIST, .primitive_mode = mode, .index_type = bytes ? 0u : 1u, .length = n,
-                 .address_of_indices_list = ib, .maximum_index = max);
-    } else {
-        /* parts of up to 65535 vertices (Mesa's vc4_draw_vbo); strips go on
-         * from their last vertices; loops and fans are drawn whole up to the limit */
-        ULONG left = (ULONG)dc->count, start = 0, part, step;
-        while (left) {
-            part = step = left;
-            if (left > MAX_VERTS) {
-                switch (mode) {
-                case GL_POINTS: part = step = MAX_VERTS; break;
-                case GL_LINES: part = step = MAX_VERTS - MAX_VERTS % 2; break;
-                case GL_TRIANGLES: part = step = MAX_VERTS - MAX_VERTS % 3; break;
-                case GL_LINE_STRIP: part = MAX_VERTS; step = part - 1; break;
-                case GL_TRIANGLE_STRIP: part = MAX_VERTS - 1; step = part - 2; break; /* even: the winding stays */
-                default:
-                    part = step = left = MAX_VERTS;
+        } else if (el) {
+            /* indices rebased by the front end: 8-bit as they are, 16-bit
+             * little-endian, 32-bit as 16-bit while they fit */
+            ULONG n = (ULONG)el->count, j;
+            BOOL bytes = el->type == GL_UNSIGNED_BYTE;
+            if (!pass) {
+                UBYTE *x = claim(c, (bytes ? n : 2 * n) + 4, 16, &ib);
+                if (!x)
+                    goto nomem;
+                for (j = 0; j < n; j++) {
+                    ULONG v = el->type == GL_UNSIGNED_INT    ? ((const ULONG *)el->indices)[j] - el->min
+                            : el->type == GL_UNSIGNED_SHORT ? (ULONG)(UWORD)(((const UWORD *)el->indices)[j] - el->min)
+                                                            : (ULONG)(UBYTE)(((const UBYTE *)el->indices)[j] - el->min);
+                    if (v > imax)
+                        imax = v;
+                    if (bytes) {
+                        x[j] = (UBYTE)v;
+                    } else {
+                        x[2 * j] = (UBYTE)v;
+                        x[2 * j + 1] = (UBYTE)(v >> 8);
+                    }
+                }
+                if (imax > MAX_VERTS) {
                     if (d->told_big != im) {
                         d->told_big = im;
-                        ogles2_log("draw: a loop or fan of more than 65535 vertices: drawn up to there (logged once a program)");
+                        ogles2_log("draw: indices span more than 65536 vertices: VC4 cannot draw them (logged once a program)");
                     }
-                    break;
+                    return TRUE; /* nothing drawn */
                 }
+                ctx->n_indices += el->count;
             }
-            if (start && !(rec = shader_record(c, code, unif, cs, vs, fs, src, nslots, start)))
-                goto nomem;
             vc4_gl_shader_state(cl, rec, nslots ? nslots : 1);
-            VC4_EMIT(cl, VERTEX_ARRAY_PRIMITIVES, .primitive_mode = mode, .length = part, .index_of_first_vertex = 0);
-            if (part >= left)
-                break;
-            left -= step;
-            start += step;
+            VC4_EMIT(cl, INDEXED_PRIMITIVE_LIST, .primitive_mode = mode, .index_type = bytes ? 0u : 1u, .length = n,
+                     .address_of_indices_list = ib, .maximum_index = imax);
+        } else {
+            /* parts of up to 65535 vertices (Mesa's vc4_draw_vbo); strips go on
+             * from their last vertices; loops and fans are drawn whole up to the limit */
+            ULONG left = (ULONG)dc->count, start = 0, part, step;
+            while (left) {
+                part = step = left;
+                if (left > MAX_VERTS) {
+                    switch (mode) {
+                    case GL_POINTS: part = step = MAX_VERTS; break;
+                    case GL_LINES: part = step = MAX_VERTS - MAX_VERTS % 2; break;
+                    case GL_TRIANGLES: part = step = MAX_VERTS - MAX_VERTS % 3; break;
+                    case GL_LINE_STRIP: part = MAX_VERTS; step = part - 1; break;
+                    case GL_TRIANGLE_STRIP: part = MAX_VERTS - 1; step = part - 2; break; /* even: the winding stays */
+                    default:
+                        part = step = left = MAX_VERTS;
+                        if (d->told_big != im) {
+                            d->told_big = im;
+                            ogles2_log("draw: a loop or fan of more than 65535 vertices: drawn up to there (logged once a program)");
+                        }
+                        break;
+                    }
+                }
+                if (start && !(rec = shader_record(c, code, unif, cs, vs, fs, src, nslots, start)))
+                    goto nomem;
+                vc4_gl_shader_state(cl, rec, nslots ? nslots : 1);
+                VC4_EMIT(cl, VERTEX_ARRAY_PRIMITIVES, .primitive_mode = mode, .length = part, .index_of_first_vertex = 0);
+                if (part >= left)
+                    break;
+                left -= step;
+                start += step;
+            }
         }
+        mark(ctx, 7);
+        if (cl->failed || c->job[c->build].state.failed)
+            goto nomem;
     }
-    mark(ctx, 7);
-    if (cl->failed || c->job[c->build].state.failed)
-        goto nomem;
     c->has_draws = TRUE;
     return TRUE;
 

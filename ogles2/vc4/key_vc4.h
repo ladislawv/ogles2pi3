@@ -86,6 +86,9 @@ struct vc4_key_sampler
      * shader and clamped), EXT_texture_filter_anisotropic (2^aniso
      * lookups). */
     unsigned char force_first, lod_bias, lod_clamp, aniso;
+    /* A half-float texture holding negative values: eight S16F planes, since
+     * the TMU drops the sign (patch 0022, texture_vc4.c). */
+    unsigned char half_signed;
 };
 
 /* What the fragment key takes from a draw. */

@@ -169,6 +169,7 @@ static unsigned char *samplers(unsigned char *o, int n, const struct vc4_key_sam
         /* patch 0019's emulations (FORMAT.md 1.1) */
         o[13] = (unsigned char)((s[i].lod_bias ? 1 : 0) | (s[i].lod_clamp ? 2 : 0));
         o[14] = s[i].aniso;
+        o[15] = s[i].half_signed; /* patch 0022 */
     }
     return o + 16 * (16 - (n < 16 ? n : 16));
 }

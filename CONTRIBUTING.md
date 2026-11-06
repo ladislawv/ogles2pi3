@@ -185,8 +185,13 @@ and the work queue. Swapping the card means rebooting the Amiga. With the Pi 3 c
   `amigent.allow` with the PC's address, `amigent.log`) and starts from `S:User-Startup` (its
   block after amictld's). The PC's copy of the key: `~/.config/amigent/key-<address>`. Its
   docs: the fork's `docs/PROTOCOL.md` (ports, the `ALLOW` and `LOG` options, commands 40 to 42).
-- **Running packages:** `bash tests/a1200/p5_run.sh <package>...` (Git Bash; the compile bridge,
-  `tools/compile_bridge/compile_bridge.py`, running in WSL). It builds each package with the
+- **Running packages:** `bash tests/a1200/p5_run.sh <package>...` (Git Bash, or inside WSL with
+  `amigent-ctl` from a venv at `~/amigent-venv`, no Python on Windows needed; the compile bridge,
+  `tools/compile_bridge/compile_bridge.py`, running in WSL). Check that the bridge is yours: the
+  newest connection to port 6803 takes the requests, with its own compiler, so a bridge left running
+  on another PC gives old variants that look like bugs. `T:p5-remote.txt` on the Amiga logs each
+  bridge's address; `BRIDGE_PORT=6804` with `compile_bridge.py --port 6804` gives a run its own port.
+  It builds each package with the
   sync-logging library, puts a stand-in in place of every `v3dglslc` (the programs are compiled
   on the PC through `v3dglslc-remote`, started detached from `Stuff:amigent/bridge/`), assigns
   `OGLES2Cache:` to a drawer on the Amiga's disk, and runs `amigent-ctl runpkg` (only changed

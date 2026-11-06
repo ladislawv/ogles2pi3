@@ -168,7 +168,12 @@ static void take_connection(void)
     tv.tv_sec = 60;
     setsockopt(cs, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     setsockopt(cs, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
-    printf("v3dglslc-remote: bridge connected\n");
+    /* whose: the newest bridge takes the requests, with its own compiler, so a
+     * stray one's programs can look like a bug (2026-11-06) */
+    {
+        const unsigned char *ip = (const unsigned char *)&a.sin_addr.s_addr;
+        printf("v3dglslc-remote: bridge connected from %d.%d.%d.%d\n", ip[0], ip[1], ip[2], ip[3]);
+    }
 }
 
 /* ---- requests ---- */

@@ -372,7 +372,7 @@ static void draw_arrays(struct OGLES2Context *ctx, struct OGLES2Program *p, GLen
             ogles2_log("glDrawArrays: no fragment shader variant for primitive %ld; using the closest",
                        (ULONG)mode);
         }
-        if (d->missed_rt != im && (fs->cbufs ? fs->cbufs : 1) != cbufs) {
+        if (ogles2_backend->device != 21 && d->missed_rt != im && (fs->cbufs ? fs->cbufs : 1) != cbufs) {
             d->missed_rt = im; /* logged once per program */
             ogles2_log("glDrawArrays: no fragment shader variant for %ld render targets "
                        "(EXT_draw_buffers): the program draws into the first only", (ULONG)ctx->fb_nrt);
@@ -853,8 +853,9 @@ void ogles2_draw_clear(struct OGLES2Context *ctx, GLbitfield mask)
     quad = &d->quad;
     quad->attrib_index[0] = OGLES2_MAX_VERTEX_ATTRIBS - 2;
     quad->attrib_index[1] = OGLES2_MAX_VERTEX_ATTRIBS - 1;
-    /* EXT_draw_buffers: GLES2 clears every draw buffer. */
-    if (ctx->fb_nrt > 1 && (mask & GL_COLOR_BUFFER_BIT)) {
+    /* EXT_draw_buffers: GLES2 clears every draw buffer. (VC4 draws one at a
+     * time, with the built-in program's gl_FragColor in each: job_vc4.c.) */
+    if (ctx->fb_nrt > 1 && ogles2_backend->device != 21 && (mask & GL_COLOR_BUFFER_BIT)) {
         struct OGLES2Program *m = mrt_program(d);
         if (m)
             quad = m;

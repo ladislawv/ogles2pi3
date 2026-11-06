@@ -61,6 +61,7 @@ struct vc4_defer
 };
 
 #define VC4_SLOTS 2 /* a job built while the last one renders */
+#define VC4_PASSES 4 /* EXT_draw_buffers: a pass per colour attachment (OGLES2_MAX_DRAW_BUFFERS) */
 
 /* A context's object (ctx->v3d): the binner's pools for its default
  * framebuffer, two jobs (one built while the other renders), the blocks
@@ -81,7 +82,19 @@ struct vc4_ctx
     struct vc4_pools fbo_pools; /* a framebuffer object's own pools, as the job uses them */
     struct vc4_target target;  /* the open job's */
     BOOL fbo;                  /* the open job draws into a framebuffer object */
-    UBYTE color_format;        /* the key's target format: 0 RGBA8 (R first in memory), 1 BGRA8, 2 RGB565 */
+    UBYTE color_format;        /* the key's target format: 0 RGBA8 (R first in memory), 1 BGRA8, 2 RGB565, 3 RGBA16F */
+    /* EXT_draw_buffers (PI3_PLAN §2.1, job_vc4.c): the open job's passes, a
+     * colour attachment each, every draw recorded in each. The last is
+     * job[build] (it may render on, and stores depth and stencil); the
+     * others are extra[build][k], lists only (their records are in job[build]'s
+     * state), rendered to the end before it. Made at a slot's first such job. */
+    struct vc4_job extra[VC4_SLOTS][VC4_PASSES - 1];
+    UBYTE npass;               /* 1 but for a framebuffer object drawing into several attachments */
+    UBYTE pass_att[VC4_PASSES];    /* each pass's attachment */
+    UBYTE pass_format[VC4_PASSES]; /* and its color_format (3: RGBA16F, the tile buffer's 64-bit
+                                    * mode, §2.1); the last's is color_format */
+    UBYTE slot_extras[VC4_SLOTS];  /* the extra jobs each slot's job ran with (job_retire) */
+    const struct vc4_job *stopped; /* the job that did not finish (job_report_stop) */
     /* depth and stencil kept across a mid-frame flush (job_keep_zs) */
     struct vc4_mem zs;
     UWORD zs_w, zs_h;
@@ -100,6 +113,12 @@ struct vc4_ctx
 };
 
 #define VC4_CTX(ctx) ((struct vc4_ctx *)(ctx)->v3d)
+
+/* The open job's pass k. */
+static inline struct vc4_job *ogles2_vc4_pass_job(struct vc4_ctx *c, int k)
+{
+    return k == c->npass - 1 ? &c->job[c->build] : &c->extra[c->build][k];
+}
 
 /* backend_vc4.c (ogles2_vc4_present: backend.h) */
 void ogles2_vc4_mem_free_after(struct OGLES2Context *user, struct v3d_mem *m);
@@ -139,7 +158,7 @@ BOOL ogles2_vc4_tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *
 /* A draw's sampler: the texture unit's texture of its kind (OGLES2_TEX_*),
  * complete or the fallback, its configuration words P0, P1, P2, its
  * storage for the key (FALSE: none at all). */
-BOOL ogles2_vc4_sampler(struct OGLES2Context *ctx, int unit, int kind, ULONG p[4], struct vc4_key_sampler *ks,
+BOOL ogles2_vc4_sampler(struct OGLES2Context *ctx, int unit, int kind, ULONG p[5], struct vc4_key_sampler *ks,
                         ULONG *first, GLfloat emu[5]);
 /* The texture parameters the shader emulates (patch 0019), into ks, for the
  * levels [first, last] sampled (texture_vc4.c, drawkey_vc4.c's probe R). */
@@ -148,14 +167,16 @@ void ogles2_vc4_sampler_emu(const struct OGLES2Texture *t, int kind, int first, 
 /* drawkey_vc4.c: VC4's storage of a texture (its level 0's format and
  * type; 0: none yet); the stencil test's uniform words, two-sidedness and
  * whether the third word is needed; a draw's key records (key_vc4.h) for a
- * target of colour class color_class (0 RGBA8, 1 BGRA8, 2 RGB565) and the
- * samplers' entries per stage. */
+ * target of colour class color_class (0 RGBA8, 1 BGRA8, 2 RGB565, 3 RGBA16F), the
+ * fragment output draw_buffer (patch 0016) and the samplers' entries per
+ * stage. */
 const struct vc4_tex_format *ogles2_vc4_storage(const struct OGLES2Texture *t);
 struct OGLES2State;
 struct OGLES2Program;
 void ogles2_vc4_stencil_words(const struct OGLES2State *s, ULONG w[3], BOOL *twoside, BOOL *full);
 void ogles2_vc4_draw_keys(struct OGLES2Context *ctx, const struct OGLES2Program *p, GLenum mode, UBYTE color_class,
-                          const struct vc4_key_sampler key[2][16], const UBYTE n[2], int psize, UBYTE *kfs, UBYTE *kvs);
+                          UBYTE draw_buffer, const struct vc4_key_sampler key[2][16], const UBYTE n[2], int psize,
+                          UBYTE *kfs, UBYTE *kvs);
 
 /* fbo_vc4.c */
 BOOL ogles2_vc4_rb_zs_storage(GLenum format, UWORD w, UWORD h, struct v3d_mem *mem, ULONG *base, ULONG *ub,
@@ -178,5 +199,9 @@ const struct OGLES2Variant *ogles2_vc4_variant_choose(const struct OGLES2Image *
  * first). 0: none in the image. */
 const struct OGLES2Variant *ogles2_vc4_variant_find(const struct OGLES2Image *im, UBYTE stage, const UBYTE *key,
                                                     const struct OGLES2Variant *fs, BOOL points);
+/* The key's draw_buffer for colour attachment att: att when the program
+ * writes gl_FragData[att], else 0 (gl_FragColor, the same code in every pass;
+ * an output it does not write is undefined). */
+UBYTE ogles2_vc4_output_for(const struct OGLES2Image *im, UBYTE att);
 
 #endif

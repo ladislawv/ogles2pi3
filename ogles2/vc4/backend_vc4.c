@@ -5,9 +5,9 @@
  * texture_vc4.c, fbo_vc4.c and program_vc4.c; the built-in image (clears of
  * part of a framebuffer: tools/clear_vc4). Not written yet, and refused:
  * glGenerateMipmap and glCopyTex* on the GPU (the front end's CPU paths run
- * instead), the internal programs (none needed with one draw buffer: the
- * copy program comes with glCopyTex* on the GPU). The device open does not choose this backend yet: the
- * Pi 4 runs as before until the A1200 has the Pi 3 card for the first time.
+ * instead), the internal programs (none needed: the clear's gl_FragColor is
+ * drawn in every pass of several draw buffers, and the copy program comes
+ * with glCopyTex* on the GPU).
  *
  * Contexts: the front end keeps a context's backend object in ctx->v3d, the
  * V3D backend's type; this backend keeps its own struct vc4_ctx there
@@ -42,10 +42,11 @@ static const struct OGLES2Caps caps = {
     "GL_EXT_texture_compression_s3tc GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5 "
     "GL_OES_texture_half_float GL_OES_texture_half_float_linear GL_OES_texture_float "
     "GL_ARB_texture_mirror_clamp_to_edge GL_EXT_texture_lod_bias GL_SGIS_texture_lod "
-    "GL_EXT_texture_filter_anisotropic GL_EXT_clip_control",
+    "GL_EXT_texture_filter_anisotropic GL_EXT_clip_control GL_EXT_draw_buffers GL_NV_fbo_color_attachments "
+    "GL_EXT_color_buffer_half_float",
     2048,  /* textures (vc4_screen.c) */
     2048,  /* viewport and renderbuffers: Mesa's on the Pi 3 (§2 "Render targets") */
-    1,     /* draw buffers: one colour buffer (EXT_draw_buffers comes emulated, §2.1) */
+    VC4_PASSES, /* draw buffers: one colour buffer, emulated by a pass each (§2.1, job_vc4.c) */
     8,     /* varyings */
     8,     /* vertex attributes */
     4088, 4095, /* uniform vectors, as the compiler's gl_Max* (§4.1) */
@@ -238,8 +239,11 @@ static void context_free(struct V3DContext *v)
     if (!c)
         return;
     for (k = 0; k < VC4_SLOTS; k++) {
+        int x;
         ogles2_vc4_defer_free_all(c, k);
         vc4_job_free(&c->job[k]);
+        for (x = 0; x < VC4_PASSES - 1; x++)
+            vc4_job_free(&c->extra[k][x]);
     }
     if (c->zs.size)
         vc4_mem_free(&c->zs);

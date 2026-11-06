@@ -111,7 +111,8 @@ bash tests/a1200/build_package.sh m2-4     # an A1200 test package -> tests/a120
 bash tests/corpus/build_corpus.sh          # the corpus: Amiga and PC builds, reference images, .v3dp files
 
 # The shader compiler (needs the Mesa build with tools/v3dglslc/patches applied)
-python3 tools/v3dglslc/replay.py           # Mesa for 68k (GCC 16.2), ~900 files
+(cd tools/v3dglslc && python3 replay.py --libs \
+  "$(python3 -c 'import replay; print(",".join(replay.TOOL + replay.VC4))')")  # Mesa for 68k (GCC 16.2), ~950 files, the VC4 driver too
 bash tools/v3dglslc/build_m68k.sh          # -> ~/ogles2-build/v3dglslc/v3dglslc
 bash tools/v3dglslc/build_host.sh          # -> ~/ogles2-build/v3dglslc/host/v3dglslc (the offline compiler)
 bash tools/v3dglslc/test/compare_v3dp.sh   # x86-64 and 68k .v3dp files must be identical

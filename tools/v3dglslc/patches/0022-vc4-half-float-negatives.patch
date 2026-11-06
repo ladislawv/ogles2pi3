@@ -1,0 +1,45 @@
+ogles2: half-float textures with negative values on VC4 (docs/PI3_PLAN.md §2
+"Textures", §2.1). The TMU returns an S16F texel without its sign: 0xbc00 reads
+as 0x3c00 (vc4_draw s16fsign, on the Pi 3 card, 2026-11-06). A sampler keyed
+half_signed takes each channel from two planes: plane i holds max(v, 0), plane
+i + 4 max(-v, 0), and the shader subtracts, eight lookups a sample; filtering is
+linear, so the difference filters exactly. The library sets the key only for a
+texture that holds negative values (ogles2/vc4/texture_vc4.c). Mesa's own state
+never sets it; v3dglslc compiles it from keys (-k, patch 0017). Applies after
+0021.
+
+--- a/src/gallium/drivers/vc4/vc4_program.c
++++ b/src/gallium/drivers/vc4/vc4_program.c
+@@ -508,6 +508,19 @@ ntq_tex_lookup(struct vc4_compile *c, nir_tex_instr *instr,
+                                                         is_txl, is_txb,
+                                                         unit | (i << 16));
+                         out[i] = qir_UNPACK_16_F(c, w, 0);
++                        /* ogles2 (patch 0022): the TMU returns an S16F
++                         * texel without its sign (docs/PI3_PLAN.md §2
++                         * "Textures"), so a texture with negative values
++                         * keeps them in planes of their own; filtering is
++                         * linear, so the difference filters exactly.
++                         */
++                        if (c->key->tex[unit].half_signed) {
++                                struct qreg n = ntq_tex_request(c, instr, s, t, r, lod,
++                                                                is_txl, is_txb,
++                                                                unit | ((i + 4) << 16));
++                                out[i] = qir_FSUB(c, out[i],
++                                                  qir_UNPACK_16_F(c, n, 0));
++                        }
+                         if (def)
+                                 ntq_store_def(c, def, i, out[i]);
+                 }
+--- a/src/gallium/drivers/vc4/vc4_qir.h
++++ b/src/gallium/drivers/vc4/vc4_qir.h
+@@ -327,6 +327,10 @@ struct vc4_key {
+                                 unsigned lod_bias:1;
+                                 unsigned lod_clamp:1;
+                                 unsigned aniso:3;
++                                /* ogles2 (patch 0022): a half-float texture
++                                 * holding negative values: planes 4 to 7
++                                 * subtracted (vc4_program.c) */
++                                unsigned half_signed:1;
+                         };
+                         struct {
+                                 uint16_t msaa_width, msaa_height;

@@ -141,7 +141,8 @@ void ogles2_vc4_stencil_words(const struct OGLES2State *s, ULONG w[3], BOOL *two
 
 /* ---- the keys ---- */
 
-static const unsigned short target_format[3] = {VC4K_R8G8B8A8_UNORM, VC4K_B8G8R8A8_UNORM, VC4K_B5G6R5_UNORM};
+static const unsigned short target_format[4] = {VC4K_R8G8B8A8_UNORM, VC4K_B8G8R8A8_UNORM, VC4K_B5G6R5_UNORM,
+                                                VC4K_R16G16B16A16_FLOAT};
 
 static BOOL y_down(const struct OGLES2Context *ctx)
 {
@@ -149,8 +150,8 @@ static BOOL y_down(const struct OGLES2Context *ctx)
 }
 
 void ogles2_vc4_draw_keys(struct OGLES2Context *ctx, const struct OGLES2Program *p, GLenum mode, UBYTE color_class,
-                          const struct vc4_key_sampler key[2][OGLES2_MAX_STAGE_SAMPLERS], const UBYTE n[2], int psize,
-                          UBYTE *kfs, UBYTE *kvs)
+                          UBYTE draw_buffer, const struct vc4_key_sampler key[2][OGLES2_MAX_STAGE_SAMPLERS],
+                          const UBYTE n[2], int psize, UBYTE *kfs, UBYTE *kvs)
 {
     const struct OGLES2State *s = &ctx->state;
     struct vc4_fs_state fss;
@@ -162,7 +163,7 @@ void ogles2_vc4_draw_keys(struct OGLES2Context *ctx, const struct OGLES2Program 
     /* the class the rasteriser sees: glPolygonMode's lines and points */
     fsmode = mode >= GL_TRIANGLES && s->polygon_mode != GL_FILL ? (s->polygon_mode == GL_POINT ? GL_POINTS : GL_LINES)
                                                                  : mode;
-    fss.color_format = target_format[color_class < 3 ? color_class : 0];
+    fss.color_format = target_format[color_class < 4 ? color_class : 0];
     fss.prim = fsmode == GL_POINTS ? 2 : (fsmode == GL_LINES || fsmode == GL_LINE_LOOP || fsmode == GL_LINE_STRIP) ? 1 : 0;
     fss.depth_test = (s->caps & OGLES2_CAP_DEPTH_TEST) && ctx->fb_depth_bits;
     fss.stencil_test = (s->caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits;
@@ -186,6 +187,7 @@ void ogles2_vc4_draw_keys(struct OGLES2Context *ctx, const struct OGLES2Program 
     fss.dst_alpha = s->blend_dst_alpha;
     fss.colormask = (unsigned char)((s->color_mask[0] ? 1 : 0) | (s->color_mask[1] ? 2 : 0) |
                                     (s->color_mask[2] ? 4 : 0) | (s->color_mask[3] ? 8 : 0));
+    fss.draw_buffer = draw_buffer;
     fss.nsamplers = n[1];
     for (k = 0; k < n[1]; k++)
         fss.samp[k] = key[1][k];
@@ -284,7 +286,7 @@ void ogles2_vc4_record_draw(struct OGLES2Context *ctx, struct OGLES2Program *p, 
     } else {
         cls = ctx->display.rb_swap ? 1 : 0;
     }
-    ogles2_vc4_draw_keys(ctx, p, mode, cls, (const struct vc4_key_sampler(*)[OGLES2_MAX_STAGE_SAMPLERS])key, n,
+    ogles2_vc4_draw_keys(ctx, p, mode, cls, 0, (const struct vc4_key_sampler(*)[OGLES2_MAX_STAGE_SAMPLERS])key, n,
                          psize, rec, rec + VC4_KEY_FS_BYTES);
     for (i = 0; i < sizeof(rec); i++)
         h = (h ^ rec[i]) * 16777619UL;

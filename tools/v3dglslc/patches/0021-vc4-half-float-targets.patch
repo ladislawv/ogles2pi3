@@ -146,7 +146,7 @@ from keys (-k, patch 0017). Applies after 0020.
 -                         * gl_FragData, not this variant's colour. */
 +                         * gl_FragData, not this variant's colour. Patch
 +                         * 0021: a half-float target's two words. */
-                         if (offset != c->output_color_index)
+                         if (offset * 4 != c->output_color_index)
                                  break;
 -                        for (int i = 0; i < 4; i++) {
 +                        for (int i = 0; i < instr->num_components; i++) {

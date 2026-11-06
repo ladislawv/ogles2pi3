@@ -24,6 +24,19 @@
  * MSAA: not kept, left). A framebuffer object's depth and stencil images
  * are one Z24S8 image on VC4 (fbo_vc4.c): its depth's, else its stencil's.
  *
+ * EXT_draw_buffers (PI3_PLAN §2.1): VC4 has one colour buffer, so a
+ * framebuffer object drawing into several attachments is one job a colour
+ * attachment over the same draws (draw_vc4.c records each draw in each, with
+ * the fragment variant for that output). Every pass starts from the depth and
+ * stencil the job started with (cleared or loaded); only the last stores them.
+ * The passes but the last are bound to the end inside job_bin, one job on the
+ * core at a time, with the same pools; the last is the context's job[build],
+ * so what follows (a render left running, its retirement) is any job's.
+ *
+ * A half-float attachment (EXT_color_buffer_half_float, §2.1) is its pass in
+ * the tile buffer's 64-bit mode (target.hdr), stored into the texture's 64-bit
+ * image (texture_vc4.c): 64x32 tiles for that pass, whatever the others take.
+ *
  * Nothing is logged while a bitmap is locked (job.c): what goes wrong in
  * job_build is logged at job_end, the GPU's errors at job_retire.
  *
@@ -130,6 +143,10 @@ void ogles2_vc4_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *
     c->bad = bad;
     c->why_bad = bad ? "no memory for the framebuffer object's tile pools" : 0;
     c->fbo = ctx->draw_fb != 0;
+    c->npass = 1;
+    c->pass_att[0] = 0;
+    c->slot_extras[c->build] = 0;
+    c->stopped = 0;
     if (c->fbo) {
         if (!tg) { /* no pools: dropped at the flush; lists for the context's frame meanwhile */
             t->width = c->w;
@@ -140,7 +157,7 @@ void ogles2_vc4_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *
             if (tg->ta_addr) { /* its own pools (fbo_vc4.c's layout) */
                 memset(&c->fbo_pools, 0, sizeof(c->fbo_pools));
                 c->fbo_pools.tiles_x = (UWORD)((tg->w + 63) / 64);
-                c->fbo_pools.tiles_y = (UWORD)((tg->h + 63) / 64);
+                c->fbo_pools.tiles_y = (UWORD)((tg->h + tg->tile_h - 1) / tg->tile_h);
                 c->fbo_pools.tsda = ogles2_vc4_bus(tg->ts_addr);
                 c->fbo_pools.talloc = ogles2_vc4_bus(tg->ta_addr);
                 c->fbo_pools.talloc_size = tg->ta_size;
@@ -155,8 +172,19 @@ void ogles2_vc4_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *
         c->color_format = 0;
         if (tg) {
             struct OGLES2Target full;
-            if (ogles2_fbo_target(ctx, ctx->draw_fb, TRUE, &full) && (full.colors & 1))
-                c->color_format = full.color[0].format == VC4_COLOR_BGR565 ? 2 : 0;
+            if (ogles2_fbo_target(ctx, ctx->draw_fb, TRUE, &full)) {
+                /* the attachments drawn into, a pass each (the top); none:
+                 * one pass without colour, for depth and stencil */
+                int a, n = 0;
+                for (a = 0; a < VC4_PASSES; a++)
+                    if (full.colors & (1 << a)) {
+                        c->pass_att[n] = (UBYTE)a;
+                        c->color_format = full.color[a].ub ? 3 : full.color[a].format == VC4_COLOR_BGR565 ? 2 : 0;
+                        c->pass_format[n++] = c->color_format;
+                    }
+                if (n)
+                    c->npass = (UBYTE)n;
+            }
         }
     } else {
         /* the bitmap's row as last locked (the binning needs the tile count
@@ -170,10 +198,35 @@ void ogles2_vc4_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *
         t->msaa = ctx->job_msaa ? 1 : 0;
         c->color_format = ctx->display.rb_swap ? 1 : 0;
     }
+    c->pass_format[c->npass - 1] = c->color_format;
+    t->hdr = c->color_format == 3;
     if (vc4_job_begin(&c->job[c->build], t, pools) < 0) {
         c->bad = TRUE;
         if (!c->why_bad)
             c->why_bad = "its frame is larger than its tile pools, or no memory for its lists";
+    }
+    /* the passes before the last: lists of their own, kept for the slot's next such job */
+    {
+        struct vc4_target pt = *t;
+        int k;
+        for (k = 0; k < c->npass - 1; k++) {
+            struct vc4_job *x = &c->extra[c->build][k];
+            if (!x->bcl.nblocks) {
+                if (vc4_job_init_lists(x) < 0)
+                    goto no_passes;
+                x->caller_flushes = 1; /* as job[]'s (backend_vc4.c, context_new) */
+            }
+            pt.hdr = c->pass_format[k] == 3;
+            if (vc4_job_begin(x, &pt, pools) < 0)
+                goto no_passes;
+        }
+        c->slot_extras[c->build] = (UBYTE)(c->npass - 1);
+        return;
+no_passes:
+        c->npass = 1; /* the draws go to job[build] alone, and the job is dropped */
+        c->bad = TRUE;
+        if (!c->why_bad)
+            c->why_bad = "no memory for the lists of its passes (EXT_draw_buffers)";
     }
 }
 
@@ -208,21 +261,66 @@ const char *ogles2_vc4_job_check(struct OGLES2Context *ctx)
     return c->bad ? c->why_bad : 0;
 }
 
-BOOL ogles2_vc4_job_build(struct OGLES2Context *ctx, const struct OGLES2Target *tg, BOOL store_zs)
+/* What a job's target starts from: nothing loaded, stored or cleared yet,
+ * and the values it would clear with. */
+static void target_clears(const struct OGLES2Context *ctx, struct vc4_target *t, UBYTE color_format)
 {
-    struct vc4_ctx *c = VC4_CTX(ctx);
-    struct vc4_job *job = &c->job[c->build];
-    struct vc4_target *t = &job->target;
-    UBYTE noload = ctx->job_noload, nostore = ctx->job_discard;
-    BOOL has_zs;
     t->load = t->store = t->clear = 0;
-    t->clear_color = clear_word(ctx, c->color_format);
+    t->clear_color = clear_word(ctx, color_format);
+    if (t->hdr) { /* two words of two halves: R, G and B, A (R, B in the low ones) */
+        const GLfloat *f = ctx->job_clear_rgba;
+        t->clear_hdr[0] = (ULONG)ogles2_float_to_half(f[0]) | (ULONG)ogles2_float_to_half(f[1]) << 16;
+        t->clear_hdr[1] = (ULONG)ogles2_float_to_half(f[2]) | (ULONG)ogles2_float_to_half(f[3]) << 16;
+    }
     t->clear_z = 0xffffffu;
     t->clear_s = 0;
     if (ctx->job_clear_zs) {
         t->clear_z = (ULONG)(ctx->job_clear_depth * 16777215.0f + 0.5f) & 0xffffffu;
         t->clear_s = ctx->job_clear_stencil;
     }
+}
+
+/* A framebuffer object's pass: colour attachment att (when it has an image),
+ * the depth and stencil as the job started with them, stored by the last. */
+static void object_pass(const struct OGLES2Context *ctx, const struct OGLES2Target *tg, struct vc4_target *t,
+                        UBYTE att, UBYTE color_format, BOOL last)
+{
+    UBYTE noload = ctx->job_noload, nostore = ctx->job_discard;
+    target_clears(ctx, t, color_format);
+    memset(&t->color, 0, sizeof(t->color));
+    memset(&t->zs, 0, sizeof(t->zs));
+    if (tg->colors & (1 << att)) {
+        surface(&tg->color[att], &t->color);
+        if (!(nostore & OGLES2_DISCARD_COLOR))
+            t->store |= VC4_COLOR;
+        if (ctx->job_clear_color)
+            t->clear |= VC4_COLOR;
+        else if (!(noload & OGLES2_DISCARD_COLOR))
+            t->load |= VC4_COLOR;
+    }
+    if (tg->has_z || tg->has_s) {
+        surface(tg->has_z ? &tg->z : &tg->s, &t->zs);
+        if (last && (nostore & (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL)) !=
+                        (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL))
+            t->store |= VC4_ZS;
+        if (!ctx->job_clear_zs && (noload & (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL)) !=
+                                      (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL))
+            t->load |= VC4_ZS;
+    }
+    if (!(t->load & VC4_ZS))
+        t->clear |= VC4_ZS;
+    if (!(t->load & VC4_COLOR) && !(t->clear & VC4_COLOR))
+        t->clear |= VC4_COLOR; /* discarded: undefined, the tile buffer's is cleared */
+}
+
+BOOL ogles2_vc4_job_build(struct OGLES2Context *ctx, const struct OGLES2Target *tg, BOOL store_zs)
+{
+    struct vc4_ctx *c = VC4_CTX(ctx);
+    struct vc4_job *job = &c->job[c->build];
+    struct vc4_target *t = &job->target;
+    BOOL has_zs;
+    int k;
+    target_clears(ctx, t, c->color_format);
     if (!tg) {
         ULONG bprow = ctx->display.bprow, fw = bprow / 4;
         UWORD tiles = (UWORD)((fw + (t->msaa ? 31 : 63)) / (t->msaa ? 32 : 64));
@@ -283,35 +381,15 @@ BOOL ogles2_vc4_job_build(struct OGLES2Context *ctx, const struct OGLES2Target *
         if (!(t->load & VC4_ZS))
             t->clear |= VC4_ZS; /* EGL: undefined at a frame's start; the tile buffer's is cleared */
     } else {
-        memset(&t->color, 0, sizeof(t->color));
-        memset(&t->zs, 0, sizeof(t->zs));
-        if (tg->colors & 1) {
-            surface(&tg->color[0], &t->color);
-            if (!(nostore & OGLES2_DISCARD_COLOR))
-                t->store |= VC4_COLOR;
-            if (ctx->job_clear_color)
-                t->clear |= VC4_COLOR;
-            else if (!(noload & OGLES2_DISCARD_COLOR))
-                t->load |= VC4_COLOR;
-        }
-        if (tg->has_z || tg->has_s) {
-            surface(tg->has_z ? &tg->z : &tg->s, &t->zs);
-            if ((nostore & (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL)) !=
-                (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL))
-                t->store |= VC4_ZS;
-            if (!ctx->job_clear_zs && (noload & (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL)) !=
-                                          (OGLES2_DISCARD_DEPTH | OGLES2_DISCARD_STENCIL))
-                t->load |= VC4_ZS;
-        }
-        if (!(t->load & VC4_ZS))
-            t->clear |= VC4_ZS;
-        if (!(t->load & VC4_COLOR) && !(t->clear & VC4_COLOR))
-            t->clear |= VC4_COLOR; /* discarded: undefined, the tile buffer's is cleared */
+        for (k = 0; k < c->npass; k++)
+            object_pass(ctx, tg, &ogles2_vc4_pass_job(c, k)->target, c->pass_att[k], c->pass_format[k],
+                        k == c->npass - 1);
     }
-    if (vc4_job_end_lists(job) < 0) {
-        c->why_bad = "out of GPU memory for its lists";
-        return FALSE;
-    }
+    for (k = 0; k < c->npass; k++)
+        if (vc4_job_end_lists(ogles2_vc4_pass_job(c, k)) < 0) {
+            c->why_bad = "out of GPU memory for its lists";
+            return FALSE;
+        }
     if (ctx->frames < 2) { /* P5: each context's first jobs' targets, logged at job_end (the bitmap is locked now) */
         c->told_target = 1;
         c->t_clear = t->clear, c->t_load = t->load, c->t_store = t->store;
@@ -324,8 +402,22 @@ BOOL ogles2_vc4_job_build(struct OGLES2Context *ctx, const struct OGLES2Target *
 int ogles2_vc4_job_bin(struct OGLES2Context *ctx, const struct OGLES2Target *tg)
 {
     struct vc4_ctx *c = VC4_CTX(ctx);
+    int k;
     (void)tg;
     c->rendering = c->build;
+    /* EXT_draw_buffers' passes before the last, to their end (the GPU is
+     * ours: job.c's take_gpu). A render of one that does not finish is
+     * reported as this step's: job.c resets the core and drops the job. */
+    for (k = 0; k < c->npass - 1; k++) {
+        struct vc4_job *x = &c->extra[c->build][k];
+        c->stopped = x;
+        if (vc4_job_bin(x, BIN_TIMEOUT_US) < 0)
+            return x->out_of_overflow ? OGLES2_WAIT_ERROR : OGLES2_WAIT_TIMED_OUT;
+        vc4_job_render_start(x);
+        if (vc4_job_render_wait(x, RENDER_TIMEOUT_US) < 0)
+            return OGLES2_WAIT_TIMED_OUT;
+    }
+    c->stopped = &c->job[c->build];
     if (vc4_job_bin(&c->job[c->build], BIN_TIMEOUT_US) < 0)
         return c->job[c->build].out_of_overflow ? OGLES2_WAIT_ERROR : OGLES2_WAIT_TIMED_OUT;
     return OGLES2_WAIT_OK;
@@ -368,15 +460,18 @@ int ogles2_vc4_wait_render(UBYTE frame)
 void ogles2_vc4_job_retire(struct OGLES2Context *ctx)
 {
     struct vc4_ctx *c = VC4_CTX(ctx);
-    struct vc4_job *j = &c->job[c->rendering];
+    int k;
     ogles2_vc4_defer_free_all(c, c->rendering);
     /* ERRSTAT 0x1000 is the idle state; VCMBE (bit 14) comes with about one
      * job in 200 whose binner ran out of memory, the picture right
-     * (PI3_PLAN §3.1): not an error */
-    if ((j->errstat & ~(V3D_ERRSTAT_IDLE | 0x4000UL /* VCMBE */)) && errors_logged < 8) {
-        errors_logged++;
-        ogles2_log("job: the GPU reports ERRSTAT 0x%08lx after it, 0x%08lx after its binning (logged 8 times)",
-                   (ULONG)j->errstat, (ULONG)j->errstat_bin);
+     * (PI3_PLAN §3.1): not an error. The job's passes too. */
+    for (k = -1; k < c->slot_extras[c->rendering]; k++) {
+        const struct vc4_job *j = k < 0 ? &c->job[c->rendering] : &c->extra[c->rendering][k];
+        if ((j->errstat & ~(V3D_ERRSTAT_IDLE | 0x4000UL /* VCMBE */)) && errors_logged < 8) {
+            errors_logged++;
+            ogles2_log("job: the GPU reports ERRSTAT 0x%08lx after it, 0x%08lx after its binning (logged 8 times)",
+                       (ULONG)j->errstat, (ULONG)j->errstat_bin);
+        }
     }
 }
 
@@ -412,7 +507,7 @@ void ogles2_vc4_job_end(struct OGLES2Context *ctx, BOOL submitted)
 void ogles2_vc4_job_report_stop(struct OGLES2Context *ctx)
 {
     struct vc4_ctx *c = VC4_CTX(ctx);
-    struct vc4_job *j = &c->job[c->rendering];
+    const struct vc4_job *j = c->stopped ? c->stopped : &c->job[c->rendering];
     if (j->out_of_overflow)
         ogles2_log("job: the binner needed more than its pools' %ld overflow chunks", (ULONG)j->pools->overflow_chunks);
     else

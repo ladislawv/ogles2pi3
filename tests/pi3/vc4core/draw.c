@@ -28,6 +28,7 @@
  *             [1], over the depth case's draws: Mesa's depth picture, and
  *             it with the colours inverted
  *   hdrrange  a half-float target keeps 2.0 and -0.5
+ *   s16fsign  where an S16F texel's sign goes (named only: a diagnosis)
  *   hdr, hdrblend the depth (blend) case into a 64-bit colour (RGBA16F)
  *             image (patch 0021), drawn from it as an RGBA64 texture: Mesa's
  *             depth (blend) picture
@@ -2135,6 +2136,55 @@ static void case_hdrrange(void)
     vc4p_free(&p);
 }
 
+/* s16fsign (named only, a diagnosis, PI3_PLAN §10): where an S16F texel's sign
+ * goes. A texture of one half, drawn with the variant for RGBA8 samplers (the
+ * shader passes the TMU's result word through as four bytes, no float unpack)
+ * and with the half-float one (the 16a unpack, each channel clamped by the
+ * RGBA8 frame: a negative reads 0, its absolute value would not). */
+static void case_s16fsign(void)
+{
+    static const uint16_t values[6] = {0x3c00, 0xbc00, 0x3800, 0xb800, 0x4000, 0xc000}; /* 1, -1, 0.5, -0.5, 2, -2 */
+    static uint16_t halves[16 * 16 * 4];
+    struct vc4_texture_layout lay;
+    static struct vc4p p;
+    struct vc4p_draw d;
+    uint32_t stride;
+    int v, how, i, ok;
+    printf("s16fsign (an S16F texel's sign: the TMU's word, then through the unpack)\n");
+    if (load_flat(&p, "texture-texture.vc4p") < 0) {
+        failures++;
+        return;
+    }
+    for (v = 0; v < 6; v++) {
+        for (i = 0; i < 16 * 16 * 4; i++)
+            halves[i] = values[v];
+        if (!(stride = half_planes(&lay, 16, 16, 1, halves))) {
+            failures++;
+            break;
+        }
+        vc4_os_flush(tex.cpu, 4 * stride);
+        for (how = 0; how < 2; how++) {
+            uint32_t word;
+            ok = begin_case(0) == 0 &&
+                 two_inputs(&p, VC4P_FORMAT_R32G32_FLOAT, how ? VC4P_FORMAT_R16G16B16A16_FLOAT : VC4P_FORMAT_R8G8B8A8_UNORM,
+                            tq_pos, 8, 8, tq_uv, 8, 8, sizeof tq_pos, VC4_PRIM_TRIANGLE_STRIP, 4, &d) == 0;
+            if (!ok) {
+                failures++;
+                continue;
+            }
+            d.tex[0][0] = vc4_tex_p0(tex.bus + lay.level[0].offset, VC4_TEX_S16F, 0, 0);
+            d.tex[0][1] = vc4_tex_p1(VC4_TEX_S16F, 16, 16, VC4_MAG_NEAREST, VC4_MIN_NEAREST, VC4_WRAP_CLAMP, VC4_WRAP_CLAMP);
+            d.tex_plane[0] = how ? stride : 0;
+            ok = vc4p_emit(&job, &d, W, H) == 0 && vc4_job_run(&job, 1000000) == 0;
+            vc4_os_invalidate(fb.cpu, W * H * 4);
+            word = vc4_get32(fb.cpu + (uint32_t)(H / 2 * fb_stride + W / 2) * 4);
+            printf("  half %04x, %s: frame word %08x%s\n", values[v], how ? "half-float variant" : "RGBA8 variant (raw)",
+                   word, ok ? "" : " (the job failed)");
+        }
+    }
+    vc4p_free(&p);
+}
+
 /* ---- speed: GPU-only numbers (PI3_PLAN §6.3), not a pass/fail case ---- */
 
 #define SW 1024
@@ -2420,6 +2470,9 @@ static int run_case(const char *name)
         return 2;
     } else if (!strcmp(name, "hdrrange")) {
         case_hdrrange();
+    } else if (!strcmp(name, "s16fsign")) {
+        case_s16fsign();
+        return 12;
     } else if (!strcmp(name, "hdrblend")) {
         hdr_case("hdrblend", 1);
         return 2;

@@ -10,16 +10,38 @@
 # uploads only what changed (CRC-32), runs the Run-* script on one command
 # channel and prints a line a minute from another, so a station that stops
 # answering shows at once; the batch stops at its exit status 4.
-#   bash tests/a1200/p5_run.sh m2-4 [m1-5 ...]      (Git Bash)
-# AMIGENT_CTL: the amigent-ctl to use; AMIGENT_HOST: the A1200 (default: amictl's station.local).
+#   bash tests/a1200/p5_run.sh m2-4 [m1-5 ...]      (Git Bash, or inside WSL)
+# AMIGENT_CTL: the amigent-ctl to use; AMIGENT_HOST: the A1200 (default: amictl's station.local);
+# OGLES2_WSL: the WSL distribution, from Git Bash (as `wsl -l` names it);
+# BRIDGE_PORT: the bridge's port on the station (default 6803). The newest
+# connection to it wins, so another bridge on the network takes this run's
+# compiles, with its own compiler: such a run needs a port of its own
+# (compile_bridge.py --port the same; 2026-11-06: an older compiler's variants,
+# from a bridge not yet identified, looked like a bug here).
 set -u
+BRIDGE_PORT=${BRIDGE_PORT:-6803}
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
 RES=$HERE/results
 WREPO=$(echo "$REPO" | sed -E 's#^/([a-z])/#/mnt/\1/#')
 STAND_IN='v3dglslc stand-in: the programs are compiled on the PC (tools/compile_bridge)'
-CTL=${AMIGENT_CTL:-"/c/- CPP/amigent/.venv/Scripts/amigent-ctl.exe"}
-export AMIGENT_HOST=${AMIGENT_HOST:-$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['host'])"     "$(cygpath -w "$REPO/tools/amictl/station.local")")}
+# Inside WSL everything is here, amigent-ctl from a venv in the Linux home (no
+# Python needed on Windows); from Git Bash the builds are WSL's and amigent-ctl
+# is Windows'.
+if [ -n "${WSL_DISTRO_NAME:-}" ]; then
+    in_wsl() { "$@"; }
+    CTL=${AMIGENT_CTL:-"$HOME/amigent-venv/bin/amigent-ctl"}
+    REMOTE=$HOME/ogles2-build-pi3/m68k/amictl/v3dglslc-remote
+    STATION=$REPO/tools/amictl/station.local
+    PY=python3
+else
+    in_wsl() { MSYS_NO_PATHCONV=1 wsl -d "${OGLES2_WSL:-Ubuntu-24.04}" "$@"; }
+    CTL=${AMIGENT_CTL:-"/c/- CPP/amigent/.venv/Scripts/amigent-ctl.exe"}
+    REMOTE=$(in_wsl sh -c 'wslpath -w "$HOME/ogles2-build-pi3/m68k/amictl/v3dglslc-remote"' | tr -d '\r')
+    STATION=$(cygpath -w "$REPO/tools/amictl/station.local")
+    PY=python
+fi
+export AMIGENT_HOST=${AMIGENT_HOST:-$($PY -c "import json,sys;print(json.load(open(sys.argv[1]))['host'])" "$STATION")}
 [ -n "$AMIGENT_HOST" ] || { echo "no station: AMIGENT_HOST, or tools/amictl/station.local's host"; exit 4; }
 export AMIGENT_RESULTS=$RES
 # KB/s for transfers (a weak Wi-Fi signal dropped the link, 2026-11-05: fixed at the AP; kept as a margin)
@@ -44,8 +66,7 @@ need() {
     fi
     return $rc
 }
-REMOTE=$(MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 wslpath -w '/home/l/ogles2-build-pi3/m68k/amictl/v3dglslc-remote' | tr -d '\r')
-wsl -d Ubuntu-24.04 pgrep -f compile_bridge.py > /dev/null ||
+in_wsl pgrep -f compile_bridge.py > /dev/null ||
     { echo "no compile_bridge.py running: start python3 tools/compile_bridge/compile_bridge.py in WSL first"; exit 1; }
 need mkdir "$BRIDGE" > /dev/null 2>&1
 need put "$REMOTE" "$BRIDGE/v3dglslc-remote" > /dev/null
@@ -54,7 +75,7 @@ need put "$HERE/out/v3dglslc-stand-in" "$BRIDGE/v3dglslc" > /dev/null
 need run -t 30 "Protect $BRIDGE/v3dglslc-remote +rwed" > /dev/null
 for t in "$@"; do
     echo "$(date +%T) $t: building"
-    MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 bash -c "cd '$WREPO' && bash tests/a1200/build_package.sh $t && \
+    in_wsl bash -c "cd '$WREPO' && bash tests/a1200/build_package.sh $t && \
         cp ~/ogles2-build-pi3/m68k-sync/ogles2.library tests/a1200/out/ogles2-$t/libs/" > /dev/null 2>&1 ||
         { echo "$t: build failed"; continue; }
     PKG=$HERE/out/ogles2-$t
@@ -70,7 +91,7 @@ for t in "$@"; do
     # its output in T:p5-remote.txt
     stop_remote() { ctl run -t 30 'Break `Status COM=v3dglslc-remote` C' > /dev/null 2>&1; }
     stop_remote
-    need start -d "$BRIDGE" "v3dglslc-remote >T:p5-remote.txt WAIT NOFALLBACK TOKEN=Stuff:amictld/amictld.token" \
+    need start -d "$BRIDGE" "v3dglslc-remote >T:p5-remote.txt PORT=$BRIDGE_PORT WAIT NOFALLBACK TOKEN=Stuff:amictld/amictld.token" \
         "COMPILER=$BRIDGE/v3dglslc" > /dev/null
     # running on the Amiga before the package needs it (else its compiles wait 60 s each)
     up=0

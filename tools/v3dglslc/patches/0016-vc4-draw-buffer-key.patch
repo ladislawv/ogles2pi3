@@ -4,7 +4,9 @@ The fragment key gets draw_buffer: gl_FragData[draw_buffer] is the colour
 ogles2.library draws a framebuffer with N attachments in N passes, one
 variant each. v3dglslc sets it through vc4_draw_buffer while it compiles a
 program's variants for gl_FragData[1..3]. Applies after 0015. Off (0),
-nothing changes.
+nothing changes. output_color_index is the output's location times 4
+(ntq_setup_outputs), which is why the store compares offset * 4: Mesa's assert
+only ever saw location 0.
 
 --- a/src/gallium/drivers/vc4/vc4_qir.h
 +++ b/src/gallium/drivers/vc4/vc4_qir.h
@@ -47,7 +49,7 @@ nothing changes.
 -                        assert(offset == c->output_color_index);
 +                        /* ogles2 (patch 0016): another draw buffer's
 +                         * gl_FragData, not this variant's colour. */
-+                        if (offset != c->output_color_index)
++                        if (offset * 4 != c->output_color_index)
 +                                break;
                          for (int i = 0; i < 4; i++) {
                                  c->sample_colors[i] =

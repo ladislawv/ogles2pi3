@@ -125,7 +125,7 @@ static void serialize(enum qstage stage, const struct vc4_key *key, uint32_t key
         /* patch 0019: the texture-parameter emulations (FORMAT.md 1.1) */
         s_u8(&b, key->tex[i].lod_bias | key->tex[i].lod_clamp << 1);
         s_u8(&b, key->tex[i].aniso);
-        s_u8(&b, 0);
+        s_u8(&b, key->tex[i].half_signed); /* patch 0022 */
     }
     if (stage == QSTAGE_FRAG) {
         const struct vc4_fs_key *k = (const struct vc4_fs_key *)key;
@@ -332,7 +332,7 @@ static void r_key_common(struct rd *r, struct vc4_key *k)
             k->tex[i].lod_clamp = (f >> 1) & 1;
             k->tex[i].aniso = r_u8(r) & 7;
         }
-        r_u8(r);
+        k->tex[i].half_signed = r_u8(r) & 1; /* patch 0022 */
     }
 }
 

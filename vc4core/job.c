@@ -33,6 +33,16 @@ int vc4_job_init(struct vc4_job *job)
     return 0;
 }
 
+int vc4_job_init_lists(struct vc4_job *job)
+{
+    memset(job, 0, sizeof(*job));
+    if (vc4_cl_init(&job->bcl, CL_BLOCK) < 0 || vc4_cl_init(&job->rcl, CL_BLOCK) < 0) {
+        vc4_job_free(job);
+        return -1;
+    }
+    return 0;
+}
+
 void vc4_job_free(struct vc4_job *job)
 {
     vc4_cl_free(&job->bcl);

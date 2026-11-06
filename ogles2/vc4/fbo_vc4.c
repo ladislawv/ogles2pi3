@@ -51,14 +51,15 @@ void ogles2_vc4_rb_surface(GLenum format, ULONG base, ULONG ub, ULONG bytes, BOO
     s->ub = 0;
 }
 
-/* 64x64 tiles: one colour target, no 64-bit ones on VC4. */
+/* 64x64 tiles, 64x32 with a half-float attachment (the tile buffer's 64-bit
+ * mode, §2.1): bpp 1 on VC4 says so. Each pass takes the mode of its own
+ * attachment (job_vc4.c); the pools are sized for the taller count. */
 void ogles2_vc4_target_layout(struct OGLES2Target *t, UBYTE depth_format, BOOL wide)
 {
     (void)depth_format;
-    (void)wide;
     t->tile_w = 64;
-    t->tile_h = 64;
-    t->bpp = 0;
+    t->tile_h = wide ? 32 : 64;
+    t->bpp = wide ? 1 : 0;
     t->depth_type = 0;
 }
 
@@ -70,7 +71,7 @@ BOOL ogles2_vc4_target_pools(struct OGLES2Context *ctx, struct v3d_mem *alloc, s
                              ULONG *tiles, ULONG name, struct OGLES2Target *t)
 {
     struct vc4_ctx *c = VC4_CTX(ctx);
-    UWORD tx = (UWORD)((t->w + 63) / 64), ty = (UWORD)((t->h + 63) / 64);
+    UWORD tx = (UWORD)((t->w + 63) / 64), ty = (UWORD)((t->h + t->tile_h - 1) / t->tile_h);
     ULONG need = (ULONG)tx * ty, tsda, talloc, total;
     (void)state;
     t->ta_addr = t->ta_size = t->ts_addr = 0;

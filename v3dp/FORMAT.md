@@ -292,10 +292,12 @@ not stored): for each of the 16 samplers (`VC4_MAX_TEXTURE_SAMPLERS`): `u32 form
 `u8 swizzle[4]`, then `u8` each `compare_mode`, `compare_func`, `wrap_s`, `wrap_t`,
 `force_first_level`, then ogles2's emulated texture parameters (`tools/v3dglslc/patches/0019`; zeros
 before it): `u8` flags (bit 0 `lod_bias`, bit 1 `lod_clamp`), `u8 aniso` (2^aniso lookups, 0 off),
-`u8 pad` (16 bytes). A `wrap_s` or `wrap_t` of 6 (`MIRROR_CLAMP_TO_EDGE`) takes the coordinate's
+`u8 half_signed` (patch 0022; zero before it: 16 bytes). A `wrap_s` or `wrap_t` of 6 (`MIRROR_CLAMP_TO_EDGE`) takes the coordinate's
 absolute value; a `format` of `R16G16B16A16_FLOAT` (56) reads four planes of the S16F type, one a
 channel (patch 0018): four lookups, each `TEXTURE_CONFIG_P0`'s data word carrying the plane in bits
-16 and up (the runtime gives that plane's P0). The key's other view of these bits, the
+16 and up (the runtime gives that plane's P0). With `half_signed` eight: planes 4 to 7 hold each
+channel's negative values, subtracted from planes 0 to 3 (the TMU returns an S16F texel without
+its sign). The key's other view of these bits, the
 multisampled texture's `msaa_width`/`msaa_height`, is not stored: GLES2 samples no
 multisampled textures, and the two views of one union depend on the host's bitfield layout.
 

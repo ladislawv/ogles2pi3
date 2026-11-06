@@ -131,6 +131,21 @@ const struct OGLES2Variant *ogles2_vc4_variant_choose(const struct OGLES2Image *
     return any;
 }
 
+/* v3dglslc compiles a program's file with a fragment variant per
+ * gl_FragData[k], k above 0, that it writes (§2.1), so the file says which it
+ * writes. Without this a gl_FragColor program would compile a variant of the
+ * same code per attachment (the built-in clear's too). */
+UBYTE ogles2_vc4_output_for(const struct OGLES2Image *im, UBYTE att)
+{
+    UWORD i;
+    if (!att)
+        return 0;
+    for (i = 0; i < im->nvariants; i++)
+        if (im->variants[i].stage == OGLES2_VARIANT_FS && (im->variants[i].cbufs & (1u << att)))
+            return att;
+    return 0;
+}
+
 /* Key bytes alike, each sampler entry's comparison function and wraps
  * (bytes 9 to 11) aside, except that a wrap of 6 (MIRROR_CLAMP_TO_EDGE: the
  * shader's absolute value, patch 0019) must be in both or neither (P5 run

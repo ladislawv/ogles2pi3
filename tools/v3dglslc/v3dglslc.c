@@ -842,6 +842,11 @@ static int draw_vc4_reference(GLuint p)
         for (k = 1; k < 4; k++) {
             if (!fsh || !fsh->Program || !(fsh->Program->info.outputs_written & BITFIELD64_BIT(FRAG_RESULT_DATA0 + k)))
                 continue;
+            /* A flush first: only a new job dirties the state that makes
+             * vc4_update_compiled_fs look at the key again. Without it the
+             * first such output kept the last draw's variant (gl_FragData[1]
+             * was never compiled: found 2026-11-05, vc4_keys.py). */
+            _mesa_Flush();
             vc4_draw_buffer = (uint8_t)k;
             _mesa_DrawArrays(GL_TRIANGLES, 0, 3);
             _mesa_Flush();

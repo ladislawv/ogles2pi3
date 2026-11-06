@@ -243,6 +243,10 @@ struct vc4_job
 };
 
 int vc4_job_init(struct vc4_job *job);
+/* A job with lists only, no state buffer of its own: its draws' records are
+ * in another job's (ogles2.library: EXT_draw_buffers' passes, one job a colour
+ * attachment over the same draws, PI3_PLAN §2.1). */
+int vc4_job_init_lists(struct vc4_job *job);
 void vc4_job_free(struct vc4_job *job);
 /* Starts the job's binning list for target t (the context's pools, sized
  * for at least its tiles): the binning mode, the start, the primitive list
