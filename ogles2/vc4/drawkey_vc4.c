@@ -112,6 +112,14 @@ static ULONG stencil_bits(const struct OGLES2State *s, int f, ULONG wm)
            (s->stencil_value_mask[f] & 0xff);
 }
 
+/* The reference clamped to the buffer's range when used, not
+ * masked: -1 is 0 and 256 is 255 (GLES 2.0 4.1.4, as draw_v3d.c; dEQP
+ * fragment_ops.stencil's -1 and max+1). */
+static ULONG stencil_ref_bits(GLint ref)
+{
+    return (ULONG)(ref < 0 ? 0 : ref > 255 ? 255 : ref) << 8;
+}
+
 void ogles2_vc4_stencil_words(const struct OGLES2State *s, ULONG w[3], BOOL *twoside, BOOL *full)
 {
     ULONG fwm = stencil_wm_bits(s->stencil_write_mask[0]), bwm;
@@ -122,14 +130,14 @@ void ogles2_vc4_stencil_words(const struct OGLES2State *s, ULONG w[3], BOOL *two
                 (s->stencil_write_mask[1] & 0xff) != (s->stencil_write_mask[0] & 0xff);
     GLuint back_mask = s->stencil_write_mask[0];
     bwm = fwm;
-    w[0] = stencil_bits(s, 0, fwm) | ((ULONG)s->stencil_ref[0] & 0xff) << 8;
+    w[0] = stencil_bits(s, 0, fwm) | stencil_ref_bits(s->stencil_ref[0]);
     w[1] = 0;
     w[2] = 0;
     if (back) {
         bwm = stencil_wm_bits(s->stencil_write_mask[1]);
         back_mask = s->stencil_write_mask[1];
         w[0] |= 1UL << 30;
-        w[1] = stencil_bits(s, 1, bwm) | 2UL << 30 | ((ULONG)s->stencil_ref[1] & 0xff) << 8;
+        w[1] = stencil_bits(s, 1, bwm) | 2UL << 30 | stencil_ref_bits(s->stencil_ref[1]);
     } else {
         w[0] |= 3UL << 30;
     }

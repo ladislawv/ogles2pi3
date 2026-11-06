@@ -1034,6 +1034,11 @@ static UBYTE *key_record(UBYTE *o, const struct OGLES2Variant *v)
     return o + VC4_VS_RECORD;
 }
 
+/* Key records a keyed image is compiled with, at most. The file then holds each
+ * record's variant, a coordinate twin of each vertex one and the reference draw's
+ * three: 28 * 2 + 3 = 59, with PROGRAM and STRINGS 61 sections of the reader's 64. */
+#define KEYED_RECORDS 28
+
 const struct OGLES2Image *ogles2_image_keyed(struct OGLES2Context *ctx, struct OGLES2Image *im, const UBYTE *keys,
                                              ULONG size)
 {
@@ -1043,7 +1048,7 @@ const struct OGLES2Image *ogles2_image_keyed(struct OGLES2Context *ctx, struct O
     const char *dirs[3];
     UBYTE *recs, *o;
     char *log;
-    ULONG h = 2166136261UL, n, i;
+    ULONG h = 2166136261UL, n, i, skip;
     int d;
     for (i = 0; i < FILE_HASH_DIGITS / 2; i++) {
         hex[2 * i] = digits[im->hash[i] >> 4];
@@ -1079,13 +1084,23 @@ const struct OGLES2Image *ogles2_image_keyed(struct OGLES2Context *ctx, struct O
     if (!im->vs_src || !im->fs_src || !ogles2_compiler_installed())
         return im->keyed;
     /* The keys of the variants it has (fragment and vertex: the compiler
-     * makes each coordinate twin), then the new ones. */
+     * makes each coordinate twin), then the new ones. At most KEYED_RECORDS:
+     * the oldest go, and may be compiled again if a draw needs them, or a
+     * program drawn in many states outgrew the file (the reader's 64 sections:
+     * all its variants refused, the closest drawn, from there on: dEQP
+     * vertex_arrays.multiple_attributes.input_types, 216 sets of attribute
+     * types on one program; and each miss compiled them all again). */
     n = 0;
     if (im->keyed)
         for (i = 0; i < im->keyed->nvariants; i++)
             if (im->keyed->variants[i].key && im->keyed->variants[i].stage != OGLES2_VARIANT_CS)
                 n++;
-    if (!(recs = AllocVec(n * VC4_VS_RECORD + size + 4, MEMF_ANY)) ||
+    skip = n + 2 > KEYED_RECORDS ? n + 2 - KEYED_RECORDS : 0; /* the draw's: a fragment and a vertex record */
+    if (skip) { /* those sets of keys may be asked for again */
+        im->nkeyed_req = 1;
+        im->keyed_req[0] = h;
+    }
+    if (!(recs = AllocVec((n - skip) * VC4_VS_RECORD + size + 4, MEMF_ANY)) ||
         !(log = AllocVec(1024, MEMF_ANY | MEMF_CLEAR))) {
         if (recs)
             FreeVec(recs);
@@ -1094,8 +1109,12 @@ const struct OGLES2Image *ogles2_image_keyed(struct OGLES2Context *ctx, struct O
     o = recs;
     if (im->keyed)
         for (i = 0; i < im->keyed->nvariants; i++)
-            if (im->keyed->variants[i].key && im->keyed->variants[i].stage != OGLES2_VARIANT_CS)
-                o = key_record(o, &im->keyed->variants[i]);
+            if (im->keyed->variants[i].key && im->keyed->variants[i].stage != OGLES2_VARIANT_CS) {
+                if (skip)
+                    skip--;
+                else
+                    o = key_record(o, &im->keyed->variants[i]);
+            }
     memcpy(o, keys, size);
     o += size;
     strcpy(path, dirs[2]);

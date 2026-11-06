@@ -1604,6 +1604,28 @@ Everything that can run here runs here first (the developer, 2026-11-03).
      it. They now follow when the pair changes (`fbo.c`'s `stencil_home`, a backend's `rb_stencil_copy`, 0
      on V3D). `fbo` 709 of 709.
 
+   Found by the later groups, each to be confirmed by a rerun of its group:
+   - **sampler arrays in the compiler's reference draw** (`uniform_api`'s `sampler2D_samplerCube` cases
+     12): `draw_vc4_reference` set only an array's element 0, the rest stayed on unit 0, and beside a cube
+     sampler there the draw was a GL error, no variants, and the link failed ("the program binary could
+     not be written"). Every element its own unit now, as `bind_samplers`. The parts run with it passed;
+     the host compiler is rebuilt, **the m68k one owes its rebuild**.
+   - **a program drawn in many states outgrew its keyed file** (`vertex_arrays.multiple_attributes.input_types`
+     70): the writer took 64 variants, the reader 64 sections, so at 66 sections the file was refused,
+     and every later draw used the closest variant. `ogles2_image_keyed` now compiles at most
+     `KEYED_RECORDS` (28) records, the oldest dropped and compiled again if drawn again: 30 variants and
+     no refusals since. A program cycling through more states than that compiles often.
+   - **the stencil reference masked, not clamped** (`fragment_ops.stencil` 8): -1 was 255 and 256 was 0;
+     `draw_v3d.c` always clamped.
+   - **the host compiler aborted once** (`fragment_ops.random.25`): `fake_drm.c`'s `MAX_BOS` (4,096 buffer
+     objects; VC4 keeps every variant) filled up after thousands of compiles in one process. The bridge
+     starts it again and asks once more. On the A1200 the same abort ends the on-target server, which the
+     library starts again at its next compile, the draw that hit it using the closest variant.
+   Not-supported so far, against Mesa's counts (its case names are on the Pi 3's card, not checked here):
+   `shaders` 91 to its 90 (89 loops and `return_in_dynamic_loop_dynamic_vertex`, "Non-uniform loops are
+   unsupported in the vertex shader"; the extra one `fragdata.invalid_assign_to_1`, which needs a single draw
+   buffer, and we offer `EXT_draw_buffers`).
+
    **The Wi-Fi link is the run's main obstacle, its cause not found.** The Amiga loses the network in
    mid-run, every 7 to 19 minutes that day and sometimes within two minutes of boot. Seen:
    ping and TCP stop while the machine lives (the pointer moves, netwatch's timers run); at one drop

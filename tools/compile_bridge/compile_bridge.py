@@ -91,21 +91,31 @@ class Compiler:
         self.p = None
 
     def request(self, version, op, device, vs, fs, bindings, keys, out_path):
-        """(result, log) of one request; the compiler writes out_path."""
-        if self.p and self.p.poll() is None and os.path.getmtime(self.path) != self.mtime:
-            self.restart()
-        if not self.p or self.p.poll() is not None:
-            self.start()
-        self.p.stdin.write(b"V2Q1" + u32(version) + u32(op) + u32(device) + string(vs) + string(fs) +
-                           string(bindings) + string(keys) + string(out_path.encode()))
-        self.p.stdin.flush()
-        head = self.p.stdout.read(12)
-        if len(head) != 12 or head[:4] != b"V2A1":
+        """(result, log) of one request; the compiler writes out_path. A compiler
+        that ends is started again and asked once more: one process fills its fake
+        device's table of buffer objects (fake_drm.c's MAX_BOS: VC4 keeps every
+        variant) and aborts, after thousands of compiles, which cost a dEQP case
+        its variants (fragment_ops.random.25, 2026-11-06)."""
+        for _ in range(2):
+            if self.p and self.p.poll() is None and os.path.getmtime(self.path) != self.mtime:
+                self.restart()
+            if not self.p or self.p.poll() is not None:
+                self.start()
+            try:
+                self.p.stdin.write(b"V2Q1" + u32(version) + u32(op) + u32(device) + string(vs) + string(fs) +
+                                   string(bindings) + string(keys) + string(out_path.encode()))
+                self.p.stdin.flush()
+                head = self.p.stdout.read(12)
+            except BrokenPipeError:
+                head = b""
+            if len(head) == 12 and head[:4] == b"V2A1":
+                result, n = struct.unpack(">iI", head[4:])
+                return result, self.p.stdout.read(n)
             self.p.kill()
+            self.p.wait()
             self.p = None
-            return 2, b"compile_bridge: the host compiler ended"
-        result, n = struct.unpack(">iI", head[4:])
-        return result, self.p.stdout.read(n)
+            print("%s the host compiler ended: started again" % time.strftime("%H:%M:%S"), flush=True)
+        return 2, b"compile_bridge: the host compiler ended"
 
 
 def serve_request(comp, version, op, device, vs, fs, bindings, keys, name):

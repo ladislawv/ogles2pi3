@@ -799,18 +799,26 @@ static int draw_vc4_reference(GLuint p)
     _mesa_GetProgramiv(p, GL_ACTIVE_UNIFORMS, &n);
     for (i = 0; i < n; i++) {
         char name[256];
-        GLint size, loc;
+        GLint size, loc, units[32], j;
         GLenum type;
         _mesa_GetActiveUniform(p, i, sizeof(name), NULL, &size, &type, name);
         if (type != GL_SAMPLER_2D && type != GL_SAMPLER_CUBE)
             continue;
         loc = _mesa_GetUniformLocation(p, name);
-        _mesa_ActiveTexture(GL_TEXTURE0 + unit);
-        _mesa_BindTexture(type == GL_SAMPLER_CUBE ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D,
-                          type == GL_SAMPLER_CUBE ? texcube : tex2d);
+        /* Every element of an array its own unit (bind_samplers): the rest left on
+         * unit 0, beside a sampler of the other kind there, make the draw an error
+         * and the link fail (dEQP uniform_api's sampler2D_samplerCube cases). */
+        if (size > 32)
+            size = 32;
+        for (j = 0; j < size; j++) {
+            units[j] = unit;
+            _mesa_ActiveTexture(GL_TEXTURE0 + unit);
+            _mesa_BindTexture(type == GL_SAMPLER_CUBE ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D,
+                              type == GL_SAMPLER_CUBE ? texcube : tex2d);
+            unit++;
+        }
         if (loc >= 0)
-            _mesa_Uniform1i(loc, unit);
-        unit++;
+            _mesa_Uniform1iv(loc, size, units);
     }
     _mesa_ActiveTexture(GL_TEXTURE0);
     _mesa_GetProgramiv(p, GL_ACTIVE_ATTRIBUTES, &n);
