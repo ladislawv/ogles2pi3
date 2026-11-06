@@ -168,6 +168,64 @@ static void test_elements(void)
         sprintf(msg, "glDrawElements 32-bit (8-11): left %06lx empty, right %06lx green", a, b);
         check(a == 0 && b == 0x00FF00, msg);
     }
+    {
+        /* 32-bit indices spanning more than 16 bits (VC4 draws in 16: its
+         * backend splits them on the CPU): a right quad of four vertices 70,000
+         * apart, a list and a strip, from client arrays and from a static buffer. */
+        enum { BIG = 70000 };
+        static const ULONG big_list[6] = {0, BIG / 3, 2 * BIG / 3, 2 * BIG / 3, BIG / 3, BIG - 1};
+        static const ULONG big_strip[4] = {0, BIG / 3, 2 * BIG / 3, BIG - 1};
+        static const ULONG corner[4] = {0, BIG / 3, 2 * BIG / 3, BIG - 1};
+        GLfloat *bp = malloc(BIG * 3 * sizeof(GLfloat)), *bc = malloc(BIG * 4 * sizeof(GLfloat));
+        if (bp && bc) {
+            GLuint vb[2];
+            int how;
+            memset(bp, 0, BIG * 3 * sizeof(GLfloat));
+            memset(bc, 0, BIG * 4 * sizeof(GLfloat));
+            for (k = 0; k < 4; k++) {
+                bp[corner[k] * 3] = 0.1f + ((k & 1) ? 0.8f : 0.0f);
+                bp[corner[k] * 3 + 1] = (k & 2) ? 0.8f : -0.8f;
+                bc[corner[k] * 4 + 1] = 1.0f;
+                bc[corner[k] * 4 + 3] = 1.0f;
+            }
+            glGenBuffers(2, vb);
+            glBindBuffer(GL_ARRAY_BUFFER, vb[0]);
+            glBufferData(GL_ARRAY_BUFFER, BIG * 3 * sizeof(GLfloat), bp, GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, vb[1]);
+            glBufferData(GL_ARRAY_BUFFER, BIG * 4 * sizeof(GLfloat), bc, GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            for (how = 0; how < 4; how++) {
+                GLubyte px[4], off[4];
+                if (how & 2) {
+                    glBindBuffer(GL_ARRAY_BUFFER, vb[0]);
+                    glVertexAttribPointer(lp, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                    glBindBuffer(GL_ARRAY_BUFFER, vb[1]);
+                    glVertexAttribPointer(lc, 4, GL_FLOAT, GL_FALSE, 0, 0);
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+                } else {
+                    glVertexAttribPointer(lp, 3, GL_FLOAT, GL_FALSE, 0, bp);
+                    glVertexAttribPointer(lc, 4, GL_FLOAT, GL_FALSE, 0, bc);
+                }
+                glClear(GL_COLOR_BUFFER_BIT);
+                if (how & 1)
+                    glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_INT, big_strip);
+                else
+                    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, big_list);
+                glReadPixels(W * 3 / 4, H / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, px);
+                glReadPixels(W / 4, H / 2, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, off);
+                sprintf(msg, "32-bit indices 70,000 apart, %s %s: right %02x%02x%02x green, left %02x%02x%02x empty",
+                        how & 1 ? "a strip" : "a list", how & 2 ? "from a buffer" : "from client arrays", px[0], px[1],
+                        px[2], off[0], off[1], off[2]);
+                check(px[0] == 0 && px[1] == 255 && px[2] == 0 && off[0] == 0 && off[1] == 0 && off[2] == 0, msg);
+            }
+            glVertexAttribPointer(lp, 3, GL_FLOAT, GL_FALSE, 0, pos);
+            glVertexAttribPointer(lc, 4, GL_FLOAT, GL_FALSE, 0, col);
+            glDeleteBuffers(2, vb);
+            aglSwapBuffers();
+        }
+        free(bp);
+        free(bc);
+    }
     glDisableVertexAttribArray(lc);
     glUseProgram(0);
     glDeleteProgram(p);

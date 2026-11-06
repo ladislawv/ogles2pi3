@@ -192,6 +192,7 @@ struct vc4_surface
 
 #define VC4_COLOR 1
 #define VC4_ZS 2
+#define VC4_TILE_FULL_RES (64u * 64u * 4u) /* a tile in a full-resolution store (Linux: VC4_TILE_BUFFER_SIZE) */
 
 /* What a job renders into. A raster colour image is width pixels a row,
  * rounded up to 4 (PI3_PLAN §2, "Raster stores"). */
@@ -205,6 +206,9 @@ struct vc4_target
     struct vc4_surface color, zs;
     uint32_t color_load_bus; /* 0: the colour is loaded from color.bus; else from here (the
                               * same tiling and format: a copy, vc4_draw peekscreen) */
+    uint8_t zs_full;       /* with msaa: zs.bus holds every tile's depth and stencil samples, all
+                            * four a pixel, VC4_TILE_FULL_RES bytes a tile in tile order (the
+                            * full-resolution store and load: a general store keeps one) */
     uint8_t load;          /* VC4_COLOR | VC4_ZS: loaded at each tile's start */
     uint8_t store;         /* and stored at its end */
     uint8_t clear;         /* cleared (the clear values below), instead of loaded */

@@ -766,6 +766,7 @@ GLuint ogles2_buffer_name(const struct OGLES2Buffer *b);
 ULONG ogles2_buffer_size(const struct OGLES2Buffer *b);
 const void *ogles2_buffer_indices(struct OGLES2Context *ctx, ULONG offset, ULONG bytes, BOOL *bad);
 const UBYTE *ogles2_buffer_stream(const struct OGLES2Buffer *b);
+const UBYTE *ogles2_buffer_shadow(const struct OGLES2Buffer *b);
 ULONG ogles2_buffer_copy(struct OGLES2Context *ctx, struct OGLES2Buffer *b, ULONG offset, GLint size,
                          GLenum type, GLboolean normalized, GLsizei stride, ULONG elem_bytes,
                          ULONG *dst_stride, ULONG *vertices,

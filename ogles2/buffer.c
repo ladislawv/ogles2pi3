@@ -569,6 +569,13 @@ const UBYTE *ogles2_buffer_stream(const struct OGLES2Buffer *b)
     return b->usage != GL_STATIC_DRAW ? b->data : 0;
 }
 
+/* Its shadow whatever its usage: for a backend that must read vertices on the
+ * CPU (VC4: indices spanning more than its 16 bits, draw_vc4.c). */
+const UBYTE *ogles2_buffer_shadow(const struct OGLES2Buffer *b)
+{
+    return b->data;
+}
+
 /* A GPU copy of buffer `b` read as an attribute array of `size` components
  * of `type` at `offset` with `stride` (0: packed): converted with
  * `convert` (draw.c's, as for client arrays) into tightly packed elements.

@@ -700,6 +700,90 @@ static ULONG code_bus(const struct OGLES2Image *im, const struct OGLES2Variant *
     return im->code_mem ? im->code_mem->busaddr + v->code_offset : 0;
 }
 
+/* A draw VC4 cannot make whole: indices spanning more than its 16 bits
+ * (OES_element_index_uint, Mesa does not do this: §2.1), or a loop or fan of
+ * more vertices. On the CPU: the primitives as a plain list, a part of at most
+ * 65535 vertices at a time, each drawn from a copy of its vertices as client
+ * arrays. Slow, and rare. */
+static BOOL draw_big(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
+{
+    struct OGLES2Program *p = dc->p;
+    const struct OGLES2Elements *el = dc->el;
+    struct OGLES2Array saved[8];
+    GLuint which[8];
+    struct OGLES2DrawCall part = *dc;
+    GLenum mode = dc->mode;
+    ULONG c = el ? (ULONG)el->count : (ULONG)dc->count, total, at, limit, k;
+    int nslots = p->nslots == 0xff ? 0 : p->nslots, nv = 0, i;
+    BOOL ok = TRUE;
+    if (nslots > 8)
+        nslots = 8;
+    switch (mode) {
+    case GL_TRIANGLES: total = c - c % 3; limit = 65535; break;
+    case GL_TRIANGLE_STRIP:
+    case GL_TRIANGLE_FAN: total = c >= 3 ? (c - 2) * 3 : 0; limit = 65535; part.mode = GL_TRIANGLES; break;
+    case GL_LINES: total = c - c % 2; limit = 65534; break;
+    case GL_LINE_STRIP: total = c >= 2 ? (c - 1) * 2 : 0; limit = 65534; part.mode = GL_LINES; break;
+    case GL_LINE_LOOP: total = c >= 2 ? c * 2 : 0; limit = 65534; part.mode = GL_LINES; break;
+    default: total = c; limit = 65535; break;
+    }
+    part.el = 0;
+    part.first = 0;
+    for (i = 0; i < nslots; i++) { /* the arrays the program reads, each once */
+        GLuint g = p->slot_attrib[i];
+        int j;
+        if (g >= OGLES2_MAX_VERTEX_ATTRIBS || !ctx->array[g].enabled)
+            continue;
+        for (j = 0; j < nv && which[j] != g; j++)
+            ;
+        if (j == nv) {
+            which[nv] = g;
+            saved[nv++] = ctx->array[g];
+        }
+    }
+    for (at = 0; at < total && ok; at += limit) {
+        ULONG n = total - at < limit ? total - at : limit, bytes = 0;
+        UBYTE *copy, *to;
+        for (i = 0; i < nv; i++)
+            bytes += (ULONG)saved[i].size * (ULONG)type_size(saved[i].type) * n;
+        if (!(copy = AllocVec(bytes + 4, MEMF_ANY)))
+            return FALSE;
+        to = copy;
+        for (i = 0; i < nv; i++) {
+            const struct OGLES2Array *a = &saved[i];
+            ULONG es = (ULONG)a->size * (ULONG)type_size(a->type), stride = a->stride ? (ULONG)a->stride : es;
+            const UBYTE *from = a->buffer ? ogles2_buffer_shadow(a->buffer) + (ULONG)a->pointer : (const UBYTE *)a->pointer;
+            for (k = 0; k < n; k++) {
+                ULONG o = at + k, t, j;
+                switch (mode) {
+                case GL_TRIANGLE_STRIP: /* an odd triangle's first two swapped: the winding stays */
+                    t = o / 3;
+                    j = o % 3 == 2 ? t + 2 : (o % 3) ^ (t & 1) ? t + 1 : t;
+                    break;
+                case GL_TRIANGLE_FAN:
+                    t = o / 3;
+                    j = o % 3 == 0 ? 0 : t + o % 3;
+                    break;
+                case GL_LINE_STRIP: j = o / 2 + o % 2; break;
+                case GL_LINE_LOOP: j = (o / 2 + o % 2) % c; break;
+                default: j = o; break;
+                }
+                memcpy(to + k * es, from + ((ULONG)dc->first + poly_index(el, j)) * stride, es);
+            }
+            ctx->array[which[i]].pointer = to;
+            ctx->array[which[i]].stride = 0;
+            ctx->array[which[i]].buffer = 0;
+            to += n * es;
+        }
+        part.count = (GLsizei)n;
+        ok = ogles2_vc4_draw(ctx, &part); /* copies them into the job's state */
+        for (i = 0; i < nv; i++)
+            ctx->array[which[i]] = saved[i];
+        FreeVec(copy);
+    }
+    return ok;
+}
+
 BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
 {
     struct vc4_ctx *c = VC4_CTX(ctx);
@@ -721,6 +805,9 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
 
     if (c->bad)
         return FALSE;
+    if (el ? (ULONG)dc->count - 1 > MAX_VERTS
+           : (ULONG)dc->count > MAX_VERTS && (mode == GL_TRIANGLE_FAN || mode == GL_LINE_LOOP))
+        return draw_big(ctx, dc);
     /* glPolygonMode, which VC4 has no hardware for (P5 run 1, m6_ext): a
      * triangle draw's vertices drawn as points, or its triangles' edges as a
      * line list built at the emission below; face culling cannot come first
@@ -848,16 +935,10 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
             if (!pass) {
                 UBYTE *x;
                 /* The largest is the front end's range (it copied that many
-                 * vertices). No branch in these loops: Emu68 runs a loop with
-                 * branches at a third of the speed (draw.c). */
+                 * vertices; more than 16 bits: draw_big). No branch in these
+                 * loops: Emu68 runs a loop with branches at a third of the
+                 * speed (draw.c). */
                 imax = (ULONG)dc->count - 1;
-                if (imax > MAX_VERTS) {
-                    if (d->told_big != im) {
-                        d->told_big = im;
-                        ogles2_log("draw: indices span more than 65536 vertices: VC4 cannot draw them (logged once a program)");
-                    }
-                    return TRUE; /* nothing drawn */
-                }
                 if (!(x = claim(c, (bytes ? n : 2 * n) + 4, 16, &ib)))
                     goto nomem;
                 if (el->type == GL_UNSIGNED_SHORT) {
@@ -884,7 +965,7 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
                      .address_of_indices_list = ib, .maximum_index = imax);
         } else {
             /* parts of up to 65535 vertices (Mesa's vc4_draw_vbo); strips go on
-             * from their last vertices; loops and fans are drawn whole up to the limit */
+             * from their last vertices; loops and fans go to draw_big first */
             ULONG left = (ULONG)dc->count, start = 0, part, step;
             while (left) {
                 part = step = left;

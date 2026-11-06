@@ -1564,9 +1564,13 @@ Everything that can run here runs here first (the developer, 2026-11-03).
       before, since a swap on a screen of the library's lets the render run on (M6), a few checks a
       run as the timing fell. Then the Pi 4 card's regression for the shared changes (`draw.c`,
       `fbo.c`, `display.c`, the card-aware tests: `p2_checks.sh`, expected as on 2026-11-05 morning).
-   5. Smaller: 4x MSAA's depth and stencil across a mid-frame flush (the full-resolution tile
-      store and load: m6-10, 3 failures); half floats with negative values: **done (2026-11-06,
-      §2 "Textures", patch 0022: m6-6 391 of 391)**; 32-bit indices spanning more than 65,536 vertices (the CPU's split);
+   5. Smaller: 4x MSAA's depth and stencil across a mid-frame flush: **done (2026-11-06)**, the
+      full-resolution tile store and load (`vc4_target.zs_full`, 16 KB a tile in tile order, as Linux's
+      `vc4_render_cl.c`), m6-10 210 of 210; half floats with negative values: **done (2026-11-06,
+      §2 "Textures", patch 0022: m6-6 391 of 391)**; 32-bit indices spanning more than 65,536 vertices:
+      **done (2026-11-06)**, `draw_big` in `draw_vc4.c` draws the primitives as plain lists of at most
+      65,535 vertices from copies on the CPU, loops and fans of arrays too (`m2_elements`' new cases,
+      a list and a strip, client arrays and a static buffer, four vertices 70,000 apart);
       ERRSTAT VCMRE (bit 13) seen in some renders with right pictures; Mesa's mipmap picture for
       `vc4_draw` (the Pi 3 under Linux again); the GPU paths of glGenerateMipmap and glCopyTex*.
    6. S2 on the Pi 3 card: the 19 MB `v3dglslc` on the A1200 (its time and memory, the

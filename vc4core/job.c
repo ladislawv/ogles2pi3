@@ -163,22 +163,34 @@ static void build_rcl(struct vc4_job *job)
                     coords(cl, x, y);
                     store_none(cl, 1);
                 }
-                VC4_EMIT(cl, LOAD_TILE_BUFFER_GENERAL,
-                         .memory_base_address_of_frame_tile_dump_buffer = t->zs.bus,
-                         .buffer_to_store = VC4_BUFFER_TO_STORE_Z_STENCIL,
-                         .format = t->zs.tiling);
+                if (t->zs_full) /* no tile coordinates of its own: the tile's address (Linux's vc4_render_cl.c) */
+                    VC4_EMIT(cl, RE_LOAD_FULL_RESOLUTION_TILE_BUFFER,
+                             .address = t->zs.bus + VC4_TILE_FULL_RES * (uint32_t)(y * job->tiles_x + x),
+                             .disable_color_buffer_read = 1);
+                else
+                    VC4_EMIT(cl, LOAD_TILE_BUFFER_GENERAL,
+                             .memory_base_address_of_frame_tile_dump_buffer = t->zs.bus,
+                             .buffer_to_store = VC4_BUFFER_TO_STORE_Z_STENCIL,
+                             .format = t->zs.tiling);
             }
             coords(cl, x, y);
             if (first)
                 VC4_EMIT0(cl, WAIT_ON_SEMAPHORE);
             VC4_EMIT(cl, BRANCH_TO_SUB_LIST, .address = job->pools->talloc + (uint32_t)(y * job->tiles_x + x) * 32);
             if (store_zs) {
-                VC4_EMIT(cl, STORE_TILE_BUFFER_GENERAL,
-                         .memory_base_address_of_frame_tile_dump_buffer = t->zs.bus,
-                         .buffer_to_store = VC4_BUFFER_TO_STORE_Z_STENCIL,
-                         .format = t->zs.tiling,
-                         .disable_color_buffer_clear_on_store_dump = (uint32_t)store_c,
-                         .last_tile_of_frame = (uint32_t)(last && !store_c));
+                if (t->zs_full)
+                    VC4_EMIT(cl, STORE_FULL_RESOLUTION_TILE_BUFFER,
+                             .address = t->zs.bus + VC4_TILE_FULL_RES * (uint32_t)(y * job->tiles_x + x),
+                             .disable_color_buffer_write = 1,
+                             .disable_clear_on_write = (uint32_t)store_c,
+                             .last_tile = (uint32_t)(last && !store_c));
+                else
+                    VC4_EMIT(cl, STORE_TILE_BUFFER_GENERAL,
+                             .memory_base_address_of_frame_tile_dump_buffer = t->zs.bus,
+                             .buffer_to_store = VC4_BUFFER_TO_STORE_Z_STENCIL,
+                             .format = t->zs.tiling,
+                             .disable_color_buffer_clear_on_store_dump = (uint32_t)store_c,
+                             .last_tile_of_frame = (uint32_t)(last && !store_c));
                 if (store_c)
                     coords(cl, x, y);
             }

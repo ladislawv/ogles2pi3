@@ -21,7 +21,8 @@
  *
  * Depth and stencil: the tile buffer's (Z24S8), cleared at a job's start;
  * kept across a mid-frame flush in a T-format image of the context's (4x
- * MSAA: not kept, left). A framebuffer object's depth and stencil images
+ * MSAA: every sample of every tile, by the full-resolution store and load: a
+ * general store keeps one sample a pixel). A framebuffer object's depth and stencil images
  * are one Z24S8 image on VC4 (fbo_vc4.c): its depth's, else its stencil's.
  *
  * EXT_draw_buffers (PI3_PLAN §2.1): VC4 has one colour buffer, so a
@@ -242,14 +243,20 @@ BOOL ogles2_vc4_job_keep_zs(struct OGLES2Context *ctx)
 {
     struct vc4_ctx *c = VC4_CTX(ctx);
     struct vc4_texture_layout lay;
-    if ((!ctx->depth_bits && !ctx->stencil_bits) || ctx->job_msaa)
-        return FALSE; /* 4x MSAA: the general store keeps one sample a pixel (left, §10) */
+    ULONG size;
+    if (!ctx->depth_bits && !ctx->stencil_bits)
+        return FALSE;
     if (c->zs.size && c->zs_w == c->frame_w && c->zs_h == ctx->height)
         return TRUE;
     if (c->zs.size)
         vc4_mem_free(&c->zs);
-    vc4_texture_layout(&lay, c->frame_w, ctx->height, 4, 1, 1);
-    if (vc4_mem_alloc(&c->zs, lay.size) < 0)
+    if (ctx->job_msaa) {
+        size = (ULONG)((c->frame_w + 31) / 32) * (ULONG)((ctx->height + 31) / 32) * VC4_TILE_FULL_RES;
+    } else {
+        vc4_texture_layout(&lay, c->frame_w, ctx->height, 4, 1, 1);
+        size = lay.size;
+    }
+    if (vc4_mem_alloc(&c->zs, size) < 0)
         return FALSE;
     c->zs_w = c->frame_w;
     c->zs_h = (UWORD)ctx->height;
@@ -374,6 +381,7 @@ BOOL ogles2_vc4_job_build(struct OGLES2Context *ctx, const struct OGLES2Target *
         if (has_zs && (store_zs || (ctx->zs_saved && !ctx->job_clear_zs))) {
             t->zs.bus = c->zs.bus;
             t->zs.tiling = vc4_size_is_lt(fw, ctx->height, 4) ? VC4_TILING_LT : VC4_TILING_T;
+            t->zs_full = t->msaa;
             if (store_zs)
                 t->store |= VC4_ZS;
             if (ctx->zs_saved && !ctx->job_clear_zs)
