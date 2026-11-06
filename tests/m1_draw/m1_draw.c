@@ -47,6 +47,7 @@ struct readback {
     struct RastPort *rp;
     int x0, y0, w, h;
     int visible;
+    int through_gl; /* a screen of the library's: glReadPixels, see px() */
     struct RastPort own;
 };
 
@@ -68,6 +69,15 @@ static double now_ms(void)
 /* Colour at GL window coordinates (bottom-left origin), 0xRRGGBB. */
 static unsigned long px(struct readback *r, int x, int y)
 {
+    /* A swap on a screen of the library's lets the render run on (M6), and the
+     * CPU's cache may hold the frame before: glReadPixels waits and invalidates
+     * (display.c, ogles2_display_read). Read directly, QUICK saw the frame before,
+     * a few checks of each run, more or fewer as the timing fell (2026-11-06). */
+    if (r->through_gl) {
+        unsigned char c[4] = {0, 0, 0, 0};
+        glReadPixels(x, y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, c);
+        return (unsigned long)c[0] << 16 | (unsigned long)c[1] << 8 | c[2];
+    }
     return ReadRGBPixel(r->rp, (UWORD)(r->x0 + x), (UWORD)(r->y0 + r->h - 1 - y)) & 0xFFFFFF;
 }
 
@@ -531,6 +541,7 @@ static void test_bitmap(void)
         r.w = 320;
         r.h = 240;
         r.visible = 0;
+        r.through_gl = 0;
         run_kind("bitmap", ctx, &r);
         finish_kind("bitmap", ctx, before);
     } else {
@@ -561,6 +572,7 @@ static void test_window(void)
     r.w = (int)w;
     r.h = (int)h;
     r.visible = 1;
+    r.through_gl = 0;
     run_kind("window", ctx, &r);
     finish_kind("window", ctx, before);
 }
@@ -610,6 +622,7 @@ static void test_fullscreen(void)
     r.w = (int)w;
     r.h = (int)h;
     r.visible = 1;
+    r.through_gl = 1;
     run_kind("fullscreen", ctx, &r);
     finish_kind("fullscreen", ctx, before);
 }

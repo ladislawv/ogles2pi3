@@ -121,7 +121,7 @@ for t in "$@"; do
         exit 4
     fi
     need run -t 30 "Assign OGLES2Cache:" > /dev/null
-    R=$(ls -d "$RES/ogles2-$t"-* 2>/dev/null | tail -1)
+    R=$(ls -d "$RES/ogles2-$t"-2[0-9]* 2>/dev/null | tail -1) # dated: not an old "-run3", which sorts after them
     if [ -z "$R" ] || [[ "${R##*ogles2-$t-}" < "$stamp" ]]; then
         echo "$(date +%T) $t: NO RESULTS from this run"
         continue

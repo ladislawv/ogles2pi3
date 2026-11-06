@@ -1554,11 +1554,16 @@ Everything that can run here runs here first (the developer, 2026-11-03).
       frame; the draw stages not touched (textures 1.6, uniforms 1.9, checks 1.3) would give about
       2 ms more at most (`tests/a1200/results/ogles2-m6-5-20261106-1[01]*`). m5-1, m6-6, m7-4, m7-5
       and m2-5's pictures as before.
-   4. The remaining packages on the Pi 3 card: SDL2 and SDL3 (m6-3, m6-4), Quake III through
-      gl4es (m6-2), glmark2 (m6-7), dEQP-GLES2 (m7-1, `p2_deqp.sh` with the bridge), the rest of
-      m7 and the older m1, m3 and m4 packages; then the Pi 4 card's regression for today's
-      shared changes (`draw.c`, `fbo.c`, `display.c`, the card-aware tests: `p2_checks.sh`,
-      expected as on 2026-11-05 morning).
+   4. The remaining packages on the Pi 3 card. **Done (2026-11-06) but dEQP-GLES2 (m7-1, with P6):**
+      SDL2 and SDL3 (m6-3, m6-4: 91.3 fps a target texture), Quake III through gl4es (m6-2: 22.8 fps,
+      the Pi 4 card 42.7 in October), glmark2 (m6-7: score 69, the Pi 4 card 251), m6-1, m6-9, m7-7
+      (2), m7-8 (37), m3-1 (114), m3-2 (143), m4-1 (189), m4-2 (806 fps, 800 triangles), m2-1 (103),
+      m2-2 (166), m2-3 (114), m1-1 (59), m1-2 (59), m1-3 (69), m1-4 (14), m1-6 (81), m1-7 (81), m1-8,
+      m1-9 (26), m1-10 (74): none FAIL, no frame dropped, every context's memory back. `m1_draw`
+      in fullscreen reads through `glReadPixels` now: read directly with QUICK, it saw the frame
+      before, since a swap on a screen of the library's lets the render run on (M6), a few checks a
+      run as the timing fell. Then the Pi 4 card's regression for the shared changes (`draw.c`,
+      `fbo.c`, `display.c`, the card-aware tests: `p2_checks.sh`, expected as on 2026-11-05 morning).
    5. Smaller: 4x MSAA's depth and stencil across a mid-frame flush (the full-resolution tile
       store and load: m6-10, 3 failures); half floats with negative values: **done (2026-11-06,
       §2 "Textures", patch 0022: m6-6 391 of 391)**; 32-bit indices spanning more than 65,536 vertices (the CPU's split);
