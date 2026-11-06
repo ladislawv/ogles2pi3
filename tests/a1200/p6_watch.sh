@@ -11,7 +11,8 @@
 # seconds (480) while a run is on, a new reset in netwatch's log, or netwatch gone from a station that
 # answers (it does not end by itself: the machine restarted, even if the log's last line was lost): the
 # PC's side of the run is killed (p6_deqp.sh then recovers and tries the group again), and this script
-# exits, so that whoever started it hears of it at once. Exit status 3: a stall; 5: the Amiga was
+# exits, so that whoever started it hears of it at once. A station that answers slowly (SLOW_MS, 1000,
+# SLOW_POLLS polls running, 3) is rebooted the same way. Exit status 3: a stall; 5: the Amiga was
 # reset; 0: the batch ended. Start it again after 3 or 5: netwatch goes on meanwhile.
 #   bash tests/a1200/p6_watch.sh
 set -u
@@ -25,6 +26,8 @@ BR=Stuff:amigent/bridge
 NLOG=Stuff:amigent/netwatch.log
 POLL=${POLL:-60}
 STALL=${STALL:-480}
+SLOW_MS=${SLOW_MS:-1000}
+SLOW_POLLS=${SLOW_POLLS:-3}
 SUM=$(ls -t "$HERE"/results/p6-deqp-*.txt 2> /dev/null | grep -v -- -watch | head -1)
 LOG=${SUM%.txt}-watch.txt
 last=""
@@ -41,12 +44,16 @@ kill_run() { # the PC's side: a client that lost its station may ignore a TERM
 # this PC's): a run begun after the reset is alive, and this script may hear of the reset minutes late
 # (2026-11-06: it killed a healthy run that way). A line without a time: all of them.
 kill_older_than_reset() {
-    local m s age p e
+    local m s age
     m=$(echo "$1" | sed -nE 's/.* min ([0-9]+) sec ([0-9]+):.*/\1/p')
     s=$(echo "$1" | sed -nE 's/.* min ([0-9]+) sec ([0-9]+):.*/\2/p')
     [ -n "$m" ] && [ -n "$s" ] || { kill_run; return; }
     age=$(($(date +%s) - $(date -d 00:00 +%s) - m * 60 - s))
     [ "$age" -gt 0 ] || { kill_run; return; }
+    kill_older_than "$age"
+}
+kill_older_than() { # seconds
+    local age=$1 p e
     for p in $(pgrep -f 'amigent-ctl runpkg'); do
         e=$(ps -o etimes= -p "$p" 2> /dev/null)
         if [ "${e:-0}" -ge "$age" ]; then
@@ -75,16 +82,35 @@ ensure_netwatch() { # 0: it runs, or was only now started the first time; 1: it 
 note "watch: every $POLL s, a stall after $STALL s, on $(basename "$SUM")"
 known=$(resets)
 known=${known:-0}
+slow=0
+back_at=""
 while pgrep -f 'p6_deqp\.sh' > /dev/null; do
+    t0=$(date +%s%N)
     if ! timeout 15 "$CTL" hello > /dev/null 2>&1; then
         down=$((down + 1))
-        [ $((down % 5)) = 1 ] && note "the station does not answer"
+        [ $((down % 20)) = 1 ] && note "the station does not answer"
         since=$(date +%s)
         last=""
-        sleep "$POLL"
+        slow=0
+        # Soon, not POLL: netwatch must run as soon as the machine is back. A link lost again within
+        # a minute of a boot, before this looked, left it without one for half an hour (2026-11-06).
+        sleep 5
         continue
     fi
+    [ "$down" -gt 0 ] && back_at=$(date +%s)
     down=0
+    # A slow link: every exchange about 2 s, not about 0.1 (compiles 1,950 ms, not 40), for hours and
+    # until a reboot, which clears it (2026-11-06; PI3_PLAN §10). A part would take many times as long.
+    ms=$((($(date +%s%N) - t0) / 1000000))
+    if [ "$ms" -ge "$SLOW_MS" ]; then slow=$((slow + 1)); else slow=0; fi
+    if [ "$slow" -ge "$SLOW_POLLS" ]; then
+        note "STALL: the link is slow (hello $ms ms, $slow times running): rebooting"
+        echo "$(date +%T) STALL: the link is slow (hello $ms ms, $slow times running): rebooting" >> "$SUM"
+        echo "the link is slow: rebooting"
+        timeout 20 "$CTL" reboot > /dev/null 2>&1
+        kill_run
+        exit 5
+    fi
     ensure_netwatch
     gone=$?
     n=$(resets)
@@ -94,7 +120,11 @@ while pgrep -f 'p6_deqp\.sh' > /dev/null; do
         note "NETWATCH RESET the Amiga ($line)"
         echo "$(date +%T) NETWATCH RESET the Amiga: $line" >> "$SUM"
         echo "NETWATCH RESET the Amiga: $line"
-        kill_older_than_reset "$line"
+        if [ "${n:-0}" -gt "$known" ] || [ -z "$back_at" ]; then
+            kill_older_than_reset "$line"
+        else # no time in the line (a reset by hand): what began since the station came back is alive
+            kill_older_than $(($(date +%s) - back_at + POLL))
+        fi
         exit 5
     fi
     if ! pgrep -f 'amigent-ctl runpkg' > /dev/null; then

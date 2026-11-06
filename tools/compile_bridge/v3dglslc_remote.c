@@ -219,6 +219,21 @@ static int write_file(const char *path, const char *b, ULONG n)
     return ok;
 }
 
+static char *put_u32(char *o, ULONG v)
+{
+    memcpy(o, &v, 4); /* the 68k's order is the network's */
+    return o + 4;
+}
+
+static char *put_str(char *o, const void *s, ULONG n)
+{
+    if (!s)
+        return put_u32(o, 0xffffffffUL);
+    o = put_u32(o, n);
+    memcpy(o, s, n);
+    return o + n;
+}
+
 /* The request compiled on the PC: FALSE if the link failed (r not replied). */
 static int forward(struct V3DGLSLRequest *r)
 {
@@ -243,10 +258,26 @@ static int forward(struct V3DGLSLRequest *r)
         if (strlen(r->out_path) + 8 > sizeof(path))
             return 0;
     }
-    ok = send_all("V2R1", 4) && send_u32(r->version) && send_u32(r->op) && send_u32(device) &&
-         send_str(r->vs, r->vs ? strlen(r->vs) : 0) && send_str(r->fs, r->fs ? strlen(r->fs) : 0) &&
-         send_str(bindings, bindings ? strlen(bindings) : 0) && send_str(keys, keys_size) &&
-         send_str(name, name ? strlen(name) : 0);
+    /* The frame in one send: field by field, with TCP_NODELAY, a request was 14 small
+     * packets. Bursts of them may be what stops the Pi 3 card's Wi-Fi (PI3_PLAN §10). */
+    {
+        ULONG nvs = r->vs ? strlen(r->vs) : 0, nfs = r->fs ? strlen(r->fs) : 0;
+        ULONG nb = bindings ? strlen(bindings) : 0, nn = name ? strlen(name) : 0;
+        char *frame = malloc(16 + 5 * 4 + nvs + nfs + nb + keys_size + nn), *o = frame;
+        if (!frame)
+            goto failed;
+        memcpy(o, "V2R1", 4);
+        o = put_u32(o + 4, r->version);
+        o = put_u32(o, r->op);
+        o = put_u32(o, device);
+        o = put_str(o, r->vs, nvs);
+        o = put_str(o, r->fs, nfs);
+        o = put_str(o, bindings, nb);
+        o = put_str(o, keys, keys_size);
+        o = put_str(o, name, nn);
+        ok = send_all(frame, (unsigned long)(o - frame));
+        free(frame);
+    }
     if (!ok || !recv_all(magic, 4) || memcmp(magic, "V2S1", 4) || !recv_u32(&result) || !recv_str(&log, &nlog) ||
         !recv_u32(&nfiles))
         goto failed;

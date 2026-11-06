@@ -13,8 +13,9 @@
  * the network nor, until the end, the disk. (All in one, it did not reset the
  * machine twice on 2026-11-06, with the station gone: a send that never returns
  * would look so.) The reset's line, written by a third process in case the disk
- * blocks too, says what the echoes were doing. No line and no reset: the machine
- * itself had stopped.
+ * blocks too (started beforehand: making a process needs the disk), says what the
+ * echoes were doing. A reset without the line: the disk had stopped. No reset: the
+ * machine itself had.
  *
  * Started by the PC while a batch runs (tests/a1200/p6_watch.sh), and on purpose
  * not from S:User-Startup: with the PC off it would reset the machine every
@@ -48,7 +49,7 @@ static long every = 60, wait_secs = 60;
 enum { PHASE_IDLE, PHASE_SEND, PHASE_WAIT };
 enum { ECHO_STARTING, ECHO_RUNNING, ECHO_ENDED, ECHO_FAILED };
 static volatile LONG since_reply, phase, phase_secs, echo_state;
-static volatile LONG log_done;
+static volatile LONG log_done, log_ended;
 static char log_text[120];
 
 static void log_line(const char *text, const char *who)
@@ -201,18 +202,24 @@ done:
     echo_state = ECHO_ENDED;
 }
 
-/* The reset's line, by a process of its own: the disk may be what has stopped. */
+/* The reset's line, by a process of its own, waiting from the start: the disk may
+ * be what has stopped, and starting a process then would talk to it too (its
+ * current directory's lock). Ctrl-F: write the line; Ctrl-C: end. */
 static void log_entry(void)
 {
-    log_line(log_text, host);
-    flush_disk();
-    log_done = 1;
+    if (Wait(SIGBREAKF_CTRL_F | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_F) {
+        log_line(log_text, host);
+        flush_disk();
+        log_done = 1;
+    }
+    Forbid(); /* as echo_entry */
+    log_ended = 1;
 }
 
 int main(int argc, char **argv)
 {
     int dry = 0, i;
-    struct Process *echo;
+    struct Process *echo, *logger;
 
     for (i = 1; i < argc; i++) {
         if (!strncmp(argv[i], "LOG=", 4))
@@ -232,10 +239,19 @@ int main(int argc, char **argv)
     }
     /* Above the run it watches: a busy program must not look like a lost link. */
     SetTaskPri(FindTask(0), 5);
+    logger = CreateNewProcTags(NP_Entry, (ULONG)log_entry, NP_Name, (ULONG) "netwatch log", NP_Priority, 5,
+                               NP_StackSize, 16384, TAG_DONE);
+    if (!logger) {
+        printf("netwatch: no process for the log\n");
+        return 20;
+    }
     echo = CreateNewProcTags(NP_Entry, (ULONG)echo_entry, NP_Name, (ULONG) "netwatch echoes", NP_Priority, 5,
                              NP_StackSize, 16384, TAG_DONE);
     if (!echo) {
         printf("netwatch: no process for the echoes\n");
+        Signal(&logger->pr_Task, SIGBREAKF_CTRL_C);
+        while (!log_ended)
+            Delay(TICKS_PER_SECOND / 5);
         return 20;
     }
     for (i = 0; i < 100 && echo_state == ECHO_STARTING; i++)
@@ -244,6 +260,9 @@ int main(int argc, char **argv)
         printf("netwatch: no bsdsocket.library or no raw socket\n");
         while (echo_state == ECHO_STARTING)
             Delay(TICKS_PER_SECOND);
+        Signal(&logger->pr_Task, SIGBREAKF_CTRL_C);
+        while (!log_ended)
+            Delay(TICKS_PER_SECOND / 5);
         return 20;
     }
     log_line("watching", host);
@@ -260,10 +279,9 @@ int main(int argc, char **argv)
                      dry ? "would reset (dry run)" : "resetting",
                      ph == PHASE_SEND ? "stuck in a send" : ph == PHASE_WAIT ? "waiting for a reply" : "between sends",
                      (long)secs);
-            if (CreateNewProcTags(NP_Entry, (ULONG)log_entry, NP_Name, (ULONG) "netwatch log", NP_Priority, 5,
-                                  NP_StackSize, 16384, TAG_DONE))
-                for (i = 0; i < 10 && !log_done; i++)
-                    Delay(TICKS_PER_SECOND);
+            Signal(&logger->pr_Task, SIGBREAKF_CTRL_F);
+            for (i = 0; i < 10 && !log_done; i++)
+                Delay(TICKS_PER_SECOND);
             if (dry)
                 break;
             Delay(5 * TICKS_PER_SECOND);
@@ -273,6 +291,9 @@ int main(int argc, char **argv)
     /* A send that never returns keeps this waiting: the code must stay for it. */
     Signal(&echo->pr_Task, SIGBREAKF_CTRL_C);
     while (echo_state != ECHO_ENDED)
+        Delay(TICKS_PER_SECOND / 5);
+    Signal(&logger->pr_Task, SIGBREAKF_CTRL_C);
+    while (!log_ended)
         Delay(TICKS_PER_SECOND / 5);
     log_line("stopped", host);
     return 0;

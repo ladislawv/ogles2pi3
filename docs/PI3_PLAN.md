@@ -1610,13 +1610,26 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    Roadshow's counters froze on received IP bytes with its read requests still pending and the link
    still "Up", and only a few frames of unknown type went on arriving; 63 to 69 °C and `throttled`
    0x00000 throughout, so not heat or power. Ruled out as the sole cause: a fixed time since boot, a
-   particular test case (`shaders-indexing` got past on its third try where the first two died), the
-   logger polling `ShowNetStatus` (a drop without it). Under test: an upload's CRC of every file (36 MB
-   of disk at each run's start), about half of them followed by a drop on the evening of 2026-11-06:
-   `out/ogles2-m7-1.keep-bin` leaves `bin/` out of it. Worked around, not solved: `tools/netwatch`
-   resets the machine after two minutes without a reply, and `p6_deqp.sh` retries the part. netwatch's
-   first version did all its work in one task and failed to reset the machine three times; split so
-   that the timer depends on neither the network nor the disk, it has reset the machine by itself since.
+   particular test case (`shaders-indexing` and `shaders-loops-p01` got past on their third tries where
+   the first two died), the logger polling `ShowNetStatus` (a drop without it), an upload's CRC of every
+   file alone (drops went on with `out/ogles2-m7-1.keep-bin`, which leaves `bin/` out of it and saves
+   about 20 s a run). Under test: bursts of small packets. Drops were rarest in the slow state below and
+   in groups with few compiles, and each compile request was 14 small sends with `TCP_NODELAY`, with
+   Roadshow's write requests at their maximum of 32; `v3dglslc-remote` now sends a request's frame in one
+   send (5 resets in the 30 minutes before, 1 in the first 22 minutes after: too little to conclude).
+   Worked around, not solved: `tools/netwatch` resets the machine after two minutes without a reply,
+   and `p6_deqp.sh` retries the part. netwatch's first version did all its work in one task and did not
+   reset the machine three times; its timer now depends on neither the network nor the disk (the log's
+   process started beforehand too: making one needs the disk). `p6_watch.sh` starts netwatch after each
+   boot, and looks every 5 s while the station is down: at its 60 s, a link lost again within a minute
+   of the boot at 19:14 left the machine without a netwatch until a hand reset at 19:48.
+   **The link also has a slow state**, seen for 42 minutes from 17:40 on 2026-11-06 with no reset in it:
+   a compile request 1,950 ms instead of 20 to 40, `amigent-ctl hello` 1,500 ms instead of 95, and from
+   the PC's `ss -ti` half the bytes of a quiet connection retransmitted at a round trip of 839 ms, while a
+   connection in steady use kept 11 ms, pings lost nothing (5 to 110 ms, the access point 1.1) and
+   Roadshow's counters looked clean. A reboot cleared it at once (`shaders-keywords`, 95 cases in 33 s;
+   36 cases of `shaders-invariance` had taken 16 minutes). Cause not found. `p6_watch.sh` now reboots a
+   station that answers slowly for three polls running.
 
    Left for P6: the remaining groups and `multisample` in 4x MSAA; the free memory that falls about 2 MB
    a minute during dEQP (logging or a leak: not known); the GPU paths of glGenerateMipmap and glCopyTex*
