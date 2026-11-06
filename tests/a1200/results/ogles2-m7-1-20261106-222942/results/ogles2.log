@@ -1,0 +1,546 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 display: render bitmap at 0x097EB83C, 1024 bytes a row: in memory the GPU reaches
+    10 display: own window, 256x256, BGRA
+    11 aglCreateContext2: context 0x08307C8C, 256x256
+    12 compiler: Stuff:amigent/work/ogles2-m7-1/libs/v3dglslc, 78 bytes, id 34E713EE
+    13 compiler: shader compiled in 140 ms
+    14 compiler: shader compiled in 40 ms
+    15 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4p
+    16 glLinkProgram: OGLES2Cache:f7422c98a7d8e8682bd58046.vc4p (3 variants, 488 bytes of code)
+    17 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    18 draw: program f7422c98a7d8e8682bd58046: 4 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    19 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    20 draw: program f7422c98a7d8e8682bd58046: 5 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    21 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    22 job: the display's bitmap (0x097EB83C) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    23 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    24 draw: program f7422c98a7d8e8682bd58046: 6 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    25 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    26 compiler: program compiled in 100 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    27 draw: program f7422c98a7d8e8682bd58046: 7 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    28 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    29 draw: program f7422c98a7d8e8682bd58046: 8 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    30 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    31 draw: program f7422c98a7d8e8682bd58046: 9 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    32 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    33 draw: program f7422c98a7d8e8682bd58046: 10 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    34 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    35 draw: program f7422c98a7d8e8682bd58046: 11 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    36 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    37 draw: program f7422c98a7d8e8682bd58046: 12 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    38 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    39 draw: program f7422c98a7d8e8682bd58046: 13 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    40 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    41 draw: program f7422c98a7d8e8682bd58046: 14 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    42 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    43 draw: program f7422c98a7d8e8682bd58046: 15 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    44 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    45 draw: program f7422c98a7d8e8682bd58046: 16 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    46 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    47 draw: program f7422c98a7d8e8682bd58046: 17 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    48 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    49 draw: program f7422c98a7d8e8682bd58046: 18 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    50 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    51 draw: program f7422c98a7d8e8682bd58046: 19 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    52 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    53 draw: program f7422c98a7d8e8682bd58046: 20 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    54 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    55 draw: program f7422c98a7d8e8682bd58046: 21 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    56 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    57 draw: program f7422c98a7d8e8682bd58046: 22 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    58 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    59 draw: program f7422c98a7d8e8682bd58046: 23 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    60 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    61 draw: program f7422c98a7d8e8682bd58046: 24 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    62 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    63 draw: program f7422c98a7d8e8682bd58046: 25 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    64 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    65 draw: program f7422c98a7d8e8682bd58046: 26 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    66 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    67 draw: program f7422c98a7d8e8682bd58046: 27 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    68 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    69 draw: program f7422c98a7d8e8682bd58046: 28 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    70 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    71 draw: program f7422c98a7d8e8682bd58046: 29 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    72 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    73 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    74 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    75 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    76 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    77 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    78 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    79 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    80 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    81 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    82 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    83 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    84 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    85 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    86 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    87 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    88 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    89 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    90 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    91 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    92 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    93 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    94 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    95 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    96 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    97 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+    98 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+    99 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   100 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   101 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   102 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   103 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   104 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   105 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   106 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   107 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   108 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   109 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   110 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   111 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   112 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   113 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   114 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   115 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   116 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   117 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   118 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   119 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   120 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   121 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   122 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   123 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   124 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   125 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   126 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   127 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   128 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   129 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   130 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   131 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   132 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   133 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   134 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   135 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   136 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   137 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   138 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   139 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   140 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   141 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   142 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   143 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   144 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   145 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   146 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   147 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   148 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   149 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   150 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   151 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   152 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   153 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   154 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   155 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   156 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   157 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   158 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   159 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   160 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   161 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   162 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   163 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   164 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   165 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   166 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   167 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   168 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   169 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   170 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   171 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   172 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   173 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   174 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   175 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   176 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   177 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   178 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   179 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   180 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   181 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   182 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   183 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   184 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   185 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   186 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   187 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   188 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   189 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   190 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   191 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   192 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   193 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   194 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   195 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   196 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   197 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   198 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   199 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   200 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   201 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   202 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   203 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   204 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   205 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   206 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   207 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   208 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   209 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   210 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   211 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   212 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   213 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   214 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   215 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   216 compiler: program compiled in 260 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   217 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   218 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   219 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   220 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   221 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   222 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   223 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   224 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   225 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   226 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   227 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   228 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   229 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   230 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   231 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   232 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   233 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   234 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   235 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   236 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   237 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   238 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   239 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   240 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   241 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   242 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   243 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   244 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   245 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   246 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   247 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   248 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   249 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   250 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   251 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   252 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   253 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   254 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   255 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   256 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   257 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   258 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   259 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   260 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   261 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   262 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   263 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   264 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   265 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   266 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   267 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   268 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   269 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   270 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   271 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   272 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   273 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   274 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   275 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   276 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   277 draw: program f7422c98a7d8e8682bd58046: 31 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   278 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   279 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   280 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   281 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   282 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   283 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   284 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   285 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   286 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   287 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   288 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   289 draw: program f7422c98a7d8e8682bd58046: 31 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   290 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   291 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   292 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   293 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   294 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   295 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   296 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   297 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   298 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   299 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   300 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   301 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   302 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   303 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   304 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   305 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   306 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   307 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   308 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   309 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   310 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   311 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   312 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   313 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   314 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   315 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   316 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   317 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   318 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   319 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   320 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   321 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   322 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   323 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   324 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   325 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   326 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   327 draw: program f7422c98a7d8e8682bd58046: 29 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   328 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   329 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   330 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   331 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   332 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   333 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   334 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   335 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   336 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   337 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   338 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   339 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   340 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   341 draw: program f7422c98a7d8e8682bd58046: 29 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   342 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   343 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   344 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   345 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   346 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   347 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   348 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   349 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   350 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   351 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   352 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   353 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   354 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   355 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   356 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   357 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   358 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   359 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   360 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   361 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   362 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   363 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   364 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   365 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   366 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   367 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   368 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   369 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   370 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   371 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   372 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   373 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   374 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   375 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   376 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   377 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   378 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   379 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   380 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   381 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   382 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   383 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   384 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   385 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   386 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   387 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   388 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   389 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   390 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   391 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   392 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   393 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   394 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   395 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   396 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   397 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   398 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   399 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   400 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   401 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   402 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   403 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   404 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   405 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   406 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   407 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   408 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   409 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   410 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   411 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   412 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   413 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   414 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   415 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   416 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   417 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   418 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   419 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   420 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   421 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   422 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   423 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   424 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   425 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   426 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   427 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   428 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   429 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   430 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   431 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   432 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   433 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   434 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   435 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   436 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   437 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   438 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   439 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   440 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   441 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   442 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   443 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   444 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   445 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   446 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   447 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   448 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   449 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   450 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   451 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   452 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   453 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   454 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   455 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   456 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   457 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   458 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   459 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   460 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   461 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   462 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   463 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   464 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   465 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   466 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   467 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   468 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   469 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   470 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   471 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   472 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   473 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   474 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   475 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   476 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   477 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   478 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   479 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   480 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   481 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   482 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   483 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   484 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   485 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   486 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   487 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   488 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   489 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   490 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   491 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   492 compiler: program compiled in 80 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   493 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   494 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   495 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   496 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   497 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   498 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   499 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   500 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   501 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   502 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   503 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   504 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   505 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   506 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   507 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   508 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   509 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   510 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   511 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   512 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   513 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   514 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   515 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   516 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   517 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   518 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   519 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   520 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   521 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   522 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   523 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   524 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   525 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   526 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   527 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   528 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   529 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   530 compiler: program compiled in 20 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   531 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   532 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   533 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   534 compiler: program compiled in 60 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   535 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   536 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   537 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   538 compiler: program compiled in 40 ms, OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k
+   539 draw: program f7422c98a7d8e8682bd58046: 30 variants for other draws, compiled (OGLES2Cache:f7422c98a7d8e8682bd58046.vc4k)
+   540 aglDestroyContext: context 0x08307C8C: freeing
+   541 device: context freed, 0 bytes of GPU memory still in use
+   542 aglDestroyContext: context 0x08307C8C (250 frames, 0 dropped, 0 binning blocks added)
+   543 timing: 250 jobs, each on average: 62115 us of CPU work before its flush, 38 us waiting for binning, 834 us for the render
+   544 timing: and in each flush 128 us building the render list, 52 us for the CPU cache before the GPU, 79 us after
+   545 timing: 250 swaps, 128480 us from one to the next on average, 612 us of it presenting
+   546 timing: per frame 2 draws, 59575 us in them; in all 0 ms in glBuffer(Sub)Data, 217 ms in glTex(Sub)Image2D

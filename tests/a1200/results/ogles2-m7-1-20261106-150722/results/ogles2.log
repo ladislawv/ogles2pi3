@@ -1,0 +1,39 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 display: render bitmap at 0x0978FD3C, 1024 bytes a row: in memory the GPU reaches
+    10 display: own window, 256x256, BGRA
+    11 aglCreateContext2: context 0x0830A5FC, 256x256
+    12 job: clear 3 load 0 store 1, depth 0xFFFFFF stencil 0
+    13 job: the display's bitmap (0x0978FD3C) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    14 job: clear 3 load 0 store 1, depth 0xFFFFFF stencil 0
+    15 framebuffer 1 is not complete (0x8CD7): nothing drawn or read (logged once)
+    16 compiler: Stuff:amigent/work/ogles2-m7-1/libs/v3dglslc, 78 bytes, id 34E713EE
+    17 compiler: shader compiled in 120 ms
+    18 compiler: shader compiled in 40 ms
+    19 compiler: program compiled in 40 ms, OGLES2Cache:048eb69114495ca54f2319cb.vc4p
+    20 glLinkProgram: OGLES2Cache:048eb69114495ca54f2319cb.vc4p (3 variants, 256 bytes of code)
+    21 compiler: shader compiled in 40 ms
+    22 compiler: shader compiled in 40 ms
+    23 compiler: program compiled in 40 ms, OGLES2Cache:4057673e41bad289d7aea448.vc4p
+    24 glLinkProgram: OGLES2Cache:4057673e41bad289d7aea448.vc4p (3 variants, 736 bytes of code)
+    25 glGetBooleanv: pname 0xFFFFFFFF not supported yet
+    26 glGetFloatv: pname 0xFFFFFFFF not supported yet
+    27 glGetIntegerv: pname 0xFFFFFFFF not supported yet
+    28 compiler: shader compiled in 120 ms
+    29 compiler: shader compiled in 40 ms
+    30 compiler: program compiled in 40 ms, OGLES2Cache:995053e76a13aaa9997677d2.vc4p
+    31 glLinkProgram: OGLES2Cache:995053e76a13aaa9997677d2.vc4p (3 variants, 384 bytes of code)
+    32 glGetIntegerv: pname 0x821B not supported yet
+    33 aglDestroyContext: context 0x0830A5FC: freeing
+    34 device: context freed, 0 bytes of GPU memory still in use
+    35 aglDestroyContext: context 0x0830A5FC (246 frames, 0 dropped, 0 binning blocks added)
+    36 timing: 246 jobs, each on average: 6026 us of CPU work before its flush, 31 us waiting for binning, 634 us for the render
+    37 timing: and in each flush 111 us building the render list, 60 us for the CPU cache before the GPU, 66 us after
+    38 timing: 246 swaps, 14204 us from one to the next on average, 582 us of it presenting
+    39 timing: per frame 0 draws, 0 us in them; in all 0 ms in glBuffer(Sub)Data, 200 ms in glTex(Sub)Image2D

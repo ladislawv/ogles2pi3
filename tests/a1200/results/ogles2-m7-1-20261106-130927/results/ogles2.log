@@ -1,0 +1,42 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 display: render bitmap at 0x0974F5FC, 1024 bytes a row: in memory the GPU reaches
+    10 display: own window, 256x256, BGRA
+    11 aglCreateContext2: context 0x0830FD0C, 256x256
+    12 compiler: Stuff:amigent/work/ogles2-m7-1/libs/v3dglslc, 78 bytes, id 34E713EE
+    13 compiler: shader compiled in 160 ms
+    14 compiler: shader compiled in 40 ms
+    15 compiler: program compiled in 40 ms, OGLES2Cache:4298382a88fecb2201ffa2f1.vc4p
+    16 glLinkProgram: OGLES2Cache:4298382a88fecb2201ffa2f1.vc4p (3 variants, 376 bytes of code)
+    17 compiler: program compiled in 60 ms, OGLES2Cache:4298382a88fecb2201ffa2f1.vc4k
+    18 draw: program 4298382a88fecb2201ffa2f1: 6 variants for other draws, compiled (OGLES2Cache:4298382a88fecb2201ffa2f1.vc4k)
+    19 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    20 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    21 job: the display's bitmap (0x0974F5FC) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    22 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    23 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    24 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    25 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    26 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    27 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    28 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    29 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    30 compiler: shader compiled in 20 ms
+    31 compiler: shader compiled in 40 ms
+    32 compiler: program compiled in 40 ms, OGLES2Cache:fdd44506f20622617995c757.vc4p
+    33 glLinkProgram: OGLES2Cache:fdd44506f20622617995c757.vc4p (3 variants, 376 bytes of code)
+    34 compiler: program compiled in 20 ms, OGLES2Cache:fdd44506f20622617995c757.vc4k
+    35 draw: program fdd44506f20622617995c757: 4 variants for other draws, compiled (OGLES2Cache:fdd44506f20622617995c757.vc4k)
+    36 aglDestroyContext: context 0x0830FD0C: freeing
+    37 device: context freed, 0 bytes of GPU memory still in use
+    38 aglDestroyContext: context 0x0830FD0C (443 frames, 0 dropped, 0 binning blocks added)
+    39 timing: 443 jobs, each on average: 45527 us of CPU work before its flush, 70 us waiting for binning, 883 us for the render
+    40 timing: and in each flush 139 us building the render list, 100 us for the CPU cache before the GPU, 72 us after
+    41 timing: 89 swaps, 493225 us from one to the next on average, 561 us of it presenting
+    42 timing: per frame 4 draws, 4722 us in them; in all 26 ms in glBuffer(Sub)Data, 39 ms in glTex(Sub)Image2D

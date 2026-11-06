@@ -1,0 +1,237 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 display: render bitmap at 0x0980B97C, 1024 bytes a row: in memory the GPU reaches
+    10 display: own window, 256x256, BGRA
+    11 aglCreateContext2: context 0x08306FF4, 256x256
+    12 compiler: Stuff:amigent/work/ogles2-m7-1/libs/v3dglslc, 78 bytes, id 34E713EE
+    13 compiler: shader compiled in 80 ms
+    14 compiler: shader compiled in 40 ms
+    15 compiler: program compiled in 40 ms, OGLES2Cache:bae0fb585cae279ea529a3cb.vc4p
+    16 glLinkProgram: OGLES2Cache:bae0fb585cae279ea529a3cb.vc4p (3 variants, 536 bytes of code)
+    17 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC9621000
+    18 compiler: program compiled in 40 ms, OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k
+    19 draw: program bae0fb585cae279ea529a3cb: 4 variants for other draws, compiled (OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k)
+    20 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    21 job: the display's bitmap (0x0980B97C) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    22 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    23 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    24 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    25 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    26 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    27 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    28 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    29 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    30 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    31 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    32 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0DB000
+    33 compiler: shader compiled in 60 ms
+    34 compiler: shader compiled in 40 ms
+    35 compiler: program compiled in 40 ms, OGLES2Cache:050126da5c5e29ccefca2cf2.vc4p
+    36 glLinkProgram: OGLES2Cache:050126da5c5e29ccefca2cf2.vc4p (3 variants, 648 bytes of code)
+    37 texture 1: 64x64, 7 levels stored at +0x2000 +0x1000 +0xC00 ... (T), bus 0xCB0DB000
+    38 compiler: program compiled in 40 ms, OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k
+    39 draw: program 050126da5c5e29ccefca2cf2: 4 variants for other draws, compiled (OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k)
+    40 texture 2: 64x64, 7 levels stored at +0x2000 +0x1000 +0xC00 ... (T), bus 0xCB100000
+    41 texture 1: 64x64, 7 levels stored at +0x2000 +0x1000 +0xC00 ... (T), bus 0xCB0DB000
+    42 compiler: program compiled in 80 ms, OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k
+    43 draw: program 050126da5c5e29ccefca2cf2: 5 variants for other draws, compiled (OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k)
+    44 texture 2: 64x64, 7 levels stored at +0x2000 +0x1000 +0xC00 ... (T), bus 0xCB100000
+    45 texture 1: 64x64, 7 levels stored at +0x1000 +0x800 +0x600 ... (T), bus 0xC984C000
+    46 compiler: program compiled in 100 ms, OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k
+    47 draw: program 050126da5c5e29ccefca2cf2: 6 variants for other draws, compiled (OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k)
+    48 compiler: shader compiled in 100 ms
+    49 compiler: shader compiled in 20 ms
+    50 compiler: program failed in 20 ms, OGLES2Cache:70171ae1892bbccb7545d13b.vc4p
+    51 glLinkProgram: the compiler failed: link failed: error: fragment shader input `v_color' has no matching output in the previous stage
+
+
+    52 compiler: program compiled in 20 ms, OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k
+    53 draw: program bae0fb585cae279ea529a3cb: 5 variants for other draws, compiled (OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k)
+    54 compiler: shader compiled in 20 ms
+    55 compiler: program compiled in 40 ms, OGLES2Cache:2f711ebdff43b6f1d26127ad.vc4p
+    56 glLinkProgram: OGLES2Cache:2f711ebdff43b6f1d26127ad.vc4p (3 variants, 536 bytes of code)
+    57 compiler: program compiled in 40 ms, OGLES2Cache:2f711ebdff43b6f1d26127ad.vc4k
+    58 draw: program 2f711ebdff43b6f1d26127ad: 4 variants for other draws, compiled (OGLES2Cache:2f711ebdff43b6f1d26127ad.vc4k)
+    59 compiler: program compiled in 140 ms, OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k
+    60 draw: program bae0fb585cae279ea529a3cb: 6 variants for other draws, compiled (OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k)
+    61 compiler: program compiled in 60 ms, OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k
+    62 draw: program bae0fb585cae279ea529a3cb: 7 variants for other draws, compiled (OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k)
+    63 compiler: program compiled in 60 ms, OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k
+    64 draw: program bae0fb585cae279ea529a3cb: 8 variants for other draws, compiled (OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k)
+    65 compiler: program compiled in 180 ms, OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k
+    66 draw: program bae0fb585cae279ea529a3cb: 9 variants for other draws, compiled (OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k)
+    67 compiler: program compiled in 120 ms, OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k
+    68 draw: program bae0fb585cae279ea529a3cb: 10 variants for other draws, compiled (OGLES2Cache:bae0fb585cae279ea529a3cb.vc4k)
+    69 glGetIntegerv: pname 0x821B not supported yet
+    70 glGetIntegerv: pname 0x821B not supported yet
+    71 glGetIntegerv: pname 0x821B not supported yet
+    72 glGetIntegerv: pname 0x821B not supported yet
+    73 glGetIntegerv: pname 0x821B not supported yet
+    74 glGetIntegerv: pname 0x821B not supported yet
+    75 glGetIntegerv: pname 0x821B not supported yet
+    76 glGetIntegerv: pname 0x821B not supported yet
+    77 glGetIntegerv: pname 0x821B not supported yet
+    78 compiler: shader compiled in 20 ms
+    79 compiler: program compiled in 40 ms, OGLES2Cache:0ef464af33d30d3e27399ca3.vc4p
+    80 glLinkProgram: OGLES2Cache:0ef464af33d30d3e27399ca3.vc4p (3 variants, 656 bytes of code)
+    81 compiler: program compiled in 20 ms, OGLES2Cache:0ef464af33d30d3e27399ca3.vc4k
+    82 draw: program 0ef464af33d30d3e27399ca3: 4 variants for other draws, compiled (OGLES2Cache:0ef464af33d30d3e27399ca3.vc4k)
+    83 glGetIntegerv: pname 0x821B not supported yet
+    84 glGetIntegerv: pname 0x821B not supported yet
+    85 glGetIntegerv: pname 0x821B not supported yet
+    86 compiler: program compiled in 80 ms, OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k
+    87 draw: program 050126da5c5e29ccefca2cf2: 7 variants for other draws, compiled (OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k)
+    88 compiler: program compiled in 160 ms, OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k
+    89 draw: program 050126da5c5e29ccefca2cf2: 8 variants for other draws, compiled (OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k)
+    90 compiler: program compiled in 100 ms, OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k
+    91 draw: program 050126da5c5e29ccefca2cf2: 9 variants for other draws, compiled (OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k)
+    92 compiler: program compiled in 100 ms, OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k
+    93 draw: program 050126da5c5e29ccefca2cf2: 10 variants for other draws, compiled (OGLES2Cache:050126da5c5e29ccefca2cf2.vc4k)
+    94 glGetIntegerv: pname 0x821B not supported yet
+    95 compiler: shader compiled in 160 ms
+    96 compiler: shader compiled in 40 ms
+    97 compiler: program compiled in 40 ms, OGLES2Cache:236f617eb7dcc9457fa23afb.vc4p
+    98 glLinkProgram: OGLES2Cache:236f617eb7dcc9457fa23afb.vc4p (3 variants, 488 bytes of code)
+    99 compiler: program compiled in 40 ms, OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k
+   100 draw: program 236f617eb7dcc9457fa23afb: 4 variants for other draws, compiled (OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k)
+   101 glGetIntegerv: pname 0x821B not supported yet
+   102 compiler: shader compiled in 80 ms
+   103 compiler: program compiled in 40 ms, OGLES2Cache:c4d6f4ade1482051a74042e8.vc4p
+   104 glLinkProgram: OGLES2Cache:c4d6f4ade1482051a74042e8.vc4p (3 variants, 616 bytes of code)
+   105 compiler: program compiled in 40 ms, OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k
+   106 draw: program c4d6f4ade1482051a74042e8: 4 variants for other draws, compiled (OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k)
+   107 compiler: shader compiled in 40 ms
+   108 compiler: program compiled in 40 ms, OGLES2Cache:cbc7e7034b66a47d1635d395.vc4p
+   109 glLinkProgram: OGLES2Cache:cbc7e7034b66a47d1635d395.vc4p (3 variants, 632 bytes of code)
+   110 compiler: program compiled in 40 ms, OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k
+   111 draw: program cbc7e7034b66a47d1635d395: 4 variants for other draws, compiled (OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k)
+   112 compiler: shader compiled in 40 ms
+   113 compiler: program compiled in 40 ms, OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4p
+   114 glLinkProgram: OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4p (3 variants, 616 bytes of code)
+   115 compiler: program compiled in 40 ms, OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k
+   116 draw: program bf6f4dc826ab2bbd208587d5: 4 variants for other draws, compiled (OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k)
+   117 compiler: shader compiled in 20 ms
+   118 compiler: program compiled in 40 ms, OGLES2Cache:6d6739900fba58670a467cae.vc4p
+   119 glLinkProgram: OGLES2Cache:6d6739900fba58670a467cae.vc4p (3 variants, 592 bytes of code)
+   120 compiler: program compiled in 40 ms, OGLES2Cache:6d6739900fba58670a467cae.vc4k
+   121 draw: program 6d6739900fba58670a467cae: 4 variants for other draws, compiled (OGLES2Cache:6d6739900fba58670a467cae.vc4k)
+   122 compiler: shader compiled in 20 ms
+   123 compiler: program compiled in 40 ms, OGLES2Cache:179f333f93db715f2ba4bea0.vc4p
+   124 glLinkProgram: OGLES2Cache:179f333f93db715f2ba4bea0.vc4p (3 variants, 624 bytes of code)
+   125 compiler: program compiled in 40 ms, OGLES2Cache:179f333f93db715f2ba4bea0.vc4k
+   126 draw: program 179f333f93db715f2ba4bea0: 4 variants for other draws, compiled (OGLES2Cache:179f333f93db715f2ba4bea0.vc4k)
+   127 compiler: shader compiled in 100 ms
+   128 compiler: program compiled in 40 ms, OGLES2Cache:4ec0f1232192f9651854c5a4.vc4p
+   129 glLinkProgram: OGLES2Cache:4ec0f1232192f9651854c5a4.vc4p (3 variants, 600 bytes of code)
+   130 compiler: program compiled in 40 ms, OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k
+   131 draw: program 4ec0f1232192f9651854c5a4: 4 variants for other draws, compiled (OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k)
+   132 glGetIntegerv: pname 0x821B not supported yet
+   133 compiler: program compiled in 40 ms, OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k
+   134 draw: program 236f617eb7dcc9457fa23afb: 5 variants for other draws, compiled (OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k)
+   135 glGetIntegerv: pname 0x821B not supported yet
+   136 compiler: program compiled in 60 ms, OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k
+   137 draw: program c4d6f4ade1482051a74042e8: 5 variants for other draws, compiled (OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k)
+   138 compiler: program compiled in 20 ms, OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k
+   139 draw: program cbc7e7034b66a47d1635d395: 5 variants for other draws, compiled (OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k)
+   140 compiler: program compiled in 40 ms, OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k
+   141 draw: program bf6f4dc826ab2bbd208587d5: 5 variants for other draws, compiled (OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k)
+   142 compiler: program compiled in 40 ms, OGLES2Cache:6d6739900fba58670a467cae.vc4k
+   143 draw: program 6d6739900fba58670a467cae: 5 variants for other draws, compiled (OGLES2Cache:6d6739900fba58670a467cae.vc4k)
+   144 compiler: program compiled in 40 ms, OGLES2Cache:179f333f93db715f2ba4bea0.vc4k
+   145 draw: program 179f333f93db715f2ba4bea0: 5 variants for other draws, compiled (OGLES2Cache:179f333f93db715f2ba4bea0.vc4k)
+   146 compiler: program compiled in 60 ms, OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k
+   147 draw: program 4ec0f1232192f9651854c5a4: 5 variants for other draws, compiled (OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k)
+   148 glGetIntegerv: pname 0x821B not supported yet
+   149 compiler: program compiled in 120 ms, OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k
+   150 draw: program 236f617eb7dcc9457fa23afb: 6 variants for other draws, compiled (OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k)
+   151 glGetIntegerv: pname 0x821B not supported yet
+   152 compiler: program compiled in 40 ms, OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k
+   153 draw: program c4d6f4ade1482051a74042e8: 6 variants for other draws, compiled (OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k)
+   154 compiler: program compiled in 20 ms, OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k
+   155 draw: program cbc7e7034b66a47d1635d395: 6 variants for other draws, compiled (OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k)
+   156 compiler: program compiled in 20 ms, OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k
+   157 draw: program bf6f4dc826ab2bbd208587d5: 6 variants for other draws, compiled (OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k)
+   158 compiler: program compiled in 40 ms, OGLES2Cache:6d6739900fba58670a467cae.vc4k
+   159 draw: program 6d6739900fba58670a467cae: 6 variants for other draws, compiled (OGLES2Cache:6d6739900fba58670a467cae.vc4k)
+   160 compiler: program compiled in 60 ms, OGLES2Cache:179f333f93db715f2ba4bea0.vc4k
+   161 draw: program 179f333f93db715f2ba4bea0: 6 variants for other draws, compiled (OGLES2Cache:179f333f93db715f2ba4bea0.vc4k)
+   162 compiler: program compiled in 40 ms, OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k
+   163 draw: program 4ec0f1232192f9651854c5a4: 6 variants for other draws, compiled (OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k)
+   164 glGetIntegerv: pname 0x821B not supported yet
+   165 compiler: program compiled in 140 ms, OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k
+   166 draw: program 236f617eb7dcc9457fa23afb: 7 variants for other draws, compiled (OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k)
+   167 glGetIntegerv: pname 0x821B not supported yet
+   168 compiler: program compiled in 40 ms, OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k
+   169 draw: program c4d6f4ade1482051a74042e8: 7 variants for other draws, compiled (OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k)
+   170 compiler: program compiled in 60 ms, OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k
+   171 draw: program cbc7e7034b66a47d1635d395: 7 variants for other draws, compiled (OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k)
+   172 compiler: program compiled in 20 ms, OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k
+   173 draw: program bf6f4dc826ab2bbd208587d5: 7 variants for other draws, compiled (OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k)
+   174 compiler: program compiled in 60 ms, OGLES2Cache:6d6739900fba58670a467cae.vc4k
+   175 draw: program 6d6739900fba58670a467cae: 7 variants for other draws, compiled (OGLES2Cache:6d6739900fba58670a467cae.vc4k)
+   176 compiler: program compiled in 20 ms, OGLES2Cache:179f333f93db715f2ba4bea0.vc4k
+   177 draw: program 179f333f93db715f2ba4bea0: 7 variants for other draws, compiled (OGLES2Cache:179f333f93db715f2ba4bea0.vc4k)
+   178 compiler: program compiled in 20 ms, OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k
+   179 draw: program 4ec0f1232192f9651854c5a4: 7 variants for other draws, compiled (OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k)
+   180 glGetIntegerv: pname 0x821B not supported yet
+   181 compiler: program compiled in 20 ms, OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k
+   182 draw: program 236f617eb7dcc9457fa23afb: 8 variants for other draws, compiled (OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k)
+   183 glGetIntegerv: pname 0x821B not supported yet
+   184 compiler: program compiled in 20 ms, OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k
+   185 draw: program c4d6f4ade1482051a74042e8: 8 variants for other draws, compiled (OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k)
+   186 compiler: program compiled in 60 ms, OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k
+   187 draw: program cbc7e7034b66a47d1635d395: 8 variants for other draws, compiled (OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k)
+   188 compiler: program compiled in 20 ms, OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k
+   189 draw: program bf6f4dc826ab2bbd208587d5: 8 variants for other draws, compiled (OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k)
+   190 compiler: program compiled in 60 ms, OGLES2Cache:6d6739900fba58670a467cae.vc4k
+   191 draw: program 6d6739900fba58670a467cae: 8 variants for other draws, compiled (OGLES2Cache:6d6739900fba58670a467cae.vc4k)
+   192 compiler: program compiled in 20 ms, OGLES2Cache:179f333f93db715f2ba4bea0.vc4k
+   193 draw: program 179f333f93db715f2ba4bea0: 8 variants for other draws, compiled (OGLES2Cache:179f333f93db715f2ba4bea0.vc4k)
+   194 compiler: program compiled in 40 ms, OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k
+   195 draw: program 4ec0f1232192f9651854c5a4: 8 variants for other draws, compiled (OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k)
+   196 glGetIntegerv: pname 0x821B not supported yet
+   197 compiler: program compiled in 60 ms, OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k
+   198 draw: program 236f617eb7dcc9457fa23afb: 9 variants for other draws, compiled (OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k)
+   199 glGetIntegerv: pname 0x821B not supported yet
+   200 compiler: program compiled in 100 ms, OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k
+   201 draw: program c4d6f4ade1482051a74042e8: 9 variants for other draws, compiled (OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k)
+   202 compiler: program compiled in 60 ms, OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k
+   203 draw: program cbc7e7034b66a47d1635d395: 9 variants for other draws, compiled (OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k)
+   204 compiler: program compiled in 40 ms, OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k
+   205 draw: program bf6f4dc826ab2bbd208587d5: 9 variants for other draws, compiled (OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k)
+   206 compiler: program compiled in 40 ms, OGLES2Cache:6d6739900fba58670a467cae.vc4k
+   207 draw: program 6d6739900fba58670a467cae: 9 variants for other draws, compiled (OGLES2Cache:6d6739900fba58670a467cae.vc4k)
+   208 compiler: program compiled in 80 ms, OGLES2Cache:179f333f93db715f2ba4bea0.vc4k
+   209 draw: program 179f333f93db715f2ba4bea0: 9 variants for other draws, compiled (OGLES2Cache:179f333f93db715f2ba4bea0.vc4k)
+   210 compiler: program compiled in 40 ms, OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k
+   211 draw: program 4ec0f1232192f9651854c5a4: 9 variants for other draws, compiled (OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k)
+   212 glGetIntegerv: pname 0x821B not supported yet
+   213 compiler: program compiled in 120 ms, OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k
+   214 draw: program 236f617eb7dcc9457fa23afb: 10 variants for other draws, compiled (OGLES2Cache:236f617eb7dcc9457fa23afb.vc4k)
+   215 glGetIntegerv: pname 0x821B not supported yet
+   216 compiler: program compiled in 80 ms, OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k
+   217 draw: program c4d6f4ade1482051a74042e8: 10 variants for other draws, compiled (OGLES2Cache:c4d6f4ade1482051a74042e8.vc4k)
+   218 compiler: program compiled in 80 ms, OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k
+   219 draw: program cbc7e7034b66a47d1635d395: 10 variants for other draws, compiled (OGLES2Cache:cbc7e7034b66a47d1635d395.vc4k)
+   220 compiler: program compiled in 60 ms, OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k
+   221 draw: program bf6f4dc826ab2bbd208587d5: 10 variants for other draws, compiled (OGLES2Cache:bf6f4dc826ab2bbd208587d5.vc4k)
+   222 compiler: program compiled in 80 ms, OGLES2Cache:6d6739900fba58670a467cae.vc4k
+   223 draw: program 6d6739900fba58670a467cae: 10 variants for other draws, compiled (OGLES2Cache:6d6739900fba58670a467cae.vc4k)
+   224 compiler: program compiled in 40 ms, OGLES2Cache:179f333f93db715f2ba4bea0.vc4k
+   225 draw: program 179f333f93db715f2ba4bea0: 10 variants for other draws, compiled (OGLES2Cache:179f333f93db715f2ba4bea0.vc4k)
+   226 compiler: program compiled in 40 ms, OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k
+   227 draw: program 4ec0f1232192f9651854c5a4: 10 variants for other draws, compiled (OGLES2Cache:4ec0f1232192f9651854c5a4.vc4k)
+   228 glGetIntegerv: pname 0x821B not supported yet
+   229 aglDestroyContext: context 0x08306FF4: freeing
+   230 device: context freed, 0 bytes of GPU memory still in use
+   231 aglDestroyContext: context 0x08306FF4 (3942 frames, 0 dropped, 0 binning blocks added)
+   232 timing: 3942 jobs, each on average: 3839 us of CPU work before its flush, 32 us waiting for binning, 937 us for the render
+   233 timing: and in each flush 498 us building the render list, 64 us for the CPU cache before the GPU, 71 us after
+   234 timing: 619 swaps, 268038 us from one to the next on average, 582 us of it presenting
+   235 timing: per frame 7 draws, 13438 us in them; in all 0 ms in glBuffer(Sub)Data, 541 ms in glTex(Sub)Image2D

@@ -64,7 +64,7 @@ CLIENT_OBJ := $(patsubst %.c,$(B)/obj/%.o,$(CLIENT_SRC)) $(B)/obj/client/lvo.o \
 .PHONY: all gen clean vbcc
 all: $(B)/fpcheck.ok $(B)/libv3dcore.a $(B)/libvc4core.a $(B)/ogles2.library $(B)/libogles2.a $(B)/tests/abi_layout $(B)/tests/smoke \
      $(B)/tests/abi_probe $(B)/tests/m1_clear $(B)/tests/m1_probe $(B)/tests/m1_draw $(B)/tests/m1_hwprobe $(B)/tests/m1_soak $(B)/tests/m2_link $(B)/tests/m2_texture $(B)/tests/m2_elements $(B)/tests/m2_buffers $(B)/tests/m4_stress $(B)/tests/m4_depth $(B)/tests/m4_setbitmap $(B)/tests/gears_gles2 $(B)/tests/cachetime $(B)/tests/emuspeed $(B)/tests/m5_fbo \
-     $(B)/tests/rtt_churn $(B)/tests/m6_share $(B)/tests/m6_tasks $(B)/tests/m6_ext $(B)/tests/m6_tfu $(B)/tests/m6_flip $(B)/tests/m6_vsync $(B)/tests/m6_msaa $(B)/tests/m7_points $(B)/tests/m7_s3tc $(B)/tests/m7_clip $(B)/tests/m7_mrt $(B)/tests/m7_half $(B)/tests/m7_copy $(B)/cmd/OGLES2Log $(B)/amictl/amictld $(B)/amictl/v3dglslc-remote
+     $(B)/tests/rtt_churn $(B)/tests/m6_share $(B)/tests/m6_tasks $(B)/tests/m6_ext $(B)/tests/m6_tfu $(B)/tests/m6_flip $(B)/tests/m6_vsync $(B)/tests/m6_msaa $(B)/tests/m7_points $(B)/tests/m7_s3tc $(B)/tests/m7_clip $(B)/tests/m7_mrt $(B)/tests/m7_half $(B)/tests/m7_copy $(B)/cmd/OGLES2Log $(B)/amictl/amictld $(B)/amictl/v3dglslc-remote $(B)/amictl/netwatch
 
 # ---- generated code (plan section 6.6). Re-run when the inputs or the set of
 # implemented ogles2_* functions change.
@@ -321,6 +321,11 @@ $(B)/amictl/v3dglslc-remote: tools/compile_bridge/v3dglslc_remote.c v3dp/v3dglsl
 	@mkdir -p $(dir $@)
 	$(CC) -std=gnu99 -O2 -Wall -Wno-pointer-sign -mcpu=68020 -mcrt=nix20 -fbbb=abcfhilmnprsz0 -Iv3dp \
 	    -o $@ tools/compile_bridge/v3dglslc_remote.c
+# Resets the Amiga when its link to the PC is gone (tests/a1200/p6_watch.sh starts it).
+$(B)/amictl/netwatch: tools/netwatch/netwatch.c Makefile
+	@mkdir -p $(dir $@)
+	$(CC) -std=gnu99 -O2 -Wall -Wno-pointer-sign -mcpu=68020 -mcrt=nix20 -fbbb=abcfhilmnprsz0 \
+	    -o $@ tools/netwatch/netwatch.c
 $(B)/amictl/amictld_host: $(AMICTL_SRC) tools/amictl/server/os_posix.c Makefile
 	@mkdir -p $(dir $@)
 	gcc -std=c99 -O2 -Wall -Wextra -o $@ tools/amictl/server/amictld.c tools/amictl/server/os_posix.c

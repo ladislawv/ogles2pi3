@@ -1585,10 +1585,13 @@ Everything that can run here runs here first (the developer, 2026-11-03).
       (`tests/a1200/results/ogles2-m{2-4,6-6,7-4,7-5}-20261106-130*`).
    Then P6 (dEQP-GLES2 and the benchmarks on both cards, against Mesa vc4's baseline) and P7
    (into `ogles2`, one release for both cards).
-6. **P6 under way (2026-11-06), the Pi 3 card, the shaders compiled on the PC** (`p6_deqp.sh`, summaries
-   `tests/a1200/results/p6-deqp-20261106-{1307,1654}.txt`). In progress: 4,098 of 17,165 cases run, none
-   failing beyond Mesa's baseline (§3.1: `clipping` 3); the rest is still to run. What the first groups
-   found, all fixed and rerun on the card:
+6. **P6 under way: dEQP-GLES2's whole list has run on the Pi 3 card (2026-11-07), the shaders compiled on
+   the PC** (`p6_deqp.sh`, summaries `tests/a1200/results/p6-deqp-20261106-{1307,1654,2255}.txt`): each of the
+   17,165 cases' newest result, **17,047 pass, 18 fail, none beyond Mesa's baseline** (§3.1: `texture` 11,
+   `clipping` 3, `uniform_api` 2, `multisample` 2 in 4x MSAA; Mesa's other two, `depth_stencil_masked` and
+   `scissor.outside_render_line`, pass here), 92 not supported (Mesa 234), 8 warnings. These are not one
+   run of one library: the groups run before a fix kept their results, so the final library owes the whole
+   list again. Mesa passes 16,906. What the first groups found, all fixed and rerun on the card:
    - **an empty scissor box or viewport** (`color_clear` 9, `fbo.render.color_clear` 28): the clip window
      was clamped to no size, and the draw covered the whole target instead of nothing. It is skipped
      now (`draw_vc4.c`). `color_clear` 19 of 19.
@@ -1604,12 +1607,12 @@ Everything that can run here runs here first (the developer, 2026-11-03).
      it. They now follow when the pair changes (`fbo.c`'s `stencil_home`, a backend's `rb_stencil_copy`, 0
      on V3D). `fbo` 709 of 709.
 
-   Found by the later groups, each to be confirmed by a rerun of its group:
+   Found by the later groups, all fixed and their groups rerun clean:
    - **sampler arrays in the compiler's reference draw** (`uniform_api`'s `sampler2D_samplerCube` cases
      12): `draw_vc4_reference` set only an array's element 0, the rest stayed on unit 0, and beside a cube
      sampler there the draw was a GL error, no variants, and the link failed ("the program binary could
-     not be written"). Every element its own unit now, as `bind_samplers`. The parts run with it passed;
-     the host compiler is rebuilt, **the m68k one owes its rebuild**.
+     not be written"). Every element its own unit now, as `bind_samplers`. Both compiler builds are
+     rebuilt; their programs are identical (`compare_vc4p.sh`, 9 of 9).
    - **a program drawn in many states outgrew its keyed file** (`vertex_arrays.multiple_attributes.input_types`
      70): the writer took 64 variants, the reader 64 sections, so at 66 sections the file was refused,
      and every later draw used the closest variant. `ogles2_image_keyed` now compiles at most
@@ -1661,7 +1664,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    `Stuff:amigent/work/ogles2-m7-1-oldcache` when the pass is done. Not addressed: nothing trims a
    user's `OGLES2Cache:` (the installer's `SYS:OGLES2Cache`), a change to the Pi 4's behaviour too.
 
-   Left for P6: the remaining groups and `multisample` in 4x MSAA; the free memory that falls about 2 MB
-   a minute during dEQP (logging or a leak: not known); the GPU paths of glGenerateMipmap and glCopyTex*
-   (§5 above); the benchmarks on both cards; the Pi 4 card's regression; a Makefile entry for
-   `tools/netwatch` (not added during the run: the Makefile is a prerequisite of objects).
+   Left for P6: the free memory that falls about 2 MB a minute during dEQP (logging or a leak: not known);
+   a program compiled twice on the Pi 3, at its link and at its first draw (the reference draw's RGBA8
+   target and float attributes against what a draw has: looked at, not settled); the GPU paths of
+   glGenerateMipmap and glCopyTex* (§5 above); the whole list again on the final library; the benchmarks on
+   both cards; the Pi 4 card's regression.

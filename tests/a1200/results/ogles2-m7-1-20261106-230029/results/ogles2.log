@@ -1,0 +1,404 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 display: render bitmap at 0x097EB83C, 1024 bytes a row: in memory the GPU reaches
+    10 display: own window, 256x256, BGRA
+    11 aglCreateContext2: context 0x0831949C, 256x256
+    12 glGetIntegerv: pname 0x821B not supported yet
+    13 compiler: Stuff:amigent/work/ogles2-m7-1/libs/v3dglslc, 78 bytes, id 34E713EE
+    14 compiler: shader compiled in 20 ms
+    15 compiler: shader compiled in 40 ms
+    16 compiler: program compiled in 40 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4p
+    17 glLinkProgram: OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4p (3 variants, 424 bytes of code)
+    18 compiler: program compiled in 20 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    19 draw: program 66d7277f26fa4f7ed7e61a7f: 6 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    20 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    21 job: the display's bitmap (0x097EB83C) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    22 job: clear 3 load 0 store 1, depth 0xFFFFFF stencil 0
+    23 glGetIntegerv: pname 0x821B not supported yet
+    24 glGetIntegerv: pname 0x821B not supported yet
+    25 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    26 glGetIntegerv: pname 0x821B not supported yet
+    27 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    28 glGetIntegerv: pname 0x821B not supported yet
+    29 compiler: program compiled in 180 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    30 draw: program 66d7277f26fa4f7ed7e61a7f: 8 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    31 glGetIntegerv: pname 0x821B not supported yet
+    32 glGetIntegerv: pname 0x821B not supported yet
+    33 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    34 glGetIntegerv: pname 0x821B not supported yet
+    35 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    36 glGetIntegerv: pname 0x821B not supported yet
+    37 compiler: program compiled in 120 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    38 draw: program 66d7277f26fa4f7ed7e61a7f: 10 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    39 glGetIntegerv: pname 0x821B not supported yet
+    40 glGetIntegerv: pname 0x821B not supported yet
+    41 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    42 glGetIntegerv: pname 0x821B not supported yet
+    43 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    44 glGetIntegerv: pname 0x821B not supported yet
+    45 compiler: program compiled in 160 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    46 draw: program 66d7277f26fa4f7ed7e61a7f: 12 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    47 glGetIntegerv: pname 0x821B not supported yet
+    48 glGetIntegerv: pname 0x821B not supported yet
+    49 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    50 glGetIntegerv: pname 0x821B not supported yet
+    51 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    52 glGetIntegerv: pname 0x821B not supported yet
+    53 compiler: program compiled in 100 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    54 draw: program 66d7277f26fa4f7ed7e61a7f: 14 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    55 glGetIntegerv: pname 0x821B not supported yet
+    56 glGetIntegerv: pname 0x821B not supported yet
+    57 glGetIntegerv: pname 0x821B not supported yet
+    58 glGetIntegerv: pname 0x821B not supported yet
+    59 compiler: program compiled in 100 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    60 draw: program 66d7277f26fa4f7ed7e61a7f: 16 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    61 glGetIntegerv: pname 0x821B not supported yet
+    62 glGetIntegerv: pname 0x821B not supported yet
+    63 glGetIntegerv: pname 0x821B not supported yet
+    64 glGetIntegerv: pname 0x821B not supported yet
+    65 compiler: program compiled in 100 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    66 draw: program 66d7277f26fa4f7ed7e61a7f: 18 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    67 glGetIntegerv: pname 0x821B not supported yet
+    68 glGetIntegerv: pname 0x821B not supported yet
+    69 glGetIntegerv: pname 0x821B not supported yet
+    70 glGetIntegerv: pname 0x821B not supported yet
+    71 glGetIntegerv: pname 0x821B not supported yet
+    72 glGetIntegerv: pname 0x821B not supported yet
+    73 compiler: program compiled in 240 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    74 draw: program 66d7277f26fa4f7ed7e61a7f: 20 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    75 glGetIntegerv: pname 0x821B not supported yet
+    76 glGetIntegerv: pname 0x821B not supported yet
+    77 glGetIntegerv: pname 0x821B not supported yet
+    78 glGetIntegerv: pname 0x821B not supported yet
+    79 glGetIntegerv: pname 0x821B not supported yet
+    80 glGetIntegerv: pname 0x821B not supported yet
+    81 compiler: program compiled in 220 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+    82 draw: program 66d7277f26fa4f7ed7e61a7f: 22 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+    83 glGetIntegerv: pname 0x821B not supported yet
+    84 glGetIntegerv: pname 0x821B not supported yet
+    85 glGetIntegerv: pname 0x821B not supported yet
+    86 glGetIntegerv: pname 0x821B not supported yet
+    87 glGetIntegerv: pname 0x821B not supported yet
+    88 glGetIntegerv: pname 0x821B not supported yet
+    89 glGetIntegerv: pname 0x821B not supported yet
+    90 glGetIntegerv: pname 0x821B not supported yet
+    91 glGetIntegerv: pname 0x821B not supported yet
+    92 glGetIntegerv: pname 0x821B not supported yet
+    93 glGetIntegerv: pname 0x821B not supported yet
+    94 glGetIntegerv: pname 0x821B not supported yet
+    95 glGetIntegerv: pname 0x821B not supported yet
+    96 glGetIntegerv: pname 0x821B not supported yet
+    97 glGetIntegerv: pname 0x821B not supported yet
+    98 glGetIntegerv: pname 0x821B not supported yet
+    99 glGetIntegerv: pname 0x821B not supported yet
+   100 glGetIntegerv: pname 0x821B not supported yet
+   101 glGetIntegerv: pname 0x821B not supported yet
+   102 glGetIntegerv: pname 0x821B not supported yet
+   103 glGetIntegerv: pname 0x821B not supported yet
+   104 glGetIntegerv: pname 0x821B not supported yet
+   105 glGetIntegerv: pname 0x821B not supported yet
+   106 glGetIntegerv: pname 0x821B not supported yet
+   107 compiler: program compiled in 120 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   108 draw: program 66d7277f26fa4f7ed7e61a7f: 24 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   109 glGetIntegerv: pname 0x821B not supported yet
+   110 glGetIntegerv: pname 0x821B not supported yet
+   111 compiler: program compiled in 100 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   112 draw: program 66d7277f26fa4f7ed7e61a7f: 26 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   113 glGetIntegerv: pname 0x821B not supported yet
+   114 glGetIntegerv: pname 0x821B not supported yet
+   115 compiler: program compiled in 160 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   116 draw: program 66d7277f26fa4f7ed7e61a7f: 28 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   117 glGetIntegerv: pname 0x821B not supported yet
+   118 glGetIntegerv: pname 0x821B not supported yet
+   119 compiler: program compiled in 180 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   120 draw: program 66d7277f26fa4f7ed7e61a7f: 30 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   121 glGetIntegerv: pname 0x821B not supported yet
+   122 glGetIntegerv: pname 0x821B not supported yet
+   123 compiler: program compiled in 140 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   124 draw: program 66d7277f26fa4f7ed7e61a7f: 32 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   125 glGetIntegerv: pname 0x821B not supported yet
+   126 glGetIntegerv: pname 0x821B not supported yet
+   127 compiler: program compiled in 120 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   128 draw: program 66d7277f26fa4f7ed7e61a7f: 34 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   129 glGetIntegerv: pname 0x821B not supported yet
+   130 glGetIntegerv: pname 0x821B not supported yet
+   131 compiler: program compiled in 160 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   132 draw: program 66d7277f26fa4f7ed7e61a7f: 36 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   133 glGetIntegerv: pname 0x821B not supported yet
+   134 glGetIntegerv: pname 0x821B not supported yet
+   135 compiler: program compiled in 80 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   136 draw: program 66d7277f26fa4f7ed7e61a7f: 38 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   137 glGetIntegerv: pname 0x821B not supported yet
+   138 glGetIntegerv: pname 0x821B not supported yet
+   139 compiler: program compiled in 80 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   140 draw: program 66d7277f26fa4f7ed7e61a7f: 40 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   141 glGetIntegerv: pname 0x821B not supported yet
+   142 glGetIntegerv: pname 0x821B not supported yet
+   143 compiler: program compiled in 120 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   144 draw: program 66d7277f26fa4f7ed7e61a7f: 42 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   145 glGetIntegerv: pname 0x821B not supported yet
+   146 glGetIntegerv: pname 0x821B not supported yet
+   147 compiler: program compiled in 80 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   148 draw: program 66d7277f26fa4f7ed7e61a7f: 44 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   149 glGetIntegerv: pname 0x821B not supported yet
+   150 glGetIntegerv: pname 0x821B not supported yet
+   151 compiler: program compiled in 120 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   152 draw: program 66d7277f26fa4f7ed7e61a7f: 46 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   153 glGetIntegerv: pname 0x821B not supported yet
+   154 glGetIntegerv: pname 0x821B not supported yet
+   155 glGetIntegerv: pname 0x821B not supported yet
+   156 glGetIntegerv: pname 0x821B not supported yet
+   157 glGetIntegerv: pname 0x821B not supported yet
+   158 glGetIntegerv: pname 0x821B not supported yet
+   159 glGetIntegerv: pname 0x821B not supported yet
+   160 glGetIntegerv: pname 0x821B not supported yet
+   161 compiler: shader compiled in 80 ms
+   162 compiler: program compiled in 40 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4p
+   163 glLinkProgram: OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4p (3 variants, 360 bytes of code)
+   164 compiler: program compiled in 20 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   165 draw: program 1feb142b3bc794d6ebb223c1: 6 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   166 glGetIntegerv: pname 0x821B not supported yet
+   167 glGetIntegerv: pname 0x821B not supported yet
+   168 compiler: program compiled in 160 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   169 draw: program 1feb142b3bc794d6ebb223c1: 8 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   170 glGetIntegerv: pname 0x821B not supported yet
+   171 glGetIntegerv: pname 0x821B not supported yet
+   172 compiler: program compiled in 160 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   173 draw: program 1feb142b3bc794d6ebb223c1: 10 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   174 glGetIntegerv: pname 0x821B not supported yet
+   175 glGetIntegerv: pname 0x821B not supported yet
+   176 compiler: shader compiled in 20 ms
+   177 compiler: program compiled in 40 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4p
+   178 glLinkProgram: OGLES2Cache:59385a183a0e65cd4aec4584.vc4p (3 variants, 400 bytes of code)
+   179 compiler: program compiled in 40 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   180 draw: program 59385a183a0e65cd4aec4584: 6 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   181 glGetIntegerv: pname 0x821B not supported yet
+   182 glGetIntegerv: pname 0x821B not supported yet
+   183 compiler: program compiled in 100 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   184 draw: program 59385a183a0e65cd4aec4584: 8 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   185 glGetIntegerv: pname 0x821B not supported yet
+   186 glGetIntegerv: pname 0x821B not supported yet
+   187 compiler: program compiled in 100 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   188 draw: program 59385a183a0e65cd4aec4584: 10 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   189 glGetIntegerv: pname 0x821B not supported yet
+   190 glGetIntegerv: pname 0x821B not supported yet
+   191 glGetIntegerv: pname 0x821B not supported yet
+   192 glGetIntegerv: pname 0x821B not supported yet
+   193 glGetIntegerv: pname 0x821B not supported yet
+   194 glGetIntegerv: pname 0x821B not supported yet
+   195 glGetIntegerv: pname 0x821B not supported yet
+   196 glGetIntegerv: pname 0x821B not supported yet
+   197 compiler: program compiled in 120 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   198 draw: program 1feb142b3bc794d6ebb223c1: 12 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   199 glGetIntegerv: pname 0x821B not supported yet
+   200 glGetIntegerv: pname 0x821B not supported yet
+   201 compiler: program compiled in 80 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   202 draw: program 1feb142b3bc794d6ebb223c1: 14 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   203 glGetIntegerv: pname 0x821B not supported yet
+   204 glGetIntegerv: pname 0x821B not supported yet
+   205 compiler: program compiled in 140 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   206 draw: program 1feb142b3bc794d6ebb223c1: 16 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   207 glGetIntegerv: pname 0x821B not supported yet
+   208 glGetIntegerv: pname 0x821B not supported yet
+   209 compiler: program compiled in 100 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   210 draw: program 59385a183a0e65cd4aec4584: 12 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   211 glGetIntegerv: pname 0x821B not supported yet
+   212 glGetIntegerv: pname 0x821B not supported yet
+   213 compiler: program compiled in 140 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   214 draw: program 59385a183a0e65cd4aec4584: 14 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   215 glGetIntegerv: pname 0x821B not supported yet
+   216 glGetIntegerv: pname 0x821B not supported yet
+   217 compiler: program compiled in 40 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   218 draw: program 59385a183a0e65cd4aec4584: 16 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   219 glGetIntegerv: pname 0x821B not supported yet
+   220 glGetIntegerv: pname 0x821B not supported yet
+   221 glGetIntegerv: pname 0x821B not supported yet
+   222 glGetIntegerv: pname 0x821B not supported yet
+   223 glGetIntegerv: pname 0x821B not supported yet
+   224 glGetIntegerv: pname 0x821B not supported yet
+   225 glGetIntegerv: pname 0x821B not supported yet
+   226 glGetIntegerv: pname 0x821B not supported yet
+   227 compiler: program compiled in 120 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   228 draw: program 1feb142b3bc794d6ebb223c1: 18 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   229 glGetIntegerv: pname 0x821B not supported yet
+   230 glGetIntegerv: pname 0x821B not supported yet
+   231 compiler: program compiled in 180 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   232 draw: program 1feb142b3bc794d6ebb223c1: 20 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   233 glGetIntegerv: pname 0x821B not supported yet
+   234 glGetIntegerv: pname 0x821B not supported yet
+   235 compiler: program compiled in 120 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   236 draw: program 1feb142b3bc794d6ebb223c1: 22 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   237 glGetIntegerv: pname 0x821B not supported yet
+   238 glGetIntegerv: pname 0x821B not supported yet
+   239 compiler: program compiled in 100 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   240 draw: program 59385a183a0e65cd4aec4584: 18 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   241 glGetIntegerv: pname 0x821B not supported yet
+   242 glGetIntegerv: pname 0x821B not supported yet
+   243 compiler: program compiled in 140 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   244 draw: program 59385a183a0e65cd4aec4584: 20 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   245 glGetIntegerv: pname 0x821B not supported yet
+   246 glGetIntegerv: pname 0x821B not supported yet
+   247 compiler: program compiled in 120 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   248 draw: program 59385a183a0e65cd4aec4584: 22 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   249 glGetIntegerv: pname 0x821B not supported yet
+   250 glGetIntegerv: pname 0x821B not supported yet
+   251 glGetIntegerv: pname 0x821B not supported yet
+   252 glGetIntegerv: pname 0x821B not supported yet
+   253 glGetIntegerv: pname 0x821B not supported yet
+   254 glGetIntegerv: pname 0x821B not supported yet
+   255 glGetIntegerv: pname 0x821B not supported yet
+   256 glGetIntegerv: pname 0x821B not supported yet
+   257 compiler: program compiled in 100 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   258 draw: program 1feb142b3bc794d6ebb223c1: 24 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   259 glGetIntegerv: pname 0x821B not supported yet
+   260 glGetIntegerv: pname 0x821B not supported yet
+   261 compiler: program compiled in 120 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   262 draw: program 1feb142b3bc794d6ebb223c1: 26 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   263 glGetIntegerv: pname 0x821B not supported yet
+   264 glGetIntegerv: pname 0x821B not supported yet
+   265 compiler: program compiled in 80 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   266 draw: program 1feb142b3bc794d6ebb223c1: 28 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   267 glGetIntegerv: pname 0x821B not supported yet
+   268 glGetIntegerv: pname 0x821B not supported yet
+   269 compiler: program compiled in 40 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   270 draw: program 59385a183a0e65cd4aec4584: 24 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   271 glGetIntegerv: pname 0x821B not supported yet
+   272 glGetIntegerv: pname 0x821B not supported yet
+   273 compiler: program compiled in 100 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   274 draw: program 59385a183a0e65cd4aec4584: 26 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   275 glGetIntegerv: pname 0x821B not supported yet
+   276 glGetIntegerv: pname 0x821B not supported yet
+   277 compiler: program compiled in 60 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   278 draw: program 59385a183a0e65cd4aec4584: 28 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   279 glGetIntegerv: pname 0x821B not supported yet
+   280 glGetIntegerv: pname 0x821B not supported yet
+   281 compiler: program compiled in 120 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   282 draw: program 66d7277f26fa4f7ed7e61a7f: 48 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   283 glGetIntegerv: pname 0x821B not supported yet
+   284 glGetIntegerv: pname 0x821B not supported yet
+   285 compiler: program compiled in 160 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   286 draw: program 66d7277f26fa4f7ed7e61a7f: 50 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   287 glGetIntegerv: pname 0x821B not supported yet
+   288 glGetIntegerv: pname 0x821B not supported yet
+   289 compiler: program compiled in 60 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   290 draw: program 66d7277f26fa4f7ed7e61a7f: 52 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   291 glGetIntegerv: pname 0x821B not supported yet
+   292 glGetIntegerv: pname 0x821B not supported yet
+   293 compiler: program compiled in 100 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   294 draw: program 1feb142b3bc794d6ebb223c1: 30 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   295 glGetIntegerv: pname 0x821B not supported yet
+   296 glGetIntegerv: pname 0x821B not supported yet
+   297 compiler: program compiled in 140 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   298 draw: program 1feb142b3bc794d6ebb223c1: 32 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   299 glGetIntegerv: pname 0x821B not supported yet
+   300 glGetIntegerv: pname 0x821B not supported yet
+   301 compiler: program compiled in 100 ms, OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k
+   302 draw: program 1feb142b3bc794d6ebb223c1: 34 variants for other draws, compiled (OGLES2Cache:1feb142b3bc794d6ebb223c1.vc4k)
+   303 glGetIntegerv: pname 0x821B not supported yet
+   304 glGetIntegerv: pname 0x821B not supported yet
+   305 compiler: program compiled in 180 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   306 draw: program 59385a183a0e65cd4aec4584: 30 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   307 glGetIntegerv: pname 0x821B not supported yet
+   308 glGetIntegerv: pname 0x821B not supported yet
+   309 compiler: program compiled in 100 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   310 draw: program 59385a183a0e65cd4aec4584: 32 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   311 glGetIntegerv: pname 0x821B not supported yet
+   312 glGetIntegerv: pname 0x821B not supported yet
+   313 compiler: program compiled in 120 ms, OGLES2Cache:59385a183a0e65cd4aec4584.vc4k
+   314 draw: program 59385a183a0e65cd4aec4584: 34 variants for other draws, compiled (OGLES2Cache:59385a183a0e65cd4aec4584.vc4k)
+   315 glGetIntegerv: pname 0x821B not supported yet
+   316 glGetIntegerv: pname 0x821B not supported yet
+   317 compiler: program compiled in 120 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   318 draw: program 66d7277f26fa4f7ed7e61a7f: 54 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   319 glGetIntegerv: pname 0x821B not supported yet
+   320 glGetIntegerv: pname 0x821B not supported yet
+   321 compiler: program compiled in 140 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   322 draw: program 66d7277f26fa4f7ed7e61a7f: 56 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   323 glGetIntegerv: pname 0x821B not supported yet
+   324 glGetIntegerv: pname 0x821B not supported yet
+   325 compiler: program compiled in 80 ms, OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k
+   326 draw: program 66d7277f26fa4f7ed7e61a7f: 58 variants for other draws, compiled (OGLES2Cache:66d7277f26fa4f7ed7e61a7f.vc4k)
+   327 glGetIntegerv: pname 0x821B not supported yet
+   328 glGetIntegerv: pname 0x821B not supported yet
+   329 glGetIntegerv: pname 0x821B not supported yet
+   330 glGetIntegerv: pname 0x821B not supported yet
+   331 glGetIntegerv: pname 0x821B not supported yet
+   332 glGetIntegerv: pname 0x821B not supported yet
+   333 glGetIntegerv: pname 0x821B not supported yet
+   334 glGetIntegerv: pname 0x821B not supported yet
+   335 glGetIntegerv: pname 0x821B not supported yet
+   336 glGetIntegerv: pname 0x821B not supported yet
+   337 glGetIntegerv: pname 0x821B not supported yet
+   338 glGetIntegerv: pname 0x821B not supported yet
+   339 glGetIntegerv: pname 0x821B not supported yet
+   340 glGetIntegerv: pname 0x821B not supported yet
+   341 glGetIntegerv: pname 0x821B not supported yet
+   342 glGetIntegerv: pname 0x821B not supported yet
+   343 glGetIntegerv: pname 0x821B not supported yet
+   344 glGetIntegerv: pname 0x821B not supported yet
+   345 glGetIntegerv: pname 0x821B not supported yet
+   346 glGetIntegerv: pname 0x821B not supported yet
+   347 glGetIntegerv: pname 0x821B not supported yet
+   348 glGetIntegerv: pname 0x821B not supported yet
+   349 glGetIntegerv: pname 0x821B not supported yet
+   350 glGetIntegerv: pname 0x821B not supported yet
+   351 glGetIntegerv: pname 0x821B not supported yet
+   352 glGetIntegerv: pname 0x821B not supported yet
+   353 glGetIntegerv: pname 0x821B not supported yet
+   354 glGetIntegerv: pname 0x821B not supported yet
+   355 glGetIntegerv: pname 0x821B not supported yet
+   356 glGetIntegerv: pname 0x821B not supported yet
+   357 glGetIntegerv: pname 0x821B not supported yet
+   358 glGetIntegerv: pname 0x821B not supported yet
+   359 glGetIntegerv: pname 0x821B not supported yet
+   360 glGetIntegerv: pname 0x821B not supported yet
+   361 glGetIntegerv: pname 0x821B not supported yet
+   362 glGetIntegerv: pname 0x821B not supported yet
+   363 glGetIntegerv: pname 0x821B not supported yet
+   364 glGetIntegerv: pname 0x821B not supported yet
+   365 glGetIntegerv: pname 0x821B not supported yet
+   366 glGetIntegerv: pname 0x821B not supported yet
+   367 glGetIntegerv: pname 0x821B not supported yet
+   368 glGetIntegerv: pname 0x821B not supported yet
+   369 glGetIntegerv: pname 0x821B not supported yet
+   370 glGetIntegerv: pname 0x821B not supported yet
+   371 glGetIntegerv: pname 0x821B not supported yet
+   372 glGetIntegerv: pname 0x821B not supported yet
+   373 glGetIntegerv: pname 0x821B not supported yet
+   374 glGetIntegerv: pname 0x821B not supported yet
+   375 glGetIntegerv: pname 0x821B not supported yet
+   376 glGetIntegerv: pname 0x821B not supported yet
+   377 glGetIntegerv: pname 0x821B not supported yet
+   378 glGetIntegerv: pname 0x821B not supported yet
+   379 glGetIntegerv: pname 0x821B not supported yet
+   380 glGetIntegerv: pname 0x821B not supported yet
+   381 glGetIntegerv: pname 0x821B not supported yet
+   382 glGetIntegerv: pname 0x821B not supported yet
+   383 glGetIntegerv: pname 0x821B not supported yet
+   384 glGetIntegerv: pname 0x821B not supported yet
+   385 glGetIntegerv: pname 0x821B not supported yet
+   386 glGetIntegerv: pname 0x821B not supported yet
+   387 glGetIntegerv: pname 0x821B not supported yet
+   388 glGetIntegerv: pname 0x821B not supported yet
+   389 glGetIntegerv: pname 0x821B not supported yet
+   390 glGetIntegerv: pname 0x821B not supported yet
+   391 glGetIntegerv: pname 0x821B not supported yet
+   392 glGetIntegerv: pname 0x821B not supported yet
+   393 glGetIntegerv: pname 0x821B not supported yet
+   394 glGetIntegerv: pname 0x821B not supported yet
+   395 glGetIntegerv: pname 0x821B not supported yet
+   396 glGetIntegerv: pname 0x821B not supported yet
+   397 glGetIntegerv: pname 0x821B not supported yet
+   398 aglDestroyContext: context 0x0831949C: freeing
+   399 device: context freed, 0 bytes of GPU memory still in use
+   400 aglDestroyContext: context 0x0831949C (500 frames, 0 dropped, 0 binning blocks added)
+   401 timing: 500 jobs, each on average: 53280 us of CPU work before its flush, 44 us waiting for binning, 782 us for the render
+   402 timing: and in each flush 120 us building the render list, 76 us for the CPU cache before the GPU, 68 us after
+   403 timing: 500 swaps, 389466 us from one to the next on average, 607 us of it presenting
+   404 timing: per frame 0 draws, 14376 us in them; in all 6 ms in glBuffer(Sub)Data, 216 ms in glTex(Sub)Image2D
