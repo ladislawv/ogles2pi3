@@ -271,6 +271,14 @@ static void convert(UBYTE *dst, ULONG dst_stride, const UBYTE *src, ULONG src_st
 {
     ULONG i;
     int k, es = type_size(type);
+    /* GL_FIXED as floats (vc4_attr_format says so): VC4's shaders read no fixed
+     * type (a position of zeros, dEQP draw.random); Mesa's vertex buffers convert too. */
+    if (type == GL_FIXED) {
+        for (i = 0; i < count; i++, src += src_stride, dst += dst_stride)
+            for (k = 0; k < n; k++)
+                ((ULONG *)dst)[k] = vc4_le32(fbits((float)((const LONG *)src)[k] / 65536.0f));
+        return;
+    }
     /* Whole words a vertex (the 68k takes them unaligned), the type decided
      * once: 5 ms of Quake III's frame went on this byte by byte (P5). */
     if (es == 4) {
@@ -382,26 +390,16 @@ static ULONG shader_record(struct vc4_ctx *c, const ULONG code[3], const ULONG u
 
 /* ---- state packets ---- */
 
-static void emit_state(struct OGLES2Context *ctx, struct vc4_cl *cl, struct vc4_emitted *em,
-                       const struct OGLES2Variant *fs, const struct draw_info *di)
+/* The clip window: viewport and scissor box, top-down, in the framebuffer. */
+static void clip_window(const struct OGLES2Context *ctx, LONG *pl, LONG *pt, LONG *pr, LONG *pb)
 {
-    const struct OGLES2State *s = &ctx->state;
-    ULONG word[2], cfgw;
-    BOOL first = !em->valid;
-    BOOL flip = ctx->fb_flip, depth_on = (s->caps & OGLES2_CAP_DEPTH_TEST) && ctx->fb_depth_bits;
-    BOOL stencil_on = (s->caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits;
-    LONG fh = (LONG)ctx->fb_h, vx = ctx->viewport[0], vy = ctx->viewport[1], vw = ctx->viewport[2],
-         vh = ctx->viewport[3], l, t, r, b;
-    struct VC4_CONFIGURATION_BITS cfg;
-    UBYTE *p;
-    BOOL ez;
-
-    /* the clip window: viewport and scissor box, top-down, in the framebuffer */
-    l = vx;
-    r = vx + vw;
+    BOOL flip = ctx->fb_flip;
+    LONG fh = (LONG)ctx->fb_h, vy = ctx->viewport[1], vh = ctx->viewport[3], l, t, r, b;
+    l = ctx->viewport[0];
+    r = l + ctx->viewport[2];
     t = flip ? fh - (vy + vh) : vy;
     b = flip ? fh - vy : vy + vh;
-    if (s->caps & OGLES2_CAP_SCISSOR_TEST) {
+    if (ctx->state.caps & OGLES2_CAP_SCISSOR_TEST) {
         LONG sl = ctx->scissor[0], sr = sl + ctx->scissor[2];
         LONG st = flip ? fh - (ctx->scissor[1] + ctx->scissor[3]) : ctx->scissor[1];
         LONG sb = flip ? fh - ctx->scissor[1] : ctx->scissor[1] + ctx->scissor[3];
@@ -416,6 +414,27 @@ static void emit_state(struct OGLES2Context *ctx, struct vc4_cl *cl, struct vc4_
     if (b > fh) b = fh;
     if (r < l) r = l;
     if (b < t) b = t;
+    *pl = l;
+    *pt = t;
+    *pr = r;
+    *pb = b;
+}
+
+static void emit_state(struct OGLES2Context *ctx, struct vc4_cl *cl, struct vc4_emitted *em,
+                       const struct OGLES2Variant *fs, const struct draw_info *di)
+{
+    const struct OGLES2State *s = &ctx->state;
+    ULONG word[2], cfgw;
+    BOOL first = !em->valid;
+    BOOL flip = ctx->fb_flip, depth_on = (s->caps & OGLES2_CAP_DEPTH_TEST) && ctx->fb_depth_bits;
+    BOOL stencil_on = (s->caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits;
+    LONG fh = (LONG)ctx->fb_h, vx = ctx->viewport[0], vy = ctx->viewport[1], vw = ctx->viewport[2],
+         vh = ctx->viewport[3], l, t, r, b;
+    struct VC4_CONFIGURATION_BITS cfg;
+    UBYTE *p;
+    BOOL ez;
+
+    clip_window(ctx, &l, &t, &r, &b);
     /* Each packet only when it says something new in this list (the state
      * lasts as long as the list: 4 ms of Quake III's frame, P5). */
     if (first || em->clip[0] != (ULONG)l || em->clip[1] != (ULONG)t || em->clip[2] != (ULONG)r || em->clip[3] != (ULONG)b) {
@@ -805,8 +824,21 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
 
     if (c->bad)
         return FALSE;
+    {
+        /* An empty scissor box or viewport draws nothing. The clip window of
+         * no size would not say so: VC4 draws the whole primitive (a clear,
+         * the whole target: dEQP color_clear, fbo.render.color_clear). */
+        LONG l, t, r, b;
+        clip_window(ctx, &l, &t, &r, &b);
+        if (r <= l || b <= t)
+            return TRUE;
+    }
     if (el ? (ULONG)dc->count - 1 > MAX_VERTS
            : (ULONG)dc->count > MAX_VERTS && (mode == GL_TRIANGLE_FAN || mode == GL_LINE_LOOP))
+        return draw_big(ctx, dc);
+    /* A loop of two vertices as its two lines: as a loop its line was missing
+     * (dEQP draw.draw_arrays.line_loop, the loops of more vertices right). */
+    if (mode == GL_LINE_LOOP && (el ? (ULONG)el->count : (ULONG)dc->count) == 2)
         return draw_big(ctx, dc);
     /* glPolygonMode, which VC4 has no hardware for (P5 run 1, m6_ext): a
      * triangle draw's vertices drawn as points, or its triangles' edges as a

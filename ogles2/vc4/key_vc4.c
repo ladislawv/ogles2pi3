@@ -87,7 +87,7 @@ unsigned vc4_attr_format(GLenum type, int size, int normalized)
         return 0;
     switch (type) {
     case GL_FLOAT: base = 21; break;                          /* R32_FLOAT */
-    case GL_FIXED: base = 41; break;                          /* R32_FIXED */
+    case GL_FIXED: base = 21; break;                          /* floats: draw_vc4.c's convert */
     case GL_UNSIGNED_BYTE: base = normalized ? 81 : 89; break;  /* R8_UNORM, R8_USCALED */
     case GL_BYTE: base = normalized ? 85 : 93; break;           /* R8_SNORM, R8_SSCALED */
     case GL_UNSIGNED_SHORT: base = normalized ? 57 : 65; break; /* R16_UNORM, R16_USCALED */

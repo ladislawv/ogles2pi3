@@ -97,6 +97,7 @@ const struct OGLES2Backend ogles2_backend_v3d = {
     ogles2_v3d_tex_from_raster,
     ogles2_v3d_rb_zs_storage,
     ogles2_v3d_rb_surface,
+    0, /* rb_stencil_copy */
     ogles2_v3d_target_layout,
     ogles2_v3d_target_pools,
     ogles2_v3d_tex_surface,

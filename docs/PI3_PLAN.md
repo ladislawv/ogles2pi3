@@ -1585,3 +1585,40 @@ Everything that can run here runs here first (the developer, 2026-11-03).
       (`tests/a1200/results/ogles2-m{2-4,6-6,7-4,7-5}-20261106-130*`).
    Then P6 (dEQP-GLES2 and the benchmarks on both cards, against Mesa vc4's baseline) and P7
    (into `ogles2`, one release for both cards).
+6. **P6 under way (2026-11-06), the Pi 3 card, the shaders compiled on the PC** (`p6_deqp.sh`, summaries
+   `tests/a1200/results/p6-deqp-20261106-{1307,1654}.txt`). In progress: 4,098 of 17,165 cases run, none
+   failing beyond Mesa's baseline (§3.1: `clipping` 3); the rest is still to run. What the first groups
+   found, all fixed and rerun on the card:
+   - **an empty scissor box or viewport** (`color_clear` 9, `fbo.render.color_clear` 28): the clip window
+     was clamped to no size, and the draw covered the whole target instead of nothing. It is skipped
+     now (`draw_vc4.c`). `color_clear` 19 of 19.
+   - **`GL_FIXED` attributes** (`draw.random` 6): `vc4_nir_lower_io` has no fixed type, so the attribute
+     read as zeros (Mesa's vertex buffers convert before it). `convert` makes floats, and the key says
+     floats (`key_vc4.c`); no compiler change.
+   - **a line loop of two vertices** (`draw.draw_arrays.line_loop` 2): its line was missing, for a reason
+     not found (Mesa passes these); drawn as two lines through `draw_big`. `draw` 101 of 101.
+   - **the levels the calls may name** (`negative_api` 6): fixed at 13, for 4096; now
+     log2(`GL_MAX_TEXTURE_SIZE`) + 1, so 12 on the Pi 3, still 13 on the Pi 4. 246 of 246.
+   - **a stencil renderbuffer beside a recreated depth one** (`fbo.render.recreate_depthbuffer.rebind_*` 7):
+     VC4 keeps both in the depth one's image (`fbo_vc4.c`), so its storage took the stencil's values with
+     it. They now follow when the pair changes (`fbo.c`'s `stencil_home`, a backend's `rb_stencil_copy`, 0
+     on V3D). `fbo` 709 of 709.
+
+   **The Wi-Fi link is the run's main obstacle, its cause not found.** The Amiga loses the network in
+   mid-run, every 7 to 19 minutes that day and sometimes within two minutes of boot. Seen:
+   ping and TCP stop while the machine lives (the pointer moves, netwatch's timers run); at one drop
+   Roadshow's counters froze on received IP bytes with its read requests still pending and the link
+   still "Up", and only a few frames of unknown type went on arriving; 63 to 69 °C and `throttled`
+   0x00000 throughout, so not heat or power. Ruled out as the sole cause: a fixed time since boot, a
+   particular test case (`shaders-indexing` got past on its third try where the first two died), the
+   logger polling `ShowNetStatus` (a drop without it). Under test: an upload's CRC of every file (36 MB
+   of disk at each run's start), about half of them followed by a drop on the evening of 2026-11-06:
+   `out/ogles2-m7-1.keep-bin` leaves `bin/` out of it. Worked around, not solved: `tools/netwatch`
+   resets the machine after two minutes without a reply, and `p6_deqp.sh` retries the part. netwatch's
+   first version did all its work in one task and failed to reset the machine three times; split so
+   that the timer depends on neither the network nor the disk, it has reset the machine by itself since.
+
+   Left for P6: the remaining groups and `multisample` in 4x MSAA; the free memory that falls about 2 MB
+   a minute during dEQP (logging or a leak: not known); the GPU paths of glGenerateMipmap and glCopyTex*
+   (§5 above); the benchmarks on both cards; the Pi 4 card's regression; a Makefile entry for
+   `tools/netwatch` (not added during the run: the Makefile is a prerequisite of objects).

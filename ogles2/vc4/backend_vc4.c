@@ -355,6 +355,7 @@ const struct OGLES2Backend ogles2_backend_vc4 = {
     tex_from_raster,
     ogles2_vc4_rb_zs_storage,
     ogles2_vc4_rb_surface,
+    ogles2_vc4_rb_stencil_copy,
     ogles2_vc4_target_layout,
     ogles2_vc4_target_pools,
     ogles2_vc4_tex_surface,

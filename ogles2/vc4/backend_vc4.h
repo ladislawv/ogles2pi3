@@ -192,6 +192,7 @@ BOOL ogles2_vc4_rb_zs_storage(GLenum format, UWORD w, UWORD h, struct v3d_mem *m
                               ULONG *bytes, UBYTE *cpp);
 void ogles2_vc4_rb_surface(GLenum format, ULONG base, ULONG ub, ULONG bytes, BOOL stencil_only,
                            struct OGLES2Surface *s);
+void ogles2_vc4_rb_stencil_copy(ULONG from, ULONG to, ULONG bytes);
 void ogles2_vc4_target_layout(struct OGLES2Target *t, UBYTE depth_format, BOOL wide);
 BOOL ogles2_vc4_target_pools(struct OGLES2Context *ctx, struct v3d_mem *alloc, struct v3d_mem *state,
                              ULONG *tiles, ULONG name, struct OGLES2Target *t);

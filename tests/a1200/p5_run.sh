@@ -80,6 +80,11 @@ for t in "$@"; do
         { echo "$t: build failed"; continue; }
     PKG=$HERE/out/ogles2-$t
     mkdir -p "$PKG/libs"
+    # With out/ogles2-<package>.keep-bin the bin/ the station has stays, not uploaded or checked
+    # (it is not removed there). Every run's upload reads each file back for its CRC: 36 MB of
+    # disk for dEQP, at a moment the Wi-Fi link dropped too often (2026-11-06; PI3_PLAN §10).
+    # Only while bin/ does not change: remove the file after a rebuild of the programs.
+    [ -e "$HERE/out/ogles2-$t.keep-bin" ] && rm -rf "$PKG/bin"
     find "$PKG" -name v3dglslc -size +100k | while IFS= read -r f; do # (the path has a space)
         echo "$t: ${f#$PKG/} replaced by the stand-in for this run"
         printf '%s\n' "$STAND_IN" > "$f"

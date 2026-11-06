@@ -77,6 +77,10 @@ struct OGLES2Renderbuffer
     UBYTE cpp;
     UWORD refs;                 /* framebuffer attachment points that refer to it */
     BOOL orphan;                /* deleted while attached: freed with the last of them */
+    /* A backend with one image for depth and stencil (rb_stencil_copy): */
+    struct OGLES2Renderbuffer *zs_in;  /* a stencil's values are in this depth one's image (0: its own) */
+    struct OGLES2Renderbuffer *held, *held_next; /* the stencils whose values are in this one's */
+    BOOL s_valid;               /* a job has used this stencil since its storage was given */
 };
 
 struct OGLES2Attachment
@@ -151,8 +155,67 @@ static struct OGLES2Renderbuffer *rb_by_name(struct OGLES2FboState *fs, GLuint n
 
 /* ---- renderbuffer storage ---- */
 
+/* A stencil's values leave the depth renderbuffer that holds them. */
+static void stencil_unhold(struct OGLES2Renderbuffer *s)
+{
+    struct OGLES2Renderbuffer **p;
+    if (!s->zs_in)
+        return;
+    for (p = &s->zs_in->held; *p; p = &(*p)->held_next)
+        if (*p == s) {
+            *p = s->held_next;
+            break;
+        }
+    s->zs_in = s->held_next = 0;
+}
+
+static void stencil_copy(const struct OGLES2Renderbuffer *from, const struct OGLES2Renderbuffer *to)
+{
+    if (from->base && to->base && from->w == to->w && from->h == to->h)
+        ogles2_backend->rb_stencil_copy(from->base, to->base, from->bytes < to->bytes ? from->bytes : to->bytes);
+}
+
+/* The stencils in rb's image go to their own (no render of rb runs: the callers
+ * made sure), as it is reused or its storage goes. */
+static void stencils_out(struct OGLES2Renderbuffer *rb)
+{
+    while (rb->held) {
+        struct OGLES2Renderbuffer *s = rb->held;
+        stencil_copy(rb, s);
+        stencil_unhold(s);
+    }
+}
+
+/* A job is about to use stencil renderbuffer s with depth renderbuffer d (0: none).
+ * On a backend with one image for both, s's values must be in d's (fbo_vc4.c);
+ * they follow when the pair changes: a depth renderbuffer recreated keeps the
+ * stencil's values (GLES 2.0: the attachments are separate images; dEQP
+ * fbo.render.recreate_depthbuffer.rebind_*). The first job has none to move. */
+static void stencil_home(struct OGLES2Context *ctx, struct OGLES2Renderbuffer *s, struct OGLES2Renderbuffer *d)
+{
+    struct OGLES2Renderbuffer *cur = s->zs_in ? s->zs_in : s, *want = d ? d : s;
+    BOOL valid = s->s_valid;
+    s->s_valid = TRUE;
+    if (cur == want)
+        return;
+    ogles2_job_finish(ctx); /* the last render may have written them */
+    if (d)
+        stencils_out(d);
+    if (valid)
+        stencil_copy(cur, want);
+    stencil_unhold(s);
+    if (d) {
+        s->zs_in = d;
+        s->held_next = d->held;
+        d->held = s;
+    }
+}
+
 static void rb_free_storage(struct OGLES2Context *ctx, struct OGLES2Renderbuffer *rb)
 {
+    stencils_out(rb);
+    stencil_unhold(rb);
+    rb->s_valid = FALSE;
     if (rb->color)
         ogles2_texture_hidden_free(ctx, rb->color);
     rb->color = 0;
@@ -1071,6 +1134,8 @@ BOOL ogles2_fbo_target(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb, 
         } else {
             t->has_s = TRUE;
             ogles2_backend->rb_surface(s->rb->format, s->rb->base, s->rb->ub, s->rb->bytes, TRUE, &t->s);
+            if (ogles2_backend->rb_stencil_copy && d->type != GL_TEXTURE)
+                stencil_home(ctx, s->rb, d->type == GL_RENDERBUFFER && d->rb->base ? d->rb : 0);
         }
     }
     /* OES_depth_texture: the depth texture's level itself; a depth-stencil

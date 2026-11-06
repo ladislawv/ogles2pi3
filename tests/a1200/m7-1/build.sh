@@ -22,3 +22,7 @@ cp "$B/deqp/deqp-gles2" "$BS/cmd/OGLES2Log" "$B/tests/m7_points" "$B/amictl/v3dg
 cp -r "$B/deqp/gles2" "$PKG/bin/gles2"
 # The must-pass list, a file per group (Run-M1 LIST=<group>).
 bash "$REPO/ports/deqp/caselists.sh" "$PKG/caselists" > /dev/null
+# Lists of a run's own (tests/a1200/p6_deqp.sh's parts of the long groups).
+if [ -n "${P6_LISTS:-}" ] && [ -d "$P6_LISTS" ]; then
+    cp "$P6_LISTS"/*.txt "$PKG/caselists/"
+fi

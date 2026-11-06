@@ -40,6 +40,16 @@
 
 #define MAX_SIZE   ((int)ogles2_backend->caps->max_texture_size) /* the backend's (backend.h) */
 
+/* The levels the calls may name: up to log2(GL_MAX_TEXTURE_SIZE), GLES 2.0 3.7.1
+ * (13 on the Pi 4, MAX_LEVELS; 12 on the Pi 3). */
+static int levels_named(void)
+{
+    int n = 1;
+    while (MAX_SIZE >> n)
+        n++;
+    return n;
+}
+
 
 
 /* ---- the context's texture state ---- */
@@ -1347,7 +1357,7 @@ static void tex_image(struct OGLES2Context *ctx, GLenum target, GLint level, GLi
         ogles2_error(ctx, err);
         return;
     }
-    if (level < 0 || level >= MAX_LEVELS || width < 0 || height < 0 || border != 0 ||
+    if (level < 0 || level >= levels_named() || width < 0 || height < 0 || border != 0 ||
         width > (MAX_SIZE >> level) || height > (MAX_SIZE >> level) ||
         (face_target(target) && width != height)) {
         ogles2_error(ctx, GL_INVALID_VALUE);
@@ -1461,8 +1471,8 @@ static void tex_sub_image(struct OGLES2Context *ctx, GLenum target, GLint level,
     if (!(t = image_texture(ctx, ts, target, level, &k)))
         return;
     f = &t->f[k];
-    if (level < 0 || level >= MAX_LEVELS || !(f->defined & (1UL << level))) {
-        ogles2_error(ctx, level < 0 || level >= MAX_LEVELS ? GL_INVALID_VALUE : GL_INVALID_OPERATION);
+    if (level < 0 || level >= levels_named() || !(f->defined & (1UL << level))) {
+        ogles2_error(ctx, level < 0 || level >= levels_named() ? GL_INVALID_VALUE : GL_INVALID_OPERATION);
         return;
     }
     /* GLES 2.0 3.7.2: the level's own format; and the RAM copy's class
@@ -1723,7 +1733,7 @@ void ogles2_glCompressedTexImage2D(struct OGLES2Context *ctx, GLenum target, GLi
     }
     bw = blocks4((ULONG)width);
     bh = blocks4((ULONG)height);
-    if (width < 0 || height < 0 || border != 0 || level < 0 || level >= MAX_LEVELS ||
+    if (width < 0 || height < 0 || border != 0 || level < 0 || level >= levels_named() ||
         imageSize != (GLsizei)(bw * bh * (bs ? bs : 8))) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
@@ -1771,7 +1781,7 @@ void ogles2_glCompressedTexSubImage2D(struct OGLES2Context *ctx, GLenum target, 
     /* The order of the checks is dEQP's (negative_api.texture): values
      * first, then the level, its bounds and size; the format and the block
      * bounds last. */
-    if (level < 0 || level >= MAX_LEVELS || xoffset < 0 || yoffset < 0 || width < 0 || height < 0) {
+    if (level < 0 || level >= levels_named() || xoffset < 0 || yoffset < 0 || width < 0 || height < 0) {
         ogles2_error(ctx, GL_INVALID_VALUE);
         return;
     }

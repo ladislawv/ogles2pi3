@@ -9,6 +9,10 @@
 # (WAIT, seconds, default 2700), the station rebooted if a program of the run is still going,
 # and the group run again, up to TRIES times (default 3). The summary goes to
 # tests/a1200/results/p6-deqp-<date>.txt as it runs.
+# CHUNK=<cases>: a group longer than that runs in parts of so many cases, <group>-pNN, each
+# tried on its own, so that a lost link costs one part (2026-11-06: the link dropped every 7 to
+# 19 minutes, and fragment_ops, 47 minutes, never finished). WITH_MSAA=1: multisample in 4x MSAA
+# after the named groups too (without names it always runs).
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
@@ -73,10 +77,25 @@ run() { # group, extra Run-M1 arguments, name
 }
 
 [ -d "$PKG/caselists" ] || bash "$HERE/build_package.sh" m7-1 > /dev/null 2>&1
-GROUPS_=${*:-$(ls "$PKG/caselists" | sed 's/\.txt$//')}
-say "P6, dEQP-GLES2 must-pass on the Pi 3 card: $(echo $GROUPS_ | wc -w) groups, bridge port ${BRIDGE_PORT:-6803}"
+GROUPS_=${*:-$(ls "$PKG/caselists" | grep -v -- '-p[0-9][0-9]*\.txt$' | sed 's/\.txt$//')}
+say "P6, dEQP-GLES2 must-pass on the Pi 3 card: $(echo $GROUPS_ | wc -w) groups, bridge port ${BRIDGE_PORT:-6803}${CHUNK:+, parts of $CHUNK cases}"
+# The parts' lists, made first: build_package.sh makes the package anew for each run (m7-1/build.sh).
+export P6_LISTS=$HERE/out/p6-lists
+rm -rf "$P6_LISTS"
+mkdir -p "$P6_LISTS"
 for g in $GROUPS_; do
-    run "$g" "" "$g"
+    n=$(grep -c . "$PKG/caselists/$g.txt" 2> /dev/null || echo 0)
+    if [ -n "${CHUNK:-}" ] && [ "$n" -gt "$CHUNK" ]; then
+        split -d -l "$CHUNK" --additional-suffix=.txt "$PKG/caselists/$g.txt" "$P6_LISTS/$g-p"
+    fi
 done
-[ -z "${*:-}" ] && run multisample "MSAA=1" multisample-msaa
+for g in $GROUPS_; do
+    parts=$(ls "$P6_LISTS" | grep -E "^$g-p[0-9]+\.txt$" | sed 's/\.txt$//')
+    for p in ${parts:-$g}; do
+        run "$p" "" "$p"
+    done
+done
+if [ -z "${*:-}" ] || [ "${WITH_MSAA:-}" = 1 ]; then
+    run multisample "MSAA=1" multisample-msaa
+fi
 say "done: $SUM"

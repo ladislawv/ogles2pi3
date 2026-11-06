@@ -8,7 +8,8 @@
  * Z24S8 image in T (or, small, LT) tiling, whatever its format (Mesa's
  * state tracker picks Z24S8 for VC4 the same way). A framebuffer object's
  * job uses its depth attachment's image, else its stencil's; with separate
- * depth and stencil renderbuffers the stencil lives in the depth one's.
+ * depth and stencil renderbuffers the stencil lives in the depth one's (and
+ * follows when the pair changes: fbo.c's stencil_home).
  * OGLES2Surface's V3D fields are this backend's: mem_format the tiling
  * (VC4_TILING_*), format the colour format (VC4_COLOR_*), ub unused; a
  * renderbuffer's ub holds its tiling.
@@ -20,6 +21,7 @@
 #include "../ogles2_internal.h"
 #include "../backend.h"
 #include "vc4core.h"
+#include "vc4_os.h"
 #include "v3d_types.h"
 #include "backend_vc4.h"
 
@@ -49,6 +51,20 @@ void ogles2_vc4_rb_surface(GLenum format, ULONG base, ULONG ub, ULONG bytes, BOO
     s->format = 0;
     s->force_alpha1 = FALSE;
     s->ub = 0;
+}
+
+/* The low byte of each Z24S8 word, the images laid out alike (the same size).
+ * Both out of the CPU's cache first: the GPU wrote them, and a stale line of the
+ * target would come back over its depth when cleaned before the next render. */
+void ogles2_vc4_rb_stencil_copy(ULONG from, ULONG to, ULONG bytes)
+{
+    const UBYTE *a = (const UBYTE *)from;
+    UBYTE *b = (UBYTE *)to;
+    ULONG i;
+    vc4_os_invalidate(a, bytes);
+    vc4_os_invalidate(b, bytes);
+    for (i = 0; i < bytes; i += 4)
+        b[i] = a[i];
 }
 
 /* 64x64 tiles, 64x32 with a half-float attachment (the tile buffer's 64-bit

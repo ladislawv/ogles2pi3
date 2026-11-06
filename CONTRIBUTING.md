@@ -200,6 +200,15 @@ and the work queue. Swapping the card means rebooting the Amiga. With the Pi 3 c
   bash tests/a1200/p5_run.sh m6-5`), `TIMEOUT` the script's limit; `AMIGENT_RATE` (KB/s, 400)
   and `AMIGENT_PIECE` (KB, 8) shape transfers. `tests/a1200/p5_netprobe.py <package>` runs a
   package's steps one at a time and checks the link after each.
+- **dEQP on the card:** `BRIDGE_PORT=6804 CHUNK=250 bash tests/a1200/p6_deqp.sh [group ...]` (groups
+  longer than `CHUNK` run in parts, so a lost link costs one part; each part is retried), with
+  `tests/a1200/p6_watch.sh` beside it: it starts `tools/netwatch` on the Amiga (pings this PC, resets
+  the Amiga after two minutes without a reply; not in `S:User-Startup`, or a PC that is off would reset
+  it every minute), and exits to report a reset (5) or a stall (3), so restart it each time.
+  `touch tests/a1200/out/ogles2-m7-1.keep-bin` leaves the station's `bin/` unchecked: each upload
+  otherwise reads its 36 MB back for the CRC. netwatch builds by hand for now:
+  `m68k-amigaos-gcc -std=gnu99 -O2 -Wall -Wno-pointer-sign -mcpu=68020 -mcrt=nix20 -fbbb=abcfhilmnprsz0
+  -o ~/ogles2-build-pi3/m68k/amictl/netwatch tools/netwatch/netwatch.c`.
 - **Traps:** amigentd has four command channels and a fifth pushes out the idlest: run one batch
   at a time (`p5_run.sh` takes a lock, `tests/a1200/out/p5_run.lock`) and keep long jobs
   detached. Killing the PC side of a run does not stop its command on the Amiga: two copies of a
