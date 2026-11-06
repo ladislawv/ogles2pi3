@@ -75,7 +75,10 @@ need put "$HERE/out/v3dglslc-stand-in" "$BRIDGE/v3dglslc" > /dev/null
 need run -t 30 "Protect $BRIDGE/v3dglslc-remote +rwed" > /dev/null
 for t in "$@"; do
     echo "$(date +%T) $t: building"
+    # The sync-logging library made here: not every package's build does (2026-11-07: m7-6 ran one
+    # three hours old without a word).
     in_wsl bash -c "cd '$WREPO' && bash tests/a1200/build_package.sh $t && \
+        make -j8 B=\$HOME/ogles2-build-pi3/m68k-sync EXTRA_CFLAGS=-DOGLES2_LOG_SYNC && \
         cp ~/ogles2-build-pi3/m68k-sync/ogles2.library tests/a1200/out/ogles2-$t/libs/" > /dev/null 2>&1 ||
         { echo "$t: build failed"; continue; }
     PKG=$HERE/out/ogles2-$t

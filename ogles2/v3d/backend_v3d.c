@@ -107,6 +107,7 @@ const struct OGLES2Backend ogles2_backend_v3d = {
     ogles2_v3d_variant_choose,
     ogles2_v3d_builtin_image,
     ogles2_v3d_internal_program,
+    0, /* internal_loaded */
 };
 
 const struct OGLES2Backend *ogles2_backend = &ogles2_backend_v3d;

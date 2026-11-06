@@ -57,6 +57,7 @@
 #include "vc4core.h"
 #include "vc4_os.h"
 #include "v3d_types.h"
+#include "v3d_gpu_lock.h"
 #include "key_vc4.h"
 #include "s3tc.h"
 #include "backend_vc4.h"
@@ -592,6 +593,82 @@ BOOL ogles2_vc4_tex_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, 
     s->force_alpha1 = FALSE;
     s->ub = 0;
     return TRUE;
+}
+
+/* glCopyTex* from the display (copy.c, texture.c's scratch texture): level 0 of t
+ * filled with the whole picture at src, a raster image of w pixels a row, by a job
+ * with no draws that loads the raster and stores the level (T or LT); no TFU here
+ * (the Pi 4's way), and the TMU samples raster images right only at power-of-two
+ * widths (§2 "Textures"). A BGRA picture stays as it is and is sampled as BGRA.
+ * The caller has rendered and finished this context's jobs. 0; -3: not this way
+ * (the CPU copies). */
+int ogles2_vc4_tex_from_raster(struct OGLES2Context *ctx, struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w,
+                               UWORD h, BOOL bgra)
+{
+    struct vc4_ctx *c = VC4_CTX(ctx);
+    struct vc4_tex *g = VT(t);
+    struct vc4_target tg;
+    const struct vc4_level *lv;
+    const struct vc4_tex_format *f;
+    ULONG len = stride * (ULONG)h, bus;
+    int r = 0;
+    if (!g || g->cls == CLASS_FLOAT || stride != (ULONG)w * 4 || (stride & 15) || c->bad)
+        return -3;
+    if ((UWORD)((w + 63) / 64) > c->pools.tiles_x || (UWORD)((h + 63) / 64) > c->pools.tiles_y)
+        return -3;
+    if (!(f = vc4_tex_format(bgra ? GL_BGRA_EXT : GL_RGBA, GL_UNSIGNED_BYTE)))
+        return -3;
+    if (!c->blit_ready) {
+        if (vc4_job_init(&c->blit) < 0)
+            return -3;
+        c->blit_ready = TRUE;
+    }
+    if (!(src & 15) && vc4_os_gpu_reachable(src, len)) {
+        bus = ogles2_vc4_bus(src);
+    } else {
+        /* as job_vc4.c's draws into the bitmap: the context's buffer, its layout */
+        if (c->shadow.size < len) {
+            if (c->shadow.size)
+                vc4_mem_free(&c->shadow);
+            if (vc4_mem_alloc(&c->shadow, len) < 0) {
+                c->shadow.size = 0;
+                return -3;
+            }
+        }
+        CopyMem((APTR)src, c->shadow.cpu, len);
+        bus = c->shadow.bus;
+    }
+    lv = &g->lay.level[0];
+    memset(&tg, 0, sizeof(tg));
+    tg.width = w;
+    tg.height = h;
+    tg.color.bus = ogles2_vc4_bus((ULONG)face_base(g, 0) + lv->offset);
+    tg.color.tiling = lv->tiling;
+    tg.color.format = VC4_COLOR_RGBA8888;
+    tg.color_load_bus = bus;
+    tg.color_load_raster = 1;
+    tg.load = VC4_COLOR;
+    tg.store = VC4_COLOR;
+    if (vc4_job_begin(&c->blit, &tg, &c->pools) < 0 || vc4_job_end_lists(&c->blit) < 0)
+        return -3;
+    CacheClearE(0, ~0UL, CACRF_ClearD); /* the picture's copy; no dirty CPU line over the level */
+    if (!v3d_gpu_lock(ogles2_device_gpu_lock(), 5000))
+        return -3;
+    ogles2_job_idle_gpu(ctx);
+    if (vc4_job_bin(&c->blit, 1000000) < 0) {
+        ogles2_device_reset("a copy's job it did not finish");
+        r = -3;
+    } else {
+        vc4_job_render_start(&c->blit);
+        if (vc4_job_render_wait(&c->blit, 1000000) < 0) {
+            ogles2_device_reset("a copy's job it did not finish");
+            r = -3;
+        }
+    }
+    v3d_gpu_unlock(ogles2_device_gpu_lock());
+    if (!r)
+        g->f = f; /* the keys and sampler take it from here; the same stored type either way */
+    return r;
 }
 
 /* A depth texture's level as a job's depth (and stencil) image, its GPU

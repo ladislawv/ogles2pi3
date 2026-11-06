@@ -260,6 +260,13 @@ static void take_gpu(struct OGLES2Context *ctx)
     ReleaseSemaphore(&OGLES2LibBase->lock);
 }
 
+/* A job of the backend's own, not this file's (VC4's copy from the display): no
+ * other program's render left on the GPU; the GPU's lock held. */
+void ogles2_job_idle_gpu(struct OGLES2Context *ctx)
+{
+    take_gpu(ctx);
+}
+
 /* Renders the open job and, unless it may run on (may_defer), waits for
  * it. Returns FALSE if the frame was dropped (the reason is logged). */
 BOOL ogles2_job_flush(struct OGLES2Context *ctx, BOOL frame_end)

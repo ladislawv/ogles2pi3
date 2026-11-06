@@ -115,6 +115,10 @@ struct vc4_ctx
     struct vc4_mem shadow;
     ULONG copy_to[VC4_SLOTS], copy_len[VC4_SLOTS];
     BOOL told_shadow;
+    /* glCopyTex* from the display: the job that stores its picture tiled
+     * (texture_vc4.c, ogles2_vc4_tex_from_raster), made at the first. */
+    struct vc4_job blit;
+    BOOL blit_ready;
     UBYTE told_target, t_clear, t_load, t_store, t_clear_s; /* job_build's, logged at job_end (P5) */
     ULONG t_clear_z;
     /* the draw's */
@@ -180,6 +184,8 @@ void ogles2_vc4_sampler_emu(const struct OGLES2Texture *t, int kind, int first, 
  * fragment output draw_buffer (patch 0016) and the samplers' entries per
  * stage. */
 const struct vc4_tex_format *ogles2_vc4_storage(const struct OGLES2Texture *t);
+int ogles2_vc4_tex_from_raster(struct OGLES2Context *ctx, struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w,
+                               UWORD h, BOOL bgra);
 struct OGLES2State;
 struct OGLES2Program;
 void ogles2_vc4_stencil_words(const struct OGLES2State *s, ULONG w[3], BOOL *twoside, BOOL *full);

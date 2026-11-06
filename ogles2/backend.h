@@ -169,7 +169,8 @@ struct OGLES2Backend
     BOOL (*tex_holds)(const struct OGLES2Texture *t, int k, int l);
     BOOL (*tex_can_generate)(const struct OGLES2Texture *t, int n);
     int (*tex_generate)(struct OGLES2Texture *t, int n);
-    int (*tex_from_raster)(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra);
+    int (*tex_from_raster)(struct OGLES2Context *ctx, struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w,
+                           UWORD h, BOOL bgra);
     /* Framebuffer targets: a depth or stencil renderbuffer's storage (mem,
      * and its image's base, padded height, bytes and bytes a pixel) and that
      * image as a surface; a target's tile size, bpp and depth type (wide: a
@@ -199,6 +200,9 @@ struct OGLES2Backend
     const struct OGLES2Variant *(*variant_choose)(const struct OGLES2Image *im, UBYTE stage, UBYTE cbufs, GLenum mode);
     const struct OGLES2Image *(*builtin_image)(void);
     const UBYTE *(*internal_program)(int which, ULONG *len);
+    /* What such a program's image needs once loaded (VC4: its sources, for the
+     * variants of states it does not hold); 0: nothing. */
+    void (*internal_loaded)(int which, struct OGLES2Image *im);
 };
 
 /* The generic vertex attributes GL offers on this GPU: indices from it on

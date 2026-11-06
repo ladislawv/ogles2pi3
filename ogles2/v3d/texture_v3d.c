@@ -563,10 +563,12 @@ int ogles2_v3d_tex_generate(struct OGLES2Texture *t, int n)
  * RGBA8, filled by the TFU from the raster image at src (rows `stride`
  * bytes apart), red and blue swapped in the sampler for a BGRA bitmap. 0,
  * or v3d_tfu's error; -3: the GPU stayed busy. */
-int ogles2_v3d_tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra)
+int ogles2_v3d_tex_from_raster(struct OGLES2Context *ctx, struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w,
+                               UWORD h, BOOL bgra)
 {
     UBYTE sw0, sw2;
     int r;
+    (void)ctx;
     CacheClearE(0, ~0UL, CACRF_ClearD); /* no dirty CPU line over the texture's memory */
     if (!v3d_gpu_lock(ogles2_device_gpu_lock(), TFU_LOCK_TIMEOUT_MS))
         return -3;

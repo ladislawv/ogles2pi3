@@ -156,7 +156,7 @@ static void build_rcl(struct vc4_job *job)
                 VC4_EMIT(cl, LOAD_TILE_BUFFER_GENERAL,
                          .memory_base_address_of_frame_tile_dump_buffer = load_bus,
                          .buffer_to_store = VC4_BUFFER_TO_STORE_COLOR,
-                         .format = t->color.tiling,
+                         .format = t->color_load_bus && t->color_load_raster ? VC4_TILING_RASTER : t->color.tiling,
                          .pixel_color_format = pixel_format(t->color.format));
             if (load_zs) {
                 if (load_c) { /* one load at a time: run the colour one first */

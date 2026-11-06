@@ -786,6 +786,7 @@ void ogles2_job_discard(struct OGLES2Context *ctx);
 /* The submitted render waited for (M6 overlap): before the CPU reads what it
  * writes or changes what it reads. */
 void ogles2_job_finish(struct OGLES2Context *ctx);
+void ogles2_job_idle_gpu(struct OGLES2Context *ctx);
 /* A job not rendered yet (open, or submitted and running) of any context in
  * ctx's share group is job `serial`: that context, else NULL. Serials are
  * unique across contexts. */

@@ -13,7 +13,9 @@
  *    the region into a scratch texture (texture.c), and the quad samples it
  *    upside down, red and blue swapped from a BGRA bitmap. The TMU samples
  *    no raster image, and the tile buffer's Flip Y crashed the machine
- *    (plan 7.11), hence the TFU and the flipped coordinates.
+ *    (plan 7.11), hence the TFU and the flipped coordinates. VC4 has no TFU:
+ *    a job with no draws loads the whole raster and stores it tiled
+ *    (texture_vc4.c, ogles2_vc4_tex_from_raster), and the quad samples the region.
  *  - From a framebuffer object: its colour image (a 2D texture's level 0,
  *    or a colour renderbuffer's own texture) sampled directly, nearest and
  *    clamped for the draw; the object's open job renders first (the copy
@@ -57,6 +59,9 @@ BOOL ogles2_copy_gpu(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, 
         if (!ogles2_fbo_color_image(ctx, &src, &sk, &sl) || src == t || sk || sl ||
             ogles2_texture_target(src) != GL_TEXTURE_2D || !ogles2_texture_image(src, 0, 0, &sw, &sh, &f, &ty))
             return FALSE;
+        /* VC4 samples a half-float image as planes, which the CPU splits: not here. */
+        if (ogles2_backend->device == 21 && ty == GL_HALF_FLOAT_OES)
+            return FALSE;
         tc[0] = (GLfloat)x0 / sw;
         tc[1] = (GLfloat)y0 / sh;
         tc[2] = (GLfloat)x1 / sw;
@@ -71,17 +76,32 @@ BOOL ogles2_copy_gpu(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, 
             return FALSE;
         /* GL's row y is the bitmap's row height - 1 - y. The GPU draws into
          * the bitmap, so it reaches it (no device-tree check). */
-        if (d->bprow >= (ULONG)d->width * 4 && !(d->base & 3))
-            src = ogles2_texture_scratch(ctx, (UWORD)cw, (UWORD)ch,
-                                         d->base + (ULONG)(d->height - y1) * d->bprow + (ULONG)x0 * 4, d->bprow,
-                                         d->rb_swap != 0);
-        ogles2_display_unlock(d);
-        if (!src)
-            return FALSE;
-        tc[0] = 0.0f; /* the scratch texture's row 0 is the region's top */
-        tc[1] = 1.0f;
-        tc[2] = 1.0f;
-        tc[3] = 0.0f;
+        if (ogles2_backend->device == 21) {
+            /* VC4: the whole bitmap, as a job loads it (its row in pixels): a
+             * tile load cannot start at a region's first pixel. */
+            UWORD fw = (UWORD)(d->bprow / 4);
+            if (d->bprow >= (ULONG)d->width * 4 && !(d->base & 3))
+                src = ogles2_texture_scratch(ctx, fw, (UWORD)d->height, d->base, d->bprow, d->rb_swap != 0);
+            ogles2_display_unlock(d);
+            if (!src)
+                return FALSE;
+            tc[0] = (GLfloat)x0 / fw;
+            tc[1] = (GLfloat)(d->height - y0) / d->height;
+            tc[2] = (GLfloat)x1 / fw;
+            tc[3] = (GLfloat)(d->height - y1) / d->height;
+        } else {
+            if (d->bprow >= (ULONG)d->width * 4 && !(d->base & 3))
+                src = ogles2_texture_scratch(ctx, (UWORD)cw, (UWORD)ch,
+                                             d->base + (ULONG)(d->height - y1) * d->bprow + (ULONG)x0 * 4, d->bprow,
+                                             d->rb_swap != 0);
+            ogles2_display_unlock(d);
+            if (!src)
+                return FALSE;
+            tc[0] = 0.0f; /* the scratch texture's row 0 is the region's top */
+            tc[1] = 1.0f;
+            tc[2] = 1.0f;
+            tc[3] = 0.0f;
+        }
     }
 
     /* The level as the copy's render target (its GPU copy made first). */

@@ -736,6 +736,8 @@ static struct OGLES2Program *copy_program(struct OGLES2Draw *d)
                        (ULONG)(d->copy_image ? "out of memory" : why));
             return 0;
         }
+        if (ogles2_backend->internal_loaded)
+            ogles2_backend->internal_loaded(OGLES2_PROG_COPY_TEX, d->copy_image);
         d->copy_ready = TRUE;
     }
     if (!d->copy_ready)

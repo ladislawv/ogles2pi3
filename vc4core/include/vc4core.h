@@ -206,6 +206,8 @@ struct vc4_target
     struct vc4_surface color, zs;
     uint32_t color_load_bus; /* 0: the colour is loaded from color.bus; else from here (the
                               * same tiling and format: a copy, vc4_draw peekscreen) */
+    uint8_t color_load_raster; /* with color_load_bus: that image is a raster one, width pixels a row
+                                * (a display's picture stored tiled: glCopyTex*, PI3_PLAN §2) */
     uint8_t zs_full;       /* with msaa: zs.bus holds every tile's depth and stencil samples, all
                             * four a pixel, VC4_TILE_FULL_RES bytes a tile in tile order (the
                             * full-resolution store and load: a general store keeps one) */

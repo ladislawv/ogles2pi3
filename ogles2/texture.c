@@ -1231,7 +1231,7 @@ struct OGLES2Texture *ogles2_texture_scratch(struct OGLES2Context *ctx, UWORD w,
     }
     if (!t && !(t = ts->scratch = ogles2_texture_hidden(ctx, w, h, GL_RGBA, GL_UNSIGNED_BYTE)))
         return 0;
-    r = ogles2_backend->tex_from_raster(t, src, stride, w, h, bgra);
+    r = ogles2_backend->tex_from_raster(ctx, t, src, stride, w, h, bgra);
     if (r == -3)
         return 0; /* the GPU stayed busy */
     if (r) {

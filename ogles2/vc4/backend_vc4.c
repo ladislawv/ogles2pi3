@@ -3,11 +3,9 @@
  * the Raspberry Pi 3's VideoCore IV on vc4core. Here the capabilities, the
  * device, GPU memory and the contexts; the groups in job_vc4.c, draw_vc4.c,
  * texture_vc4.c, fbo_vc4.c and program_vc4.c; the built-in image (clears of
- * part of a framebuffer: tools/clear_vc4). Not written yet, and refused:
- * glGenerateMipmap and glCopyTex* on the GPU (the front end's CPU paths run
- * instead), the internal programs (none needed: the clear's gl_FragColor is
- * drawn in every pass of several draw buffers, and the copy program comes
- * with glCopyTex* on the GPU).
+ * part of a framebuffer: tools/clear_vc4) and the copy program (glCopyTex*:
+ * tools/copy_tex). Not written, and refused: glGenerateMipmap on the GPU (the front
+ * end's CPU path runs instead).
  *
  * Contexts: the front end keeps a context's backend object in ctx->v3d, the
  * V3D backend's type; this backend keeps its own struct vc4_ctx there
@@ -26,6 +24,7 @@
 #include "v3d_types.h" /* struct v3d_mem: the front end's GPU block */
 #include "backend_vc4.h"
 #include "builtin_vc4p.h"
+#include "copy_tex_vc4p.h"
 
 /* ---- capabilities: §2's limits, §2.1's extensions as far as done ---- */
 
@@ -250,6 +249,8 @@ static void context_free(struct V3DContext *v)
     vc4_pools_free(&c->pools);
     if (c->shadow.size)
         vc4_mem_free(&c->shadow);
+    if (c->blit_ready)
+        vc4_job_free(&c->blit);
     FreeVec(c);
     if (live_contexts && --live_contexts == 0)
         builtin_drop();
@@ -261,9 +262,6 @@ static void context_free(struct V3DContext *v)
 
 static BOOL tex_can_generate(const struct OGLES2Texture *t, int n) { (void)t; (void)n; return FALSE; }
 static int tex_generate(struct OGLES2Texture *t, int n) { (void)t; (void)n; return GL_INVALID_OPERATION; }
-/* -3 (texture.c: "not now"): the CPU copies, without the TFU's log line each time */
-static int tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra) { (void)t; (void)src; (void)stride; (void)w; (void)h; (void)bgra; return -3; }
-static const UBYTE *internal_program(int which, ULONG *len) { (void)which; *len = 0; return 0; }
 
 /* ---- the built-in image: tools/clear_vc4's program, loaded at its first
  * use (its code in GPU memory), kept while a context is (freed with the
@@ -283,6 +281,27 @@ static char *dup_str(const char *s)
     if ((d = AllocVec(n + 1, MEMF_ANY)) != 0)
         memcpy(d, s, n + 1);
     return d;
+}
+
+/* The internal programs: glCopyTex*'s (tools/copy_tex). Several draw buffers need
+ * none: the clear's gl_FragColor is drawn in every pass. */
+static const UBYTE *internal_program(int which, ULONG *len)
+{
+    if (which != OGLES2_PROG_COPY_TEX) {
+        *len = 0;
+        return 0;
+    }
+    *len = sizeof(copy_tex_vc4p);
+    return copy_tex_vc4p;
+}
+
+static void internal_loaded(int which, struct OGLES2Image *im)
+{
+    if (which == OGLES2_PROG_COPY_TEX) {
+        im->name = "built-in copy (tools/copy_tex)";
+        im->vs_src = dup_str(copy_tex_vc4_vs);
+        im->fs_src = dup_str(copy_tex_vc4_fs);
+    }
 }
 
 static const struct OGLES2Image *builtin_image(void)
@@ -352,7 +371,7 @@ const struct OGLES2Backend ogles2_backend_vc4 = {
     ogles2_vc4_tex_holds,
     tex_can_generate,
     tex_generate,
-    tex_from_raster,
+    ogles2_vc4_tex_from_raster,
     ogles2_vc4_rb_zs_storage,
     ogles2_vc4_rb_surface,
     ogles2_vc4_rb_stencil_copy,
@@ -365,4 +384,5 @@ const struct OGLES2Backend ogles2_backend_vc4 = {
     ogles2_vc4_variant_choose,
     builtin_image,
     internal_program,
+    internal_loaded,
 };

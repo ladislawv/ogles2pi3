@@ -60,7 +60,8 @@ int ogles2_v3d_tex_levels(const struct OGLES2Texture *t);
 BOOL ogles2_v3d_tex_holds(const struct OGLES2Texture *t, int k, int l);
 BOOL ogles2_v3d_tex_can_generate(const struct OGLES2Texture *t, int n);
 int ogles2_v3d_tex_generate(struct OGLES2Texture *t, int n);
-int ogles2_v3d_tex_from_raster(struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w, UWORD h, BOOL bgra);
+int ogles2_v3d_tex_from_raster(struct OGLES2Context *ctx, struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w,
+                               UWORD h, BOOL bgra);
 BOOL ogles2_v3d_tex_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int l, struct OGLES2Surface *s);
 BOOL ogles2_v3d_tex_zs_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, int l, struct OGLES2Surface *s);
 

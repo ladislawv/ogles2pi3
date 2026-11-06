@@ -1590,8 +1590,10 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    17,165 cases' newest result, **17,047 pass, 18 fail, none beyond Mesa's baseline** (§3.1: `texture` 11,
    `clipping` 3, `uniform_api` 2, `multisample` 2 in 4x MSAA; Mesa's other two, `depth_stencil_masked` and
    `scissor.outside_render_line`, pass here), 92 not supported (Mesa 234), 8 warnings. These are not one
-   run of one library: the groups run before a fix kept their results, so the final library owes the whole
-   list again. Mesa passes 16,906. What the first groups found, all fixed and rerun on the card:
+   run of one library: the groups run before a fix kept their results. No whole pass is owed for that: each
+   fix touches a narrow path, rerun in the groups that exercise it; a later change reruns the groups it
+   touches (one whole pass before P7's release is a check of the release, not of this). Mesa passes
+   16,906. What the first groups found, all fixed and rerun on the card:
    - **an empty scissor box or viewport** (`color_clear` 9, `fbo.render.color_clear` 28): the clip window
      was clamped to no size, and the draw covered the whole target instead of nothing. It is skipped
      now (`draw_vc4.c`). `color_clear` 19 of 19.
@@ -1664,8 +1666,17 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    `Stuff:amigent/work/ogles2-m7-1-oldcache` when the pass is done. Not addressed: nothing trims a
    user's `OGLES2Cache:` (the installer's `SYS:OGLES2Cache`), a change to the Pi 4's behaviour too.
 
+   **glCopyTex* on the GPU (2026-11-07):** the copy program with the variants of the copies it can draw
+   (`tools/copy_tex/keys_vc4.c`, `make_header_vc4.sh`; `ogles2/vc4/copy_tex_vc4p.h`) and its sources for any
+   other state, so a copy needs no compiler. From an object as on the Pi 4. From the display there is no TFU,
+   and the TMU samples raster images right only at power-of-two widths: a job with no draws loads the whole
+   raster and stores it tiled into a scratch texture of the frame's size (`vc4_target.color_load_raster`,
+   `ogles2_vc4_tex_from_raster`; from the context's buffer when the bitmap is one the stores cannot reach), and
+   the quad samples the region. A whole-screen copy at 640x480: 17.3 ms a frame against the CPU's 166.8 (m7-6,
+   36 of 36; `texture`, `fbo` as before; m5-1 261 of 261, the same three contexts' memory).
+
    Left for P6: the free memory that falls about 2 MB a minute during dEQP (logging or a leak: not known);
    a program compiled twice on the Pi 3, at its link and at its first draw (the reference draw's RGBA8
-   target and float attributes against what a draw has: looked at, not settled); the GPU paths of
-   glGenerateMipmap and glCopyTex* (§5 above); the whole list again on the final library; the benchmarks on
-   both cards; the Pi 4 card's regression.
+   target and float attributes against what a draw has: looked at, not settled); the GPU path of
+   glGenerateMipmap (speed only: 36 ms a 256x256 texture on the CPU, 265 ms a frame for a 512x512 target,
+   read back first); the benchmarks on both cards; the Pi 4 card's regression.
