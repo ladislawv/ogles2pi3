@@ -63,6 +63,14 @@ struct vc4_defer
 #define VC4_SLOTS 2 /* a job built while the last one renders */
 #define VC4_PASSES 4 /* EXT_draw_buffers: a pass per colour attachment (OGLES2_MAX_DRAW_BUFFERS) */
 
+/* What a binning list's state packets last said (draw_vc4.c, emit_state): one
+ * the same as the last is left out, as Mesa's dirty bits do. */
+struct vc4_emitted
+{
+    BOOL valid;
+    ULONG clip[4], cfg, offset[2], line, xy[2], z[2], centre[2];
+};
+
 /* A context's object (ctx->v3d): the binner's pools for its default
  * framebuffer, two jobs (one built while the other renders), the blocks
  * each frees after its render, the open job's target and draw state. */
@@ -95,6 +103,7 @@ struct vc4_ctx
                                     * mode, §2.1); the last's is color_format */
     UBYTE slot_extras[VC4_SLOTS];  /* the extra jobs each slot's job ran with (job_retire) */
     const struct vc4_job *stopped; /* the job that did not finish (job_report_stop) */
+    struct vc4_emitted emitted[VC4_PASSES]; /* each pass's list (job_begin forgets them) */
     /* depth and stencil kept across a mid-frame flush (job_keep_zs) */
     struct vc4_mem zs;
     UWORD zs_w, zs_h;

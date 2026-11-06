@@ -147,6 +147,7 @@ void ogles2_vc4_job_begin(struct OGLES2Context *ctx, const struct OGLES2Target *
     c->pass_att[0] = 0;
     c->slot_extras[c->build] = 0;
     c->stopped = 0;
+    c->emitted[0].valid = c->emitted[1].valid = c->emitted[2].valid = c->emitted[3].valid = FALSE;
     if (c->fbo) {
         if (!tg) { /* no pools: dropped at the flush; lists for the context's frame meanwhile */
             t->width = c->w;

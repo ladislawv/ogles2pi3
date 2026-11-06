@@ -27,8 +27,25 @@
 
 static inline uint32_t vc4_le32(uint32_t v)
 {
-#if VC4_BIG_ENDIAN
+#if defined(__m68k__) || defined(__mc68000__)
+    /* the draw path's every word (Emu68 translates these three well; GCC 6
+     * leaves the shifts as written) */
+    __asm__("rol.w #8,%0\n\tswap %0\n\trol.w #8,%0" : "=d"(v) : "0"(v) : "cc");
+    return v;
+#elif VC4_BIG_ENDIAN
     return (v >> 24) | ((v >> 8) & 0xff00u) | ((v << 8) & 0xff0000u) | (v << 24);
+#else
+    return v;
+#endif
+}
+
+static inline uint16_t vc4_le16(uint16_t v)
+{
+#if defined(__m68k__) || defined(__mc68000__)
+    __asm__("rol.w #8,%0" : "=d"(v) : "0"(v) : "cc");
+    return v;
+#elif VC4_BIG_ENDIAN
+    return (uint16_t)((v << 8) | (v >> 8));
 #else
     return v;
 #endif
@@ -42,11 +59,7 @@ static inline void vc4_put32(uint8_t *p, uint32_t v)
 
 static inline void vc4_put16(uint8_t *p, uint32_t v)
 {
-#if VC4_BIG_ENDIAN
-    *(volatile uint16_t *)p = (uint16_t)(((v & 0xff) << 8) | ((v >> 8) & 0xff));
-#else
-    *(volatile uint16_t *)p = (uint16_t)v;
-#endif
+    *(volatile uint16_t *)p = vc4_le16((uint16_t)v);
 }
 
 static inline void vc4_putf(uint8_t *p, float f)

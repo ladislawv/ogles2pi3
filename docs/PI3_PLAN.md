@@ -1543,8 +1543,17 @@ Everything that can run here runs here first (the developer, 2026-11-03).
       split into S16F planes before sampling): m7-5, 17 failures. **Done (2026-11-06, §2.1), as item
       1.** Left: a sampler splits a level after waiting for this context's own render only, so
       another context's job drawing into a shared texture is not waited for there.
-   3. The VC4 draw path's CPU cost (Quake III above): cache what a draw shares with the one
-      before (keys, uniform streams, shader records, attribute copies of unchanged arrays).
+   3. The VC4 draw path's CPU cost (Quake III above). **Done (2026-11-06): 24.3 to 32.7 fps over the
+      whole "four" demo**, a frame's draws 20.1 ms to 10.1 (shaders 6.2 to 1.0, the binning list with
+      the indices 3.9 to 1.1, vertex data 5.0 to 2.9): the variants chosen by a signature of what the
+      keys read, so the keys are built and searched only on a miss (`draw_vc4.c`; it must stay in
+      step with `ogles2_vc4_draw_keys`); a state packet left out when it says what the list's last
+      did; vertex data and indices by whole words without branches in the loops, swapped by
+      `rol.w`, `swap`. What remains is mostly the game: `PROFILE=1` has all the library's calls at
+      about 21 ms a frame, level loading included (10.3 of it `glDrawElements`), against 31 ms a
+      frame; the draw stages not touched (textures 1.6, uniforms 1.9, checks 1.3) would give about
+      2 ms more at most (`tests/a1200/results/ogles2-m6-5-20261106-1[01]*`). m5-1, m6-6, m7-4, m7-5
+      and m2-5's pictures as before.
    4. The remaining packages on the Pi 3 card: SDL2 and SDL3 (m6-3, m6-4), Quake III through
       gl4es (m6-2), glmark2 (m6-7), dEQP-GLES2 (m7-1, `p2_deqp.sh` with the bridge), the rest of
       m7 and the older m1, m3 and m4 packages; then the Pi 4 card's regression for today's

@@ -271,23 +271,23 @@ static void convert(UBYTE *dst, ULONG dst_stride, const UBYTE *src, ULONG src_st
 {
     ULONG i;
     int k, es = type_size(type);
-    for (i = 0; i < count; i++, src += src_stride, dst += dst_stride) {
-        if (es == 4) {
-            for (k = 0; k < n; k++) {
-                dst[4 * k] = src[4 * k + 3];
-                dst[4 * k + 1] = src[4 * k + 2];
-                dst[4 * k + 2] = src[4 * k + 1];
-                dst[4 * k + 3] = src[4 * k];
-            }
-        } else if (es == 2) {
-            for (k = 0; k < n; k++) {
-                dst[2 * k] = src[2 * k + 1];
-                dst[2 * k + 1] = src[2 * k];
-            }
-        } else {
+    /* Whole words a vertex (the 68k takes them unaligned), the type decided
+     * once: 5 ms of Quake III's frame went on this byte by byte (P5). */
+    if (es == 4) {
+        for (i = 0; i < count; i++, src += src_stride, dst += dst_stride)
+            for (k = 0; k < n; k++)
+                ((ULONG *)dst)[k] = vc4_le32(((const ULONG *)src)[k]);
+    } else if (es == 2) {
+        for (i = 0; i < count; i++, src += src_stride, dst += dst_stride)
+            for (k = 0; k < n; k++)
+                ((UWORD *)dst)[k] = vc4_le16(((const UWORD *)src)[k]);
+    } else if (n == 4) { /* colours */
+        for (i = 0; i < count; i++, src += src_stride, dst += dst_stride)
+            *(ULONG *)dst = *(const ULONG *)src;
+    } else {
+        for (i = 0; i < count; i++, src += src_stride, dst += dst_stride)
             for (k = 0; k < n; k++)
                 dst[k] = src[k];
-        }
     }
 }
 
@@ -382,10 +382,12 @@ static ULONG shader_record(struct vc4_ctx *c, const ULONG code[3], const ULONG u
 
 /* ---- state packets ---- */
 
-static void emit_state(struct OGLES2Context *ctx, struct vc4_cl *cl, const struct OGLES2Variant *fs,
-                       const struct draw_info *di)
+static void emit_state(struct OGLES2Context *ctx, struct vc4_cl *cl, struct vc4_emitted *em,
+                       const struct OGLES2Variant *fs, const struct draw_info *di)
 {
     const struct OGLES2State *s = &ctx->state;
+    ULONG word[2], cfgw;
+    BOOL first = !em->valid;
     BOOL flip = ctx->fb_flip, depth_on = (s->caps & OGLES2_CAP_DEPTH_TEST) && ctx->fb_depth_bits;
     BOOL stencil_on = (s->caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits;
     LONG fh = (LONG)ctx->fb_h, vx = ctx->viewport[0], vy = ctx->viewport[1], vw = ctx->viewport[2],
@@ -414,9 +416,17 @@ static void emit_state(struct OGLES2Context *ctx, struct vc4_cl *cl, const struc
     if (b > fh) b = fh;
     if (r < l) r = l;
     if (b < t) b = t;
-    VC4_EMIT(cl, CLIP_WINDOW, .clip_window_left_pixel_coordinate = (uint32_t)l,
-             .clip_window_bottom_pixel_coordinate = (uint32_t)t, .clip_window_width_in_pixels = (uint32_t)(r - l),
-             .clip_window_height_in_pixels = (uint32_t)(b - t));
+    /* Each packet only when it says something new in this list (the state
+     * lasts as long as the list: 4 ms of Quake III's frame, P5). */
+    if (first || em->clip[0] != (ULONG)l || em->clip[1] != (ULONG)t || em->clip[2] != (ULONG)r || em->clip[3] != (ULONG)b) {
+        em->clip[0] = (ULONG)l;
+        em->clip[1] = (ULONG)t;
+        em->clip[2] = (ULONG)r;
+        em->clip[3] = (ULONG)b;
+        VC4_EMIT(cl, CLIP_WINDOW, .clip_window_left_pixel_coordinate = (uint32_t)l,
+                 .clip_window_bottom_pixel_coordinate = (uint32_t)t, .clip_window_width_in_pixels = (uint32_t)(r - l),
+                 .clip_window_height_in_pixels = (uint32_t)(b - t));
+    }
 
     /* configuration bits (Mesa's vc4_create_rasterizer_state and _zsa_state):
      * culling, the winding as the V3D backend sets it, early Z in the < direction */
@@ -439,22 +449,57 @@ static void emit_state(struct OGLES2Context *ctx, struct vc4_cl *cl, const struc
     }
     if (ctx->job_msaa)
         cfg.early_z_updates_enable = 0;
-    if ((p = vc4_cl_room(cl, VC4_CONFIGURATION_BITS_length)) != 0)
-        VC4_CONFIGURATION_BITS_pack(p, &cfg);
+    VC4_CONFIGURATION_BITS_pack((UBYTE *)&cfgw, &cfg);
+    if ((first || em->cfg != cfgw) && (p = vc4_cl_room(cl, VC4_CONFIGURATION_BITS_length)) != 0) {
+        em->cfg = cfgw;
+        *(ULONG *)p = cfgw; /* the packet's four bytes as packed (the list is in memory the CPU caches) */
+    }
     /* depth offset: Mesa's float_to_187_half (the top 16 bits); units in
      * the 24-bit buffer's steps, which VC4's always is */
-    VC4_EMIT(cl, DEPTH_OFFSET, .depth_offset_factor = fbits(s->polygon_offset_factor) >> 16,
-             .depth_offset_units = fbits(s->polygon_offset_units) >> 16);
-    VC4_EMIT(cl, POINT_SIZE, .point_size = 1.0f);
-    VC4_EMIT(cl, LINE_WIDTH, .line_width = s->line_width);
-    VC4_EMIT(cl, CLIPPER_XY_SCALING, .viewport_half_width_in_1_16th_of_pixel = di->vp_xs,
-             .viewport_half_height_in_1_16th_of_pixel = di->vp_ys);
-    VC4_EMIT(cl, CLIPPER_Z_SCALE_AND_OFFSET, .viewport_z_scale_zc_to_zs = di->vp_zs,
-             .viewport_z_offset_zc_to_zs = di->vp_zo);
-    VC4_EMIT(cl, VIEWPORT_OFFSET, .viewport_centre_x_coordinate = (float)vx + (float)vw * 0.5f,
-             .viewport_centre_y_coordinate = flip ? (float)fh - ((float)vy + (float)vh * 0.5f)
-                                                  : (float)vy + (float)vh * 0.5f);
-    VC4_EMIT(cl, FLAT_SHADE_FLAGS, .flat_shading_flags = 0);
+    word[0] = fbits(s->polygon_offset_factor) >> 16;
+    word[1] = fbits(s->polygon_offset_units) >> 16;
+    if (first || em->offset[0] != word[0] || em->offset[1] != word[1]) {
+        em->offset[0] = word[0];
+        em->offset[1] = word[1];
+        VC4_EMIT(cl, DEPTH_OFFSET, .depth_offset_factor = word[0], .depth_offset_units = word[1]);
+    }
+    if (first)
+        VC4_EMIT(cl, POINT_SIZE, .point_size = 1.0f);
+    word[0] = fbits(s->line_width);
+    if (first || em->line != word[0]) {
+        em->line = word[0];
+        VC4_EMIT(cl, LINE_WIDTH, .line_width = s->line_width);
+    }
+    word[0] = fbits(di->vp_xs);
+    word[1] = fbits(di->vp_ys);
+    if (first || em->xy[0] != word[0] || em->xy[1] != word[1]) {
+        em->xy[0] = word[0];
+        em->xy[1] = word[1];
+        VC4_EMIT(cl, CLIPPER_XY_SCALING, .viewport_half_width_in_1_16th_of_pixel = di->vp_xs,
+                 .viewport_half_height_in_1_16th_of_pixel = di->vp_ys);
+    }
+    word[0] = fbits(di->vp_zs);
+    word[1] = fbits(di->vp_zo);
+    if (first || em->z[0] != word[0] || em->z[1] != word[1]) {
+        em->z[0] = word[0];
+        em->z[1] = word[1];
+        VC4_EMIT(cl, CLIPPER_Z_SCALE_AND_OFFSET, .viewport_z_scale_zc_to_zs = di->vp_zs,
+                 .viewport_z_offset_zc_to_zs = di->vp_zo);
+    }
+    {
+        float cx = (float)vx + (float)vw * 0.5f;
+        float cy = flip ? (float)fh - ((float)vy + (float)vh * 0.5f) : (float)vy + (float)vh * 0.5f;
+        word[0] = fbits(cx);
+        word[1] = fbits(cy);
+        if (first || em->centre[0] != word[0] || em->centre[1] != word[1]) {
+            em->centre[0] = word[0];
+            em->centre[1] = word[1];
+            VC4_EMIT(cl, VIEWPORT_OFFSET, .viewport_centre_x_coordinate = cx, .viewport_centre_y_coordinate = cy);
+        }
+    }
+    if (first)
+        VC4_EMIT(cl, FLAT_SHADE_FLAGS, .flat_shading_flags = 0);
+    em->valid = TRUE;
 }
 
 /* ---- one draw ---- */
@@ -518,54 +563,135 @@ static void choose(struct OGLES2Context *ctx, struct vc4_draw *d, const struct O
     }
 }
 
-/* The image's last choices (its be_cache): a draw whose keys equal one's
- * (a hash, then every byte) takes its variants without the search, which
- * compares 292-byte keys variant by variant. A few entries an image: a
- * program's draws mostly repeat a handful of states. */
-#define CHOICES 4
+/* The image's last choices (its be_cache). The keys are 596 bytes, slow to
+ * build and hash for every draw (6 ms of Quake III's frame, P5), and the search
+ * compares them variant by variant: a draw whose signature equals an earlier
+ * one's takes its variants without either. The signature holds all that
+ * ogles2_vc4_draw_keys reads, in the form the key does (what the key leaves out
+ * left out too, as a wrap mode but mirror-clamp), and must stay in step with it. */
+#define CHOICES 8
+#define SIG_SAMPLERS 8
+struct draw_sig
+{
+    ULONG flags, counts;
+    UWORD blend[6];
+    UWORD attr[8];
+    ULONG samp[2 * SIG_SAMPLERS]; /* per sampler in use, both stages: its format, its bits */
+};
+#define SIG_WORDS_HEAD ((sizeof(struct draw_sig) - sizeof(((struct draw_sig *)0)->samp)) / 4)
+
 struct choice
 {
-    ULONG h;
-    UBYTE used;
-    UBYTE keys[VC4_KEY_FS_BYTES + VC4_KEY_VS_BYTES];
+    ULONG words; /* 0: unused */
+    struct draw_sig sig;
     struct chosen ch;
 };
 struct choices
 {
-    UBYTE next;
+    UBYTE next, last;
     struct choice e[CHOICES];
 };
 
+/* The draw's signature; its length in words, 0 with too many samplers for one. */
+static ULONG draw_signature(const struct OGLES2Context *ctx, const struct OGLES2Program *p, const struct samplers *sm,
+                            GLenum mode, BOOL points, BOOL twoside, BOOL full, UBYTE color_format, UBYTE att,
+                            struct draw_sig *g)
+{
+    const struct OGLES2State *s = &ctx->state;
+    ULONG caps = s->caps, f, n = 0;
+    int nslots = p->nslots == 0xff ? 0 : p->nslots, st, k;
+    BOOL msaa = ctx->job_msaa != 0;
+    if (sm->n[0] + sm->n[1] > SIG_SAMPLERS)
+        return 0;
+    if (nslots > 8)
+        nslots = 8;
+    f = (ULONG)color_format | (ULONG)att << 2;
+    f |= (mode == GL_POINTS ? 2UL : (mode == GL_LINES || mode == GL_LINE_LOOP || mode == GL_LINE_STRIP) ? 1UL : 0UL) << 4;
+    if (points)
+        f |= 1UL << 6;
+    if ((caps & OGLES2_CAP_DEPTH_TEST) && ctx->fb_depth_bits)
+        f |= 1UL << 7;
+    if ((caps & OGLES2_CAP_STENCIL_TEST) && ctx->fb_stencil_bits)
+        f |= 1UL << 8 | (twoside ? 1UL << 9 : 0) | (full ? 1UL << 10 : 0);
+    if (mode == GL_POINTS && y_down(ctx))
+        f |= 1UL << 11;
+    if (msaa)
+        f |= 1UL << 12 | ((caps & OGLES2_CAP_SAMPLE_COVERAGE) ? 1UL << 13 : 0) |
+             ((caps & OGLES2_CAP_SAMPLE_ALPHA_TO_COVERAGE) ? 1UL << 14 : 0);
+    f |= (s->color_mask[0] ? 1UL << 16 : 0) | (s->color_mask[1] ? 1UL << 17 : 0) | (s->color_mask[2] ? 1UL << 18 : 0) |
+         (s->color_mask[3] ? 1UL << 19 : 0);
+    if (s->clip_depth == GL_ZERO_TO_ONE_EXT)
+        f |= 1UL << 20;
+    f |= (ULONG)nslots << 21;
+    if (caps & OGLES2_CAP_BLEND) {
+        f |= 1UL << 15;
+        g->blend[0] = (UWORD)s->blend_eq_rgb;
+        g->blend[1] = (UWORD)s->blend_eq_alpha;
+        g->blend[2] = (UWORD)s->blend_src_rgb;
+        g->blend[3] = (UWORD)s->blend_dst_rgb;
+        g->blend[4] = (UWORD)s->blend_src_alpha;
+        g->blend[5] = (UWORD)s->blend_dst_alpha;
+    } else {
+        g->blend[0] = g->blend[1] = g->blend[2] = g->blend[3] = g->blend[4] = g->blend[5] = 0;
+    }
+    g->flags = f;
+    g->counts = (ULONG)sm->n[0] | (ULONG)sm->n[1] << 8;
+    for (k = 0; k < 8; k++) {
+        GLuint a = k < nslots ? p->slot_attrib[k] : 0xff;
+        const struct OGLES2Array *arr = a < OGLES2_MAX_VERTEX_ATTRIBS ? &ctx->array[a] : 0;
+        g->attr[k] = arr && arr->enabled ? (UWORD)(0x8000u | (arr->type & 15) << 8 | arr->size << 4 | (arr->normalized ? 1 : 0)) : 0;
+    }
+    for (st = 0; st < 2; st++)
+        for (k = 0; k < sm->n[st]; k++) {
+            const struct vc4_key_sampler *ks = &sm->key[st][k];
+            g->samp[n++] = (ULONG)ks->f;
+            g->samp[n++] = (ks->wrap_s == GL_MIRROR_CLAMP_TO_EDGE ? 1UL : 0) | (ks->wrap_t == GL_MIRROR_CLAMP_TO_EDGE ? 2UL : 0) |
+                           (ks->force_first ? 4UL : 0) | (ks->lod_bias ? 8UL : 0) | (ks->lod_clamp ? 16UL : 0) |
+                           (ks->half_signed ? 32UL : 0) | (ULONG)ks->aniso << 8;
+        }
+    return SIG_WORDS_HEAD + n;
+}
+
 static void choose_cached(struct OGLES2Context *ctx, struct vc4_draw *d, const struct OGLES2DrawCall *dc,
-                          const UBYTE *kfs, const UBYTE *kvs, BOOL points, struct chosen *ch)
+                          const struct samplers *sm, GLenum mode, BOOL points, BOOL twoside, BOOL full,
+                          UBYTE color_format, UBYTE att, UBYTE draw_buffer, struct chosen *ch)
 {
     struct OGLES2Image *im = (struct OGLES2Image *)dc->p->image;
-    struct choices *c = im->be_cache;
+    struct choices *cache = im->be_cache;
+    struct draw_sig sig;
     struct choice *e;
-    ULONG h = 2166136261UL, i;
-    for (i = 0; i < VC4_KEY_FS_BYTES; i++)
-        h = (h ^ kfs[i]) * 16777619UL;
-    for (i = 0; i < VC4_KEY_VS_BYTES; i++)
-        h = (h ^ kvs[i]) * 16777619UL;
-    if (c)
+    UBYTE kfs[VC4_KEY_FS_BYTES], kvs[VC4_KEY_VS_BYTES];
+    ULONG words = draw_signature(ctx, dc->p, sm, mode, points, twoside, full, color_format, att, &sig), i, j;
+    if (cache && words) {
+        /* the last one first: runs of draws in one state */
         for (i = 0; i < CHOICES; i++) {
-            e = &c->e[i];
-            if (e->used && e->h == h && !memcmp(e->keys, kfs, VC4_KEY_FS_BYTES) &&
-                !memcmp(e->keys + VC4_KEY_FS_BYTES, kvs, VC4_KEY_VS_BYTES)) {
+            ULONG at = (i + cache->last) % CHOICES;
+            e = &cache->e[at];
+            if (e->words != words || e->sig.flags != sig.flags)
+                continue;
+            for (j = 1; j < words && ((const ULONG *)&e->sig)[j] == ((const ULONG *)&sig)[j]; j++)
+                ;
+            if (j == words) {
+                cache->last = (UBYTE)at;
                 *ch = e->ch;
                 return;
             }
         }
+    }
+    ogles2_vc4_draw_keys(ctx, dc->p, mode, color_format, draw_buffer,
+                         (const struct vc4_key_sampler(*)[OGLES2_MAX_STAGE_SAMPLERS])sm->key, sm->n, points, kfs, kvs);
     choose(ctx, d, dc, kfs, kvs, points, ch);
-    /* the search may have replaced the keyed image, and with it the cache */
-    if (!(c = im->be_cache) && !(c = im->be_cache = AllocVec(sizeof(*c), MEMF_ANY | MEMF_CLEAR)))
+    if (!words)
         return;
-    e = &c->e[c->next];
-    c->next = (UBYTE)((c->next + 1) % CHOICES);
-    e->used = 1;
-    e->h = h;
-    memcpy(e->keys, kfs, VC4_KEY_FS_BYTES);
-    memcpy(e->keys + VC4_KEY_FS_BYTES, kvs, VC4_KEY_VS_BYTES);
+    /* the search may have replaced the keyed image, and with it the cache */
+    if (!(cache = im->be_cache) && !(cache = im->be_cache = AllocVec(sizeof(*cache), MEMF_ANY | MEMF_CLEAR)))
+        return;
+    cache->last = cache->next;
+    e = &cache->e[cache->next];
+    cache->next = (UBYTE)((cache->next + 1) % CHOICES);
+    e->words = words;
+    for (j = 0; j < words; j++)
+        ((ULONG *)&e->sig)[j] = ((const ULONG *)&sig)[j];
     e->ch = *ch;
 }
 
@@ -587,7 +713,6 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     struct attr_src src[16];
     const struct OGLES2Variant *cs, *vs, *fs;
     struct chosen ch;
-    UBYTE kfs[VC4_KEY_FS_BYTES], kvs[VC4_KEY_VS_BYTES];
     ULONG code[3], unif[3], rec;
     ULONG ib = 0, ilen = 0, imax = 0; /* the draw's 16-bit (or 8-bit) indices, shared by its passes */
     GLenum mode = dc->mode, poly = 0;
@@ -642,12 +767,9 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     for (pass = 0; pass < c->npass; pass++) {
         struct vc4_cl *cl = &ogles2_vc4_pass_job(c, pass)->bcl;
 
-        /* the keys (drawkey_vc4.c) */
-        ogles2_vc4_draw_keys(ctx, p, mode, c->pass_format[pass],
-                             c->npass > 1 ? ogles2_vc4_output_for(im, c->pass_att[pass]) : 0,
-                             (const struct vc4_key_sampler(*)[OGLES2_MAX_STAGE_SAMPLERS])sm.key, sm.n, points, kfs,
-                             kvs);
-        choose_cached(ctx, d, dc, kfs, kvs, points, &ch);
+        /* the variants, by the keys (drawkey_vc4.c) */
+        choose_cached(ctx, d, dc, &sm, mode, points, twoside, full, c->pass_format[pass], c->pass_att[pass],
+                      c->npass > 1 ? ogles2_vc4_output_for(im, c->pass_att[pass]) : 0, &ch);
         cs = ch.v[0];
         vs = ch.v[1];
         fs = ch.v[2];
@@ -686,7 +808,7 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
             goto nomem;
         mark(ctx, 5);
 
-        emit_state(ctx, cl, fs, &di);
+        emit_state(ctx, cl, &c->emitted[pass], fs, &di);
         if (poly && mode == GL_LINES) {
             /* each triangle's three edges, as 16-bit indices */
             if (!pass) {
@@ -724,28 +846,36 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
             ULONG n = (ULONG)el->count, j;
             BOOL bytes = el->type == GL_UNSIGNED_BYTE;
             if (!pass) {
-                UBYTE *x = claim(c, (bytes ? n : 2 * n) + 4, 16, &ib);
-                if (!x)
-                    goto nomem;
-                for (j = 0; j < n; j++) {
-                    ULONG v = el->type == GL_UNSIGNED_INT    ? ((const ULONG *)el->indices)[j] - el->min
-                            : el->type == GL_UNSIGNED_SHORT ? (ULONG)(UWORD)(((const UWORD *)el->indices)[j] - el->min)
-                                                            : (ULONG)(UBYTE)(((const UBYTE *)el->indices)[j] - el->min);
-                    if (v > imax)
-                        imax = v;
-                    if (bytes) {
-                        x[j] = (UBYTE)v;
-                    } else {
-                        x[2 * j] = (UBYTE)v;
-                        x[2 * j + 1] = (UBYTE)(v >> 8);
-                    }
-                }
+                UBYTE *x;
+                /* The largest is the front end's range (it copied that many
+                 * vertices). No branch in these loops: Emu68 runs a loop with
+                 * branches at a third of the speed (draw.c). */
+                imax = (ULONG)dc->count - 1;
                 if (imax > MAX_VERTS) {
                     if (d->told_big != im) {
                         d->told_big = im;
                         ogles2_log("draw: indices span more than 65536 vertices: VC4 cannot draw them (logged once a program)");
                     }
                     return TRUE; /* nothing drawn */
+                }
+                if (!(x = claim(c, (bytes ? n : 2 * n) + 4, 16, &ib)))
+                    goto nomem;
+                if (el->type == GL_UNSIGNED_SHORT) {
+                    const UWORD *in = el->indices;
+                    UWORD *o = (UWORD *)x, m = (UWORD)el->min;
+                    for (j = 0; j < n; j++)
+                        o[j] = vc4_le16((UWORD)(in[j] - m));
+                } else if (el->type == GL_UNSIGNED_INT) {
+                    const ULONG *in = el->indices;
+                    UWORD *o = (UWORD *)x;
+                    ULONG m = el->min;
+                    for (j = 0; j < n; j++)
+                        o[j] = vc4_le16((UWORD)(in[j] - m));
+                } else {
+                    const UBYTE *in = el->indices;
+                    UBYTE m = (UBYTE)el->min;
+                    for (j = 0; j < n; j++)
+                        x[j] = (UBYTE)(in[j] - m);
                 }
                 ctx->n_indices += el->count;
             }
