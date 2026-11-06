@@ -7,6 +7,10 @@
 ;   With 4x multisampling:         Execute Run-M1 MSAA=1
 ;   Result images in the log:      Execute Run-M1 CASES=... IMAGES=1
 ;   ogles2's own point size test:  Execute Run-M1 TEST=points
+;   Compiled programs in RAM:      Execute Run-M1 LIST=fbo RAMCACHE=1
+;     (emptied first, gone at a reset. In cache/ they stay from run to run,
+;     two files a program on the Pi 3, and creating each gets slower as that
+;     drawer grows: for long runs compiled on the PC.)
 ;   Watched from the PC:           Execute Run-M1 CASES=... PROGRESS=1
 ;     (tools/amictl/deqp_watch.py): each case's start and end in
 ;     RAM:deqp-progress.txt, the library's log in RAM:ogles2.log, both read
@@ -14,7 +18,8 @@
 ; Nothing is installed. Output goes to results/: <NAME>.txt (what dEQP
 ; prints, with the totals at the end) and <NAME>.qpa (its full log); NAME
 ; is LIST's, else "deqp".
-.key CASES/K,LIST/K,NAME/K,MSAA/K,IMAGES/K,TEST/K,PROGRESS/K
+.key CASES/K,LIST/K,NAME/K,MSAA/K,IMAGES/K,TEST/K,PROGRESS/K,RAMCACHE/K
+.def RAMCACHE 0
 .def CASES dEQP-GLES2.info.*
 .def LIST ""
 .def NAME ""
@@ -68,6 +73,13 @@ Echo ogles2 M7 run 1: $DEQPSEL >>M7R1:results/00-progress.txt
 Date >>M7R1:results/00-progress.txt
 Assign LIBS: M7R1:libs ADD
 Assign OGLES2Cache: M7R1:cache
+If {RAMCACHE} EQ 1 VAL
+  If NOT EXISTS RAM:m7-cache
+    MakeDir RAM:m7-cache
+  EndIf
+  Delete RAM:m7-cache/#? QUIET >NIL:
+  Assign OGLES2Cache: RAM:m7-cache
+EndIf
 Avail FLUSH >NIL:
 SetEnv OGLES2/LogFile M7R1:results/ogles2.log
 If {PROGRESS} EQ 1 VAL

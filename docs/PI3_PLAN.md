@@ -1630,6 +1630,14 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    Roadshow's counters looked clean. A reboot cleared it at once (`shaders-keywords`, 95 cases in 33 s;
    36 cases of `shaders-invariance` had taken 16 minutes). Cause not found. `p6_watch.sh` now reboots a
    station that answers slowly for three polls running.
+   **dEQP's shader cache was slowing everything** (as in `ogles3`'s run): `Run-M1` keeps every compiled
+   program in the package's `cache/` on disk, never emptied, and one listing of it no longer finished in
+   110 s. The PC compiled a program in 2 to 3 ms and the Amiga saw 260 ms; the parts fell from about 100
+   cases a minute to about 30. `RAMCACHE=1` keeps them in `RAM:m7-cache`, emptied at each run's start
+   (`p5_run.sh` passes it with `keep-bin`): a part of `shaders-operator` 8 min 31 s to 2 min 49 s, compiles
+   260 ms to 40, about 89 cases a minute (the Pi 4's whole group, its cache on disk, 48). Delete
+   `Stuff:amigent/work/ogles2-m7-1-oldcache` when the pass is done. Not addressed: nothing trims a
+   user's `OGLES2Cache:` (the installer's `SYS:OGLES2Cache`), a change to the Pi 4's behaviour too.
 
    Left for P6: the remaining groups and `multisample` in 4x MSAA; the free memory that falls about 2 MB
    a minute during dEQP (logging or a leak: not known); the GPU paths of glGenerateMipmap and glCopyTex*

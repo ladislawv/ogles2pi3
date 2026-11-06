@@ -205,8 +205,10 @@ and the work queue. Swapping the card means rebooting the Amiga. With the Pi 3 c
   `tests/a1200/p6_watch.sh` beside it: it starts `tools/netwatch` on the Amiga (pings this PC, resets
   the Amiga after two minutes without a reply; not in `S:User-Startup`, or a PC that is off would reset
   it every minute), and exits to report a reset (5) or a stall (3), so restart it each time.
-  `touch tests/a1200/out/ogles2-m7-1.keep-bin` leaves the station's `bin/` unchecked: each upload
-  otherwise reads its 36 MB back for the CRC. netwatch builds by hand for now:
+  `touch tests/a1200/out/ogles2-m7-1.keep-bin` leaves the station's `bin/` unchecked (each upload
+  otherwise reads its 36 MB back for the CRC) and keeps each run's compiled programs in RAM: in the
+  package's `cache/` on disk they pile up and made a run three times slower. Delete
+  `Stuff:amigent/work/ogles2-m7-1-oldcache` afterwards. netwatch builds by hand for now:
   `m68k-amigaos-gcc -std=gnu99 -O2 -Wall -Wno-pointer-sign -mcpu=68020 -mcrt=nix20 -fbbb=abcfhilmnprsz0
   -o ~/ogles2-build-pi3/m68k/amictl/netwatch tools/netwatch/netwatch.c`.
 - **Traps:** amigentd has four command channels and a fifth pushes out the idlest: run one batch

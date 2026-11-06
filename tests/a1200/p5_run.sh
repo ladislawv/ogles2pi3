@@ -115,6 +115,16 @@ for t in "$@"; do
     need run -t 60 "Delete \"$CACHE/#?\" QUIET" > /dev/null
     need run -t 30 "Assign OGLES2Cache: \"$CACHE\"" > /dev/null
     stamp=$(date +%Y%m%d-%H%M%S)
+    # A long batch (keep-bin): each run a new package cache/. Its script keeps every program compiled
+    # there, two files each with the Pi 3's; never emptied, a drawer no 110 s could list had a compile's
+    # 3 ms on the PC take 260 ms on the Amiga (2026-11-06, dEQP). Moved aside, an instant, not deleted:
+    # delete $WORK/ogles2-$t-oldcache when the batch is done.
+    # And the programs in RAM (Run-M1 RAMCACHE=1): no disk for each of them, about 750 files a part.
+    if [ -e "$HERE/out/ogles2-$t.keep-bin" ]; then
+        ctl mkdir "$WORK/ogles2-$t-oldcache" > /dev/null 2>&1
+        ctl run -t 60 "Rename \"$WORK/ogles2-$t/cache\" \"$WORK/ogles2-$t-oldcache/c$stamp\"" > /dev/null 2>&1
+        ARGS="${ARGS:+$ARGS }RAMCACHE=1"
+    fi
     echo "$(date +%T) $t: uploading and running"
     # ARGS: the Run-* script's KEY=VALUE words (m6-5's FRAMES=0: the whole timedemo)
     ctl runpkg "$PKG" -t ${TIMEOUT:-1200} -w "$WORK" -r "$RES" ${ARGS:+-a "$ARGS"} 2>&1 |
