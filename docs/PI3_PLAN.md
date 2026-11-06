@@ -1571,9 +1571,17 @@ Everything that can run here runs here first (the developer, 2026-11-03).
       **done (2026-11-06)**, `draw_big` in `draw_vc4.c` draws the primitives as plain lists of at most
       65,535 vertices from copies on the CPU, loops and fans of arrays too (`m2_elements`' new cases,
       a list and a strip, client arrays and a static buffer, four vertices 70,000 apart);
-      ERRSTAT VCMRE (bit 13) seen in some renders with right pictures; Mesa's mipmap picture for
+      ERRSTAT VCMRE (bit 13) seen in some renders with right pictures: **narrowed (2026-11-06)** to
+      draws of many small triangles (`m1_draw`'s timing run, one draw of 600 vertices in 320x240, about
+      every such frame), the render-side twin of VCMBE; Mesa sets nothing for it either, and it stays
+      logged (8 lines a run) until dEQP or a picture says otherwise; Mesa's mipmap picture for
       `vc4_draw` (the Pi 3 under Linux again); the GPU paths of glGenerateMipmap and glCopyTex*.
-   6. S2 on the Pi 3 card: the 19 MB `v3dglslc` on the A1200 (its time and memory, the
-      version-2 server path), now that transfers hold (8 KB pieces).
+   6. S2 on the Pi 3 card: the 19 MB `v3dglslc` on the A1200. **Done (2026-11-06), no bridge:** the
+      compiler in the packages' `libs/` for the whole run; the first shader 1.7 to 1.9 s with its
+      start, a program about 0.3 s (the largest 2.5 s), about 30 MB while resident, gone after; keyed
+      compiles at draws through the version-2 path (m6-6: 42, m7-5: 22). m7-5 162 of 162, m6-6 394 of
+      395, m7-4 128 of 129, m2-4 150 of 152; the four failures are the tests' `destroy returns the
+      memory` counting the resident compiler, as the packages' scripts warn
+      (`tests/a1200/results/ogles2-m{2-4,6-6,7-4,7-5}-20261106-130*`).
    Then P6 (dEQP-GLES2 and the benchmarks on both cards, against Mesa vc4's baseline) and P7
    (into `ogles2`, one release for both cards).
