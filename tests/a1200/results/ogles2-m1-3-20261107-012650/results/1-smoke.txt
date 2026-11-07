@@ -1,0 +1,26 @@
+ogles2 smoke test (M0)
+PASS: OGLES2Open
+     library 1.3, ABI 1, table 672 bytes (164 entries)
+PASS: table size matches header
+PASS: aglCreateContextTags2
+     GL_VENDOR   ogles2.library
+     GL_RENDERER VideoCore IV V3D 2.1 (PiStorm)
+     GL_VERSION  OpenGL ES 2.0 ogles2.library 1.3
+     GLSL        OpenGL ES GLSL ES 1.00
+PASS: GL_RENDERER reports the V3D identity (the Pi 4's: its QPU count and VPM size too)
+PASS: GL_VERSION starts "OpenGL ES 2.0"
+PASS: GL_SHADING_LANGUAGE_VERSION starts "OpenGL ES GLSL ES 1.00"
+PASS: no error after valid calls
+PASS: bad glGetString name: NULL and GL_INVALID_ENUM
+PASS: glUniform1i without a program sets GL_INVALID_OPERATION
+PASS: glGetError clears the error
+PASS: aglGetProcAddress("glGetError")
+PASS: aglGetProcAddress first and last names
+PASS: aglGetProcAddress(unknown) = NULL
+PASS: call through the context-free thunk
+PASS: aglDestroyContext clears the current context
+PASS: public semaphore "VC4 submit" exists
+PASS: submission lock is free between jobs
+     free memory before 864765632, after 20 sessions 864765632 (0)
+PASS: 20 open/create/destroy/close sessions leak no memory
+ALL PASSED: 0 failure(s)

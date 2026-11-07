@@ -1,0 +1,166 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 display: render bitmap at 0x0A064954, 3200 bytes a row: in memory the GPU reaches
+    10 display: own window, 800x600, BGRA
+    11 aglCreateContext2: context 0x08F69E54, 800x600
+    12 compiler: Stuff:amigent/work/ogles2-m6-7/libs/v3dglslc, 78 bytes, id 34E713EE
+    13 glLinkProgram: OGLES2Cache:935e057582dba04b51429935.vc4p (3 variants, 872 bytes of code)
+    14 draw: program 935e057582dba04b51429935: 4 variants for other draws (OGLES2Cache:935e057582dba04b51429935.vc4k)
+    15 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    16 job: clear 3 load 0 store 1, depth 0xFFFFFF stencil 0
+    17 job: the display's bitmap (0x0A064954) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    18 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    19 job: clear 3 load 0 store 1, depth 0xFFFFFF stencil 0
+    20 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    21 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    22 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    23 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    24 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    25 job: the GPU reports ERRSTAT 0x00003000 after it, 0x00001000 after its binning (logged 8 times)
+    26 glLinkProgram: OGLES2Cache:fb5876a7ab1d610644d0fb0e.vc4p (3 variants, 944 bytes of code)
+    27 draw: program fb5876a7ab1d610644d0fb0e: 4 variants for other draws (OGLES2Cache:fb5876a7ab1d610644d0fb0e.vc4k)
+    28 texture 1: 512x512, 10 levels stored at +0x56000 +0x16000 +0x6000 ... (T), bus 0xCB3FD000
+    29 glLinkProgram: OGLES2Cache:e1421ad806211bd60acc59d5.vc4p (3 variants, 872 bytes of code)
+    30 draw: program e1421ad806211bd60acc59d5: 4 variants for other draws (OGLES2Cache:e1421ad806211bd60acc59d5.vc4k)
+    31 glLinkProgram: OGLES2Cache:8169daddeee6db3717f7f8a8.vc4p (3 variants, 1104 bytes of code)
+    32 draw: program 8169daddeee6db3717f7f8a8: 4 variants for other draws (OGLES2Cache:8169daddeee6db3717f7f8a8.vc4k)
+    33 glLinkProgram: OGLES2Cache:0746304089ac1a4e66439836.vc4p (3 variants, 1680 bytes of code)
+    34 draw: program 0746304089ac1a4e66439836: 4 variants for other draws (OGLES2Cache:0746304089ac1a4e66439836.vc4k)
+    35 glLinkProgram: OGLES2Cache:64c88307fd3f2afca1fe7e17.vc4p (3 variants, 1704 bytes of code)
+    36 draw: program 64c88307fd3f2afca1fe7e17: 4 variants for other draws (OGLES2Cache:64c88307fd3f2afca1fe7e17.vc4k)
+    37 glLinkProgram: OGLES2Cache:234389d0efb24d66ea219f61.vc4p (3 variants, 1128 bytes of code)
+    38 draw: program 234389d0efb24d66ea219f61: 4 variants for other draws (OGLES2Cache:234389d0efb24d66ea219f61.vc4k)
+    39 glLinkProgram: OGLES2Cache:0aa2a7a49dc342d432457fc0.vc4p (3 variants, 1136 bytes of code)
+    40 draw: program 0aa2a7a49dc342d432457fc0: 4 variants for other draws (OGLES2Cache:0aa2a7a49dc342d432457fc0.vc4k)
+    41 glLinkProgram: OGLES2Cache:53476b5e1140414c162c2e5d.vc4p (3 variants, 1888 bytes of code)
+    42 draw: program 53476b5e1140414c162c2e5d: 4 variants for other draws (OGLES2Cache:53476b5e1140414c162c2e5d.vc4k)
+    43 glLinkProgram: OGLES2Cache:54b2ac8d0f7d1445e53f5622.vc4p (3 variants, 704 bytes of code)
+    44 draw: program 54b2ac8d0f7d1445e53f5622: 4 variants for other draws (OGLES2Cache:54b2ac8d0f7d1445e53f5622.vc4k)
+    45 glLinkProgram: OGLES2Cache:3638d7de9aa21a9fcda14974.vc4p (3 variants, 1024 bytes of code)
+    46 draw: program 3638d7de9aa21a9fcda14974: 4 variants for other draws (OGLES2Cache:3638d7de9aa21a9fcda14974.vc4k)
+    47 glLinkProgram: OGLES2Cache:0d4adb7b4b5975df175243a2.vc4p (3 variants, 736 bytes of code)
+    48 draw: program 0d4adb7b4b5975df175243a2: 4 variants for other draws (OGLES2Cache:0d4adb7b4b5975df175243a2.vc4k)
+    49 glLinkProgram: OGLES2Cache:35cdef1afc2dca40df27541d.vc4p (3 variants, 384 bytes of code)
+    50 draw: program 35cdef1afc2dca40df27541d: 7 variants for other draws (OGLES2Cache:35cdef1afc2dca40df27541d.vc4k)
+    51 glLinkProgram: OGLES2Cache:900219a81ec8a464418774bb.vc4p (3 variants, 1032 bytes of code)
+    52 glLinkProgram: OGLES2Cache:f3c539e3cae660d1645a5bee.vc4p (3 variants, 1032 bytes of code)
+    53 glLinkProgram: OGLES2Cache:5aeb39d3bd430cc6fa84123d.vc4p (3 variants, 2128 bytes of code)
+    54 draw: program 5aeb39d3bd430cc6fa84123d: 4 variants for other draws (OGLES2Cache:5aeb39d3bd430cc6fa84123d.vc4k)
+    55 glLinkProgram: OGLES2Cache:027b59d0ae9ac1f388206793.vc4p (3 variants, 1256 bytes of code)
+    56 glLinkProgram: OGLES2Cache:689dd5d1725f285aa8dd1fce.vc4p (3 variants, 1256 bytes of code)
+    57 glLinkProgram: OGLES2Cache:e810451fbf78ca98f4a60096.vc4p (3 variants, 1000 bytes of code)
+    58 glLinkProgram: OGLES2Cache:196cfaceefcae030d232f74b.vc4p (3 variants, 952 bytes of code)
+    59 glLinkProgram: OGLES2Cache:bf15622b3f8f277bf8f9a0e4.vc4p (3 variants, 2496 bytes of code)
+    60 glLinkProgram: OGLES2Cache:534b0bf8f5780d4e109feef4.vc4p (3 variants, 968 bytes of code)
+    61 glLinkProgram: OGLES2Cache:aa8c90cec4630c80e7dcf970.vc4p (3 variants, 1056 bytes of code)
+    62 glLinkProgram: OGLES2Cache:8122cdc1f8df8155893f5d0b.vc4p (3 variants, 4440 bytes of code)
+    63 glLinkProgram: OGLES2Cache:46e7582d55411fd9cdddfd75.vc4p (3 variants, 952 bytes of code)
+    64 draw: program 534b0bf8f5780d4e109feef4: 4 variants for other draws (OGLES2Cache:534b0bf8f5780d4e109feef4.vc4k)
+    65 draw: program 8122cdc1f8df8155893f5d0b: 4 variants for other draws (OGLES2Cache:8122cdc1f8df8155893f5d0b.vc4k)
+    66 draw: program 46e7582d55411fd9cdddfd75: 4 variants for other draws (OGLES2Cache:46e7582d55411fd9cdddfd75.vc4k)
+    67 draw: program 196cfaceefcae030d232f74b: 4 variants for other draws (OGLES2Cache:196cfaceefcae030d232f74b.vc4k)
+    68 draw: program 027b59d0ae9ac1f388206793: 4 variants for other draws (OGLES2Cache:027b59d0ae9ac1f388206793.vc4k)
+    69 draw: program 689dd5d1725f285aa8dd1fce: 5 variants for other draws (OGLES2Cache:689dd5d1725f285aa8dd1fce.vc4k)
+    70 draw: program e810451fbf78ca98f4a60096: 5 variants for other draws (OGLES2Cache:e810451fbf78ca98f4a60096.vc4k)
+    71 draw: program bf15622b3f8f277bf8f9a0e4: 4 variants for other draws (OGLES2Cache:bf15622b3f8f277bf8f9a0e4.vc4k)
+    72 draw: program aa8c90cec4630c80e7dcf970: 4 variants for other draws (OGLES2Cache:aa8c90cec4630c80e7dcf970.vc4k)
+    73 glLinkProgram: OGLES2Cache:823fc80f7c90e6a43b19b22f.vc4p (3 variants, 408 bytes of code)
+    74 glLinkProgram: OGLES2Cache:8c868e9e10cf1bab3d47b512.vc4p (3 variants, 3208 bytes of code)
+    75 draw: program 823fc80f7c90e6a43b19b22f: 4 variants for other draws (OGLES2Cache:823fc80f7c90e6a43b19b22f.vc4k)
+    76 draw: program 8c868e9e10cf1bab3d47b512: 4 variants for other draws (OGLES2Cache:8c868e9e10cf1bab3d47b512.vc4k)
+    77 glLinkProgram: OGLES2Cache:57c6f5110dab6c50d9d44a72.vc4p (3 variants, 16464 bytes of code)
+    78 glLinkProgram: OGLES2Cache:4e6186381701a8fb70cd8500.vc4p (3 variants, 768 bytes of code)
+    79 glLinkProgram: OGLES2Cache:de24211a2372cc02acb555f5.vc4p (3 variants, 464 bytes of code)
+    80 texture 3: 512x512, 10 levels stored at +0x56000 +0x16000 +0x6000 ... (T), bus 0xCB687000
+    81 texture 4: 512x512, 10 levels stored at +0x56000 +0x16000 +0x6000 ... (T), bus 0xCD06F000
+    82 texture 5: 512x512, 10 levels stored at +0x56000 +0x16000 +0x6000 ... (T), bus 0xCD31A000
+    83 texture 6: 512x512, 10 levels stored at +0x56000 +0x16000 +0x6000 ... (T), bus 0xCD5C5000
+    84 glLinkProgram: OGLES2Cache:3b0e481be1e9bae1e4604fc8.vc4p (3 variants, 4136 bytes of code)
+    85 texture 7: 800x600, 10 levels stored at +0x156000 +0x56000 +0x16000 ... (T), bus 0xCF3D0000
+    86 glLinkProgram: OGLES2Cache:cad5dd0faa95222569048a33.vc4p (3 variants, 712 bytes of code)
+    87 texture 8: 256x256, 9 levels stored at +0x16000 +0x6000 +0x2000 ... (T), bus 0xCF702000
+    88 glLinkProgram: OGLES2Cache:5d12f1914d5e41d226c4933f.vc4p (3 variants, 720 bytes of code)
+    89 texture 9: 256x256, 9 levels stored at +0x16000 +0x6000 +0x2000 ... (T), bus 0xCF79D000
+    90 glLinkProgram: OGLES2Cache:7f07db8dcd76c5952663aa41.vc4p (3 variants, 440 bytes of code)
+    91 glLinkProgram: OGLES2Cache:8507e42c16c542319c88c95a.vc4p (3 variants, 976 bytes of code)
+    92 texture 10: 800x600, 10 levels stored at +0x156000 +0x56000 +0x16000 ... (T), bus 0xCFA62000
+    93 glLinkProgram: OGLES2Cache:67c64534d335e4b8365d2a32.vc4p (3 variants, 976 bytes of code)
+    94 draw: program de24211a2372cc02acb555f5: 6 variants for other draws (OGLES2Cache:de24211a2372cc02acb555f5.vc4k)
+    95 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 1, P0 0xCB6DD001; bias 0/100, LOD 100/100..100/100, 512x512
+    96 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 2, P0 0xCB6DD002; bias 0/100, LOD 200/100..200/100, 512x512
+    97 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 3, P0 0xCB6DD003; bias 0/100, LOD 300/100..300/100, 512x512
+    98 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 4, P0 0xCB6DD004; bias 0/100, LOD 400/100..400/100, 512x512
+    99 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 5, P0 0xCB6DD005; bias 0/100, LOD 500/100..500/100, 512x512
+   100 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 6, P0 0xCB6DD006; bias 0/100, LOD 600/100..600/100, 512x512
+   101 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 7, P0 0xCB6DD007; bias 0/100, LOD 700/100..700/100, 512x512
+   102 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 8, P0 0xCB6DD008; bias 0/100, LOD 800/100..800/100, 512x512
+   103 glGenerateMipmap: drawn on the GPU (texture 3, 512x512, 10 levels; logged once)
+   104 draw: program 57c6f5110dab6c50d9d44a72: 6 variants for other draws (OGLES2Cache:57c6f5110dab6c50d9d44a72.vc4k)
+   105 draw: program 3b0e481be1e9bae1e4604fc8: 6 variants for other draws (OGLES2Cache:3b0e481be1e9bae1e4604fc8.vc4k)
+   106 texture 7: 800x600, 10 levels stored at +0x156000 +0x56000 +0x16000 ... (T), bus 0xCF3D0000
+   107 draw: program cad5dd0faa95222569048a33: 6 variants for other draws (OGLES2Cache:cad5dd0faa95222569048a33.vc4k)
+   108 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 1, P0 0xCF718001; bias 0/100, LOD 100/100..100/100, 256x256
+   109 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 2, P0 0xCF718002; bias 0/100, LOD 200/100..200/100, 256x256
+   110 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 3, P0 0xCF718003; bias 0/100, LOD 300/100..300/100, 256x256
+   111 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 4, P0 0xCF718004; bias 0/100, LOD 400/100..400/100, 256x256
+   112 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 5, P0 0xCF718005; bias 0/100, LOD 500/100..500/100, 256x256
+   113 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 6, P0 0xCF718006; bias 0/100, LOD 600/100..600/100, 256x256
+   114 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 7, P0 0xCF718007; bias 0/100, LOD 700/100..700/100, 256x256
+   115 draw: program 5d12f1914d5e41d226c4933f: 6 variants for other draws (OGLES2Cache:5d12f1914d5e41d226c4933f.vc4k)
+   116 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 1, P0 0xCF7B3001; bias 0/100, LOD 100/100..100/100, 256x256
+   117 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 2, P0 0xCF7B3002; bias 0/100, LOD 200/100..200/100, 256x256
+   118 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 3, P0 0xCF7B3003; bias 0/100, LOD 300/100..300/100, 256x256
+   119 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 4, P0 0xCF7B3004; bias 0/100, LOD 400/100..400/100, 256x256
+   120 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 5, P0 0xCF7B3005; bias 0/100, LOD 500/100..500/100, 256x256
+   121 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 6, P0 0xCF7B3006; bias 0/100, LOD 600/100..600/100, 256x256
+   122 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 7, P0 0xCF7B3007; bias 0/100, LOD 700/100..700/100, 256x256
+   123 draw: program 7f07db8dcd76c5952663aa41: 6 variants for other draws (OGLES2Cache:7f07db8dcd76c5952663aa41.vc4k)
+   124 texture 7: 800x600, 10 levels stored at +0x156000 +0x56000 +0x16000 ... (T), bus 0xCF3D0000
+   125 draw: program 8507e42c16c542319c88c95a: 6 variants for other draws (OGLES2Cache:8507e42c16c542319c88c95a.vc4k)
+   126 texture 10: 800x600, 10 levels stored at +0x156000 +0x56000 +0x16000 ... (T), bus 0xCF9C8000
+   127 draw: program 67c64534d335e4b8365d2a32: 6 variants for other draws (OGLES2Cache:67c64534d335e4b8365d2a32.vc4k)
+   128 texture 7: 800x600, 10 levels stored at +0x156000 +0x56000 +0x16000 ... (T), bus 0xCF3D0000
+   129 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 1, P0 0xCF718001; bias 0/100, LOD 100/100..100/100, 256x256
+   130 draw: sampler 0 emulated: force_first 1 bias 0 clamp 0 aniso 0, first 2, P0 0xCF718002; bias 0/100, LOD 200/100..200/100, 256x256
+   131 texture 7: 800x600, 10 levels stored at +0x156000 +0x56000 +0x16000 ... (T), bus 0xCF3D0000
+   132 texture 10: 800x600, 10 levels stored at +0x156000 +0x56000 +0x16000 ... (T), bus 0xCF9C8000
+   133 glLinkProgram: OGLES2Cache:55c04fa2a14a52f01dec1b3e.vc4p (3 variants, 864 bytes of code)
+   134 glLinkProgram: OGLES2Cache:3aeba203bcdfc0175396b765.vc4p (3 variants, 728 bytes of code)
+   135 glLinkProgram: OGLES2Cache:bbc4fad2b75d51aaa444c1e9.vc4p (3 variants, 864 bytes of code)
+   136 framebuffer 1: tile pools of its own for 1600x1200
+   137 draw: program 3aeba203bcdfc0175396b765: 9 variants for other draws (OGLES2Cache:3aeba203bcdfc0175396b765.vc4k)
+   138 draw: program bbc4fad2b75d51aaa444c1e9: 6 variants for other draws (OGLES2Cache:bbc4fad2b75d51aaa444c1e9.vc4k)
+   139 draw: program 55c04fa2a14a52f01dec1b3e: 6 variants for other draws (OGLES2Cache:55c04fa2a14a52f01dec1b3e.vc4k)
+   140 glLinkProgram: OGLES2Cache:070c39101b1853b8171619bd.vc4p (3 variants, 2648 bytes of code)
+   141 framebuffer 1: tile pools of its own for 1600x1200
+   142 texture 3: 1600x1200, 11 levels stored at +0x556000 +0x156000 +0x56000 ... (T), bus 0xD0D11000
+   143 draw: program 070c39101b1853b8171619bd: 6 variants for other draws (OGLES2Cache:070c39101b1853b8171619bd.vc4k)
+   144 glLinkProgram: OGLES2Cache:8cb3edf3c9cd8d261970f55b.vc4p (3 variants, 824 bytes of code)
+   145 draw: program 8cb3edf3c9cd8d261970f55b: 6 variants for other draws (OGLES2Cache:8cb3edf3c9cd8d261970f55b.vc4k)
+   146 glLinkProgram: OGLES2Cache:7bba56146b31dfb6307399f7.vc4p (3 variants, 1408 bytes of code)
+   147 draw: program 7bba56146b31dfb6307399f7: 6 variants for other draws (OGLES2Cache:7bba56146b31dfb6307399f7.vc4k)
+   148 glLinkProgram: OGLES2Cache:78debee6fd79da07f9ff66b6.vc4p (3 variants, 1952 bytes of code)
+   149 draw: program 78debee6fd79da07f9ff66b6: 6 variants for other draws (OGLES2Cache:78debee6fd79da07f9ff66b6.vc4k)
+   150 glLinkProgram: OGLES2Cache:cae6090db8ee55314eeead5a.vc4p (3 variants, 1120 bytes of code)
+   151 draw: program cae6090db8ee55314eeead5a: 6 variants for other draws (OGLES2Cache:cae6090db8ee55314eeead5a.vc4k)
+   152 glLinkProgram: OGLES2Cache:84dee6d620c33535bf3e0aa0.vc4p (3 variants, 1880 bytes of code)
+   153 draw: program 84dee6d620c33535bf3e0aa0: 6 variants for other draws (OGLES2Cache:84dee6d620c33535bf3e0aa0.vc4k)
+   154 glLinkProgram: OGLES2Cache:250d1b7de6755275d7953463.vc4p (3 variants, 1848 bytes of code)
+   155 draw: program 250d1b7de6755275d7953463: 6 variants for other draws (OGLES2Cache:250d1b7de6755275d7953463.vc4k)
+   156 glLinkProgram: OGLES2Cache:4bf2ee1a3efe4968fe4e2476.vc4p (3 variants, 1848 bytes of code)
+   157 draw: program 4bf2ee1a3efe4968fe4e2476: 6 variants for other draws (OGLES2Cache:4bf2ee1a3efe4968fe4e2476.vc4k)
+   158 glLinkProgram: OGLES2Cache:9cce32e5b16b1cbe12e682bd.vc4p (3 variants, 2040 bytes of code)
+   159 draw: program 9cce32e5b16b1cbe12e682bd: 6 variants for other draws (OGLES2Cache:9cce32e5b16b1cbe12e682bd.vc4k)
+   160 aglDestroyContext: context 0x08F69E54: freeing
+   161 device: context freed, 0 bytes of GPU memory still in use
+   162 aglDestroyContext: context 0x08F69E54 (5386 frames, 0 dropped, 0 binning blocks added)
+   163 timing: 5386 jobs, each on average: 9316 us of CPU work before its flush, 516 us waiting for binning, 5612 us for the render
+   164 timing: and in each flush 367 us building the render list, 58 us for the CPU cache before the GPU, 64 us after
+   165 timing: 4749 swaps, 28606 us from one to the next on average, 3292 us of it presenting
+   166 timing: per frame 7 draws, 1865 us in them; in all 139 ms in glBuffer(Sub)Data, 248 ms in glTex(Sub)Image2D

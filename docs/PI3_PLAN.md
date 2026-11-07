@@ -1683,7 +1683,17 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    and the first call on a chain not laid out, as on the Pi 4. m6-8 121, m6-6 395, m2-4 152, m3-2 147, none FAIL;
    `texture`, `fbo` as before.
 
-   Left for P6: the free memory that falls about 2 MB a minute during dEQP (logging or a leak: not known);
-   a program compiled twice on the Pi 3, at its link and at its first draw (the reference draw's RGBA8
-   target and float attributes against what a draw has: looked at, not settled); the benchmarks on both
-   cards; the Pi 4 card's regression.
+   **Every package on the final library, the Pi 3 card (2026-11-07):** m1-1 59, m1-2 59, m1-3 69, m1-4 14, m1-5
+   59, m1-6 81, m1-7 81, m1-8 26, m1-9 26, m1-10 74, m2-1 103, m2-2 166, m2-3 118, m2-4 152, m3-1 118, m3-2
+   147, m4-1 193, m5-1 261, m6-6 395, m6-8 121, m6-10 210, m7-2 66, m7-3 105, m7-4 129, m7-5 162, m7-6 36, m7-7
+   2, m7-8 37: none FAIL; m2-5's 14 pictures PASS against Mesa's (at most 0.18 % differ). (m1-1 lost one check
+   and m4-1 six on a first run, to memory freed elsewhere during a check and to a link drop, "no bridge";
+   both clean when run again. p5_run.sh counts no "no bridge" itself: read a package's log when it fails.)
+   **Benchmarks on the card:** Quake III's "four" with GLES2 32.8 fps (11.0 / 30.5 / 215 ms), as before these
+   changes; glmark2 70; es2gears-sized m4-2 799 fps at 800 triangles and 369 at 8,000; SDL2's target texture
+   91.7 fps, a new one each frame 70.6. The free memory during dEQP does not fall: it stood at 839 MB through
+   a part (17:43 to 17:48 on 2026-11-06); what looked like 2 MB a minute was the first minutes of a run.
+
+   Left for P6: a program compiled twice on the Pi 3, at its link and at its first draw (the reference draw's
+   RGBA8 target and float attributes against what a draw has: looked at, not settled); the Pi 4 card's
+   regression and benchmarks (they need the card in); Mesa's mipmap picture for `vc4_draw` (the Pi 3 under Linux).
