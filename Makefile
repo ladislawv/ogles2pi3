@@ -325,6 +325,9 @@ $(B)/amictl/v3dglslc-remote: tools/compile_bridge/v3dglslc_remote.c v3dp/v3dglsl
 	$(CC) -std=gnu99 -O2 -Wall -Wno-pointer-sign -mcpu=68020 -mcrt=nix20 -fbbb=abcfhilmnprsz0 -Iv3dp \
 	    -o $@ tools/compile_bridge/v3dglslc_remote.c
 # Resets the Amiga when its link to the PC is gone (tests/a1200/p6_watch.sh starts it).
+$(B)/tools/piclock: tools/piclock/piclock.c $(VC4_SRC:%=vc4core/%.c) $(VC4_HDR) Makefile
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(VC4_INC) -o $@ tools/piclock/piclock.c $(VC4_SRC:%=vc4core/%.c)
 $(B)/amictl/netwatch: tools/netwatch/netwatch.c Makefile
 	@mkdir -p $(dir $@)
 	$(CC) -std=gnu99 -O2 -Wall -Wno-pointer-sign -mcpu=68020 -mcrt=nix20 -fbbb=abcfhilmnprsz0 \

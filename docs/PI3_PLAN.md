@@ -1771,8 +1771,17 @@ were written on, read that section's "Another machine" first.
    67.1 against 67.0 fps (66.6, 66.4, 68.2 against 66.5, 67.7, 66.7); gears (m6-1, TEETH=1) 0.3 to 1.3 %
    slower in every mode, every round (bitmap arrays 749.5 against 740.4 fps, screen 939.1 against
    928.2, window 399.7 against 398.5), the size of the placement effects P2 measured and accepted (P2's
-   acceptance above: gears within 1 %). Both libraries ran below October's figures alike (Quake III 89 then): the day's
-   set-up (the A1200 on Wi-Fi with this card too, Quake III's settings reset), not the library.
+   acceptance above: gears within 1 %). Both libraries ran below 4 and 5 November's figures alike (Quake III 89 fps
+   then): **the Pi 4 ran at 1.5 GHz**. After the card's boot files were changed for the Pi 3 and back, its
+   `config.txt` had no overclock and the default `gpu_mem`; `tools/piclock` (the firmware's clocks,
+   temperature and throttling, through the mailbox from AmigaOS) read the ARM at 1,500 MHz, its maximum,
+   40 °C, nothing throttled. Every CPU stage of Quake III's frame was slower by the same factor (draws
+   2,802 to 3,890 us a frame, uploads 406 to 564), and so was its load (14.0 to 19.2 s); the 5 November
+   package and library ran 66.7 fps that day too. `gpu_mem=256` (the 4 November memory map again:
+   0x01000000-0x2E9FFFFF) alone changed nothing (67.2 fps); **with the ARM at 2.2 GHz again, Quake III
+   89.3 fps on this library, 89.1 on 1.3.3's** (loads 13.93 and 13.92 s), 4 November's figures. The
+   gears figures above are at 1.5 GHz. `piclock`'s ARM query answers nothing under the overclock (the
+   other clocks, the voltage, 1.035 V, and the temperature, 55 °C after the demo, do).
    On the way: `p2_checks.sh` took an old results drawer for a run that left none (a station drop, and a
    78-byte compiler stand-in that `runpkg`, which deletes nothing, had left in 12 of the station's package
    drawers: each compile waited 60 s). It stops at a drop now, takes only a run's own results and removes a
