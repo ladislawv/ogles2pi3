@@ -16,7 +16,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
 RES=$HERE/results
 WREPO=$(echo "$REPO" | sed -E 's#^/([a-z])/#/mnt/\1/#')
-wsl() { MSYS_NO_PATHCONV=1 command wsl -d Ubuntu-24.04 "$@"; }
+wsl() { MSYS_NO_PATHCONV=1 command wsl -d "${OGLES2_WSL:-Ubuntu-24.04}" "$@"; } # OGLES2_WSL: as `wsl -l` names it
 
 if [ "${1:-}" = ref ]; then
     wsl bash -c "set -e; rm -rf ~/p2head ~/p2head-build; mkdir -p ~/p2head
@@ -27,8 +27,9 @@ if [ "${1:-}" = ref ]; then
     exit $?
 fi
 RUNS=${1:-3}
-REF=$(wsl wslpath -w "${REF_LIB:-/home/l/p2head-build/m68k/ogles2.library}") # REF_LIB: another (a WSL path)
-NEW=$(wsl wslpath -w /home/l/ogles2-build-pi3/m68k/ogles2.library)
+WHOME=$(wsl sh -c 'echo $HOME' | tr -d '\r') # the WSL home (its user differs between machines)
+REF=$(wsl wslpath -w "${REF_LIB:-$WHOME/p2head-build/m68k/ogles2.library}" | tr -d '\r') # REF_LIB: another (a WSL path)
+NEW=$(wsl wslpath -w "$WHOME/ogles2-build-pi3/m68k/ogles2.library" | tr -d '\r')
 [ -f "$REF" ] || { echo "no reference library: bash $0 ref"; exit 1; }
 amictl() { python "$REPO/tools/amictl/amictl.py" "$@"; }
 newest() { ls -d "$RES"/$1-* 2>/dev/null | tail -1; }

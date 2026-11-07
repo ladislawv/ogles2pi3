@@ -1284,6 +1284,33 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 
 ## 10. Status and next steps
 
+**Where it stands, for whoever picks it up (2026-11-07, branch `pi3-p5`, pushed):** the Pi 3 side is
+finished and tested on the card. P5 (the VC4 backend) is done; P6 on the Pi 3 card is done: dEQP-GLES2's
+whole list 17,047 of 17,165 pass, its 18 failures all in Mesa vc4's own baseline (item 6 below); every
+regression package without a FAIL; Quake III 32.8 fps, glmark2 70; glCopyTex* and glGenerateMipmap on
+the GPU; a program compiles once (at its link) for the usual first draw; the disk cache has a size. The
+details are in the dated entries below, the newest last. **Next, in order:**
+1. **The Pi 4 card: regression and benchmarks** (P6's other half, §5.1: the Pi 4 must behave as release
+   1.3.3). Swap the card (a reboot), then from Git Bash or WSL with amictl (CONTRIBUTING.md, "The remote
+   test station"): `bash tests/a1200/p2_checks.sh` (m5-1, m7-6, m2-5's 14 pictures against
+   `REF`, m6-1, Quake III), the texture packages (`p2_checks.sh m2-4 m7-2 m7-4 m7-5 m6-6 m6-8 m6-10`),
+   m7-9 (the cache's trim, which is the one change on purpose: it is in the shared front end), and
+   `p2_speed.sh` with `REF_LIB` set to 1.3.3's library for the speed (`release/dist/ogles2-1.3.3.lha`'s
+   `Libs/ogles2.library`, or built from tag `v1.3.3`). dEQP on the Pi 4 is optional before
+   P7 (its own baseline is in `DEVELOPMENT_PLAN.md`); `RAMCACHE=1` shortens it (item 6).
+2. **P7: into `ogles2`** (PD8, §8): merge this branch there (the build root back to `~/ogles2-build`), check
+   both cards again, then the release (`release/build_release.sh`, one library and one compiler for both,
+   one whole dEQP pass as the release's check). Nothing is pushed to `ogles2` before the developer says
+   so.
+3. Optional: Mesa's mipmap picture for `vc4_draw` (the Pi 3 under Linux, §6); the Wi-Fi drops of the
+   A1200's link on the Pi 3 card (cause unknown, the station's and not the library's; the scripts work
+   around them); ERRSTAT VCMRE, logged for some renders with right pictures (item 5).
+
+How to work on the card: CONTRIBUTING.md, "The Pi 3 card and the amigent station" (packages with
+`p5_run.sh`, dEQP with `p6_deqp.sh` and `p6_watch.sh`, why a program compiles at a draw with
+`p6_keydiff.sh`), and its traps; CLAUDE.md for an agent. On a machine other than the one the scripts
+were written on, read that section's "Another machine" first.
+
 **Done (2026-11-03):**
 - Repository `ladislawv/ogles2pi3` (private) made from `ogles2` (`main` at release 1.3.3, its
   history and tags); cloned on the build machine at `C:\- CPP\ogles2pi3`.

@@ -8,7 +8,9 @@
 #   III's timedemo (package p2v-m6-5, from tests/a1200/p2_vc4keys.sh): fps.
 # Run from WSL or Git Bash in the repository:
 #   bash tests/a1200/p2_checks.sh [m5-1 m7-6 m2-5 m6-1 q3]
+# OGLES2_WSL: the WSL distribution, from Git Bash (as `wsl -l` names it; default Ubuntu-24.04).
 set -u
+WSLD=${OGLES2_WSL:-Ubuntu-24.04}
 HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
 RES=$HERE/results
@@ -24,7 +26,7 @@ WREPO=$(echo "$REPO" | sed -E 's#^/([a-z])/#/mnt/\1/#')
 
 build() { # package
     if [ $WSL = 1 ]; then
-        MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 bash -c "cd '$WREPO' && bash tests/a1200/build_package.sh $1" > /dev/null 2>&1
+        MSYS_NO_PATHCONV=1 wsl -d "$WSLD" bash -c "cd '$WREPO' && bash tests/a1200/build_package.sh $1" > /dev/null 2>&1
     else
         (cd "$REPO" && bash tests/a1200/build_package.sh "$1") > /dev/null 2>&1
     fi
@@ -35,7 +37,7 @@ for t in $WANT; do
     case $t in
     q3)
         lib=$HOME/ogles2-build-pi3/m68k/ogles2.library
-        [ $WSL = 1 ] && lib=$(MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 wslpath -w /home/l/ogles2-build-pi3/m68k/ogles2.library)
+        [ $WSL = 1 ] && lib=$(MSYS_NO_PATHCONV=1 wsl -d "$WSLD" sh -c 'wslpath -w "$HOME/ogles2-build-pi3/m68k/ogles2.library"' | tr -d '\r')
         cp "$lib" "$HERE/out/p2v-m6-5/libs/ogles2.library" || exit 1
         amictl runpkg "$HERE/out/p2v-m6-5" -t 1800 -a "FRAMES=0" > /dev/null
         echo "q3: $(grep -h 'frames.*fps' "$(newest p2v-m6-5)"/results/qconsole.log)"
@@ -47,7 +49,7 @@ for t in $WANT; do
         amictl runpkg "$HERE/out/ogles2-$t" -t 1200 > /dev/null
         R=$(newest "ogles2-$t")/results
         case $t in
-        m5-1 | m7-6 | m2-4 | m7-2 | m7-4 | m7-5 | m1-5 | m6-6 | m6-8 | m6-10 | m7-3) echo "$t: $(grep -h '^PASS' "$R"/*.txt | wc -l) PASS, $(grep -h '^FAIL' "$R"/*.txt | wc -l) FAIL" ;;
+        m5-1 | m7-6 | m2-4 | m7-2 | m7-4 | m7-5 | m1-5 | m6-6 | m6-8 | m6-10 | m7-3 | m7-9) echo "$t: $(grep -h '^PASS' "$R"/*.txt | wc -l) PASS, $(grep -h '^FAIL' "$R"/*.txt | wc -l) FAIL" ;;
         m2-5)
             same=0 diff=0
             for f in "$R"/*.ppm; do

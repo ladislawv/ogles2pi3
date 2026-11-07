@@ -22,9 +22,10 @@ station's large-reply stall, postponed) is in §13's "Next" list.
 [`CLAUDE.md`](CLAUDE.md) has the short version for an AI agent.
 
 This repository (`ogles2pi3`) adds the Raspberry Pi 3 (VideoCore IV) beside the Pi 4: its plan
-and status are [`docs/PI3_PLAN.md`](docs/PI3_PLAN.md), §10 ending with the work queue (P5, the
-VC4 backend on the A1200, is under way: the regression packages and Quake III run on the Pi 3
-card). Testing with the Pi 3 card: "The Pi 3 card and the amigent station" below.
+and status are [`docs/PI3_PLAN.md`](docs/PI3_PLAN.md): §10 starts with where it stands and what
+is next (2026-11-07: the Pi 3 side finished and tested on the card, dEQP-GLES2 within Mesa vc4's
+baseline; next the Pi 4 card's regression, then P7, the merge into `ogles2`). Testing with the
+Pi 3 card: "The Pi 3 card and the amigent station" below.
 
 ## Setting up a build machine
 
@@ -209,6 +210,23 @@ and the work queue. Swapping the card means rebooting the Amiga. With the Pi 3 c
   otherwise reads its 36 MB back for the CRC) and keeps each run's compiled programs in RAM: in the
   package's `cache/` on disk they pile up and made a run three times slower. Delete
   `Stuff:amigent/work/ogles2-m7-1-oldcache` afterwards.
+- **Why a program compiles at a draw:** the library logs each such compile ("variants for other
+  draws, compiled"); `BRIDGE_PORT=6804 bash tests/a1200/p6_keydiff.sh <package>` runs a package with
+  an empty cache, fetches its `.vc4p` (the link's variants) and `.vc4k` (the draws') and prints, with
+  `tools/v3dglslc/test/vc4_keydiff.py`, the key fields each draw's variant differs in from the link's.
+  That is how the compiler's stale sampler views were found (PI3_PLAN §10, 2026-11-07). After a change
+  to `v3dglslc`'s VC4 side run `tools/v3dglslc/test/vc4_keys.py` (keys, hints, a file independent of
+  the program before it) and `compare_vc4p.sh` (host and m68k output byte for byte).
+- **Another machine:** the scripts' defaults are the first build machine's. From Git Bash,
+  `OGLES2_WSL` names the WSL distribution (`wsl -l`; the default `Ubuntu-24.04`, on some machines
+  `Ubuntu`); inside WSL nothing needs it. The station's address: `AMIGENT_HOST`, or
+  `tools/amictl/station.local` (copied from a machine that has one; never committed). The SDL
+  packages (m6-3, m6-4, m7-7, m7-8) need `PISTORM3D_SDK` where the PiStorm3D SDK is, or the build
+  only says "build failed". The amigent fork's checkout and venv may be anywhere (`AMIGENT_CTL` the
+  `amigent-ctl` to use). If WSL's git has no author set, commit from Windows git: a commit in WSL then
+  fails while the files stay staged. Give the compile bridge a port of its own (`BRIDGE_PORT=6804`,
+  `compile_bridge.py --port 6804`) when another PC may run one: the newest connection to a port takes
+  the requests.
 - **Traps:** amigentd has four command channels and a fifth pushes out the idlest: run one batch
   at a time (`p5_run.sh` takes a lock, `tests/a1200/out/p5_run.lock`) and keep long jobs
   detached. Killing the PC side of a run does not stop its command on the Amiga: two copies of a
