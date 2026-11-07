@@ -1720,7 +1720,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    m6-4 6 and 5 (their earlier runs took files from an old cache: no count). m2-5's 9 programs that still
    compile at a draw all draw in a state a link cannot know: RGB textures (stored rgbx), a depth buffer on an
    FBO, points, blending, stencil. dEQP's `texture` group (807 cases, the programs with samplers) the same as
-   the night before, part for part (796 pass, the same 11 known failures). Host against m68k 9 of 9 files identical, `compile_bridge.py --check` 8 of
+   the night before, part for part (796 pass, the same 11 known failures), and `fbo` 709 of 709 as before
+   (one part again after a Wi-Fi drop). Host against m68k 9 of 9 files identical, `compile_bridge.py --check` 8 of
    8 (V3D unchanged), `vc4_keys.py` all (the library's own hint buffer and keys in the files).
    **The disk cache has a size (2026-11-07):** every program left its files in `OGLES2Cache:` for good, and a
    drawer that grows makes each new file slower (dEQP's above; `ogles3`'s run reached a million files). The
