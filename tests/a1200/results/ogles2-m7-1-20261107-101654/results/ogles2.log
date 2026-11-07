@@ -1,0 +1,94 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 device: a VideoCore IV (the device tree): the VC4 backend
+     4 vc4core: device tree: /soc 0x7e000000 -> 0xf2000000; RAM 0x00000000 is bus 0xc0000000; mailbox at 0xf200b880, 3D core at 0xf2c00000, timer at 0xf2003000; 1 RAM range(s), the first 0x01000000-0x2e000000
+     5 vc4core: mailbox: the ARM's memory 0x00000000-0x3e000000 (68k), reached by the GPU
+     6 vc4core: mailbox: the VideoCore's memory 0x3e000000-0x40000000 (68k), reached by the GPU
+     7 vc4core: V3D 2.1: 3 slices of 4 QPUs, VPM 12 KB
+     8 device: VC4 taken over
+     9 display: render bitmap at 0x09757B8C, 1024 bytes a row: in memory the GPU reaches
+    10 display: own window, 256x256, BGRA
+    11 aglCreateContext2: context 0x08310E5C, 256x256
+    12 compiler: Stuff:amigent/work/ogles2-m7-1/libs/v3dglslc, 78 bytes, id 34E713EE
+    13 compiler: shader compiled in 180 ms
+    14 compiler: shader compiled in 20 ms
+    15 compiler: program compiled in 20 ms, OGLES2Cache:b1ac6f52f10226cb7d679536.vc4p
+    16 glLinkProgram: OGLES2Cache:b1ac6f52f10226cb7d679536.vc4p (5 variants, 640 bytes of code)
+    17 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC97D9000
+    18 compiler: program compiled in 20 ms, OGLES2Cache:b1ac6f52f10226cb7d679536.vc4k
+    19 draw: program b1ac6f52f10226cb7d679536: 6 variants for other draws, compiled (OGLES2Cache:b1ac6f52f10226cb7d679536.vc4k)
+    20 texture 2: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB31D000
+    21 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    22 job: the display's bitmap (0x09757B8C) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    23 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC97D9000
+    24 texture 2: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0B0000
+    25 job: clear 3 load 0 store 3, depth 0xFFFFFF stencil 0
+    26 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC97D9000
+    27 texture 2: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0B0000
+    28 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC97D9000
+    29 texture 2: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0B0000
+    30 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC97D9000
+    31 texture 2: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0B0000
+    32 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC97D9000
+    33 texture 2: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0B0000
+    34 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC97D9000
+    35 texture 2: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0B0000
+    36 texture 1: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xC97D9000
+    37 texture 2: 128x128, 8 levels stored at +0x6000 +0x2000 +0x1000 ... (T), bus 0xCB0B0000
+    38 glGetIntegerv: pname 0x821B not supported yet
+    39 compiler: shader compiled in 100 ms
+    40 compiler: program compiled in 20 ms, OGLES2Cache:fc202c7d8ce813e0d921ad36.vc4p
+    41 glLinkProgram: OGLES2Cache:fc202c7d8ce813e0d921ad36.vc4p (5 variants, 736 bytes of code)
+    42 compiler: program compiled in 20 ms, OGLES2Cache:fc202c7d8ce813e0d921ad36.vc4k
+    43 draw: program fc202c7d8ce813e0d921ad36: 6 variants for other draws, compiled (OGLES2Cache:fc202c7d8ce813e0d921ad36.vc4k)
+    44 glGetIntegerv: pname 0x821B not supported yet
+    45 glGetIntegerv: pname 0x821B not supported yet
+    46 glGetIntegerv: pname 0x821B not supported yet
+    47 glGetIntegerv: pname 0x821B not supported yet
+    48 glGetIntegerv: pname 0x821B not supported yet
+    49 glGetIntegerv: pname 0x821B not supported yet
+    50 glGetIntegerv: pname 0x821B not supported yet
+    51 glGetIntegerv: pname 0x821B not supported yet
+    52 glGetIntegerv: pname 0x821B not supported yet
+    53 glGetIntegerv: pname 0x821B not supported yet
+    54 glGetIntegerv: pname 0x821B not supported yet
+    55 glGetIntegerv: pname 0x821B not supported yet
+    56 glGetIntegerv: pname 0x821B not supported yet
+    57 glGetIntegerv: pname 0x821B not supported yet
+    58 glGetIntegerv: pname 0x821B not supported yet
+    59 glGetIntegerv: pname 0x821B not supported yet
+    60 glGetIntegerv: pname 0x821B not supported yet
+    61 glGetIntegerv: pname 0x821B not supported yet
+    62 glGetIntegerv: pname 0x821B not supported yet
+    63 glGetIntegerv: pname 0x821B not supported yet
+    64 glGetIntegerv: pname 0x821B not supported yet
+    65 glGetIntegerv: pname 0x821B not supported yet
+    66 glGetIntegerv: pname 0x821B not supported yet
+    67 glGetIntegerv: pname 0x821B not supported yet
+    68 glGetIntegerv: pname 0x821B not supported yet
+    69 glGetIntegerv: pname 0x821B not supported yet
+    70 glGetIntegerv: pname 0x821B not supported yet
+    71 glGetIntegerv: pname 0x821B not supported yet
+    72 glGetIntegerv: pname 0x821B not supported yet
+    73 glGetIntegerv: pname 0x821B not supported yet
+    74 glGetIntegerv: pname 0x821B not supported yet
+    75 glGetIntegerv: pname 0x821B not supported yet
+    76 glGetIntegerv: pname 0x821B not supported yet
+    77 glGetIntegerv: pname 0x821B not supported yet
+    78 glGetIntegerv: pname 0x821B not supported yet
+    79 glGetIntegerv: pname 0x821B not supported yet
+    80 glGetIntegerv: pname 0x821B not supported yet
+    81 glGetIntegerv: pname 0x821B not supported yet
+    82 glGetIntegerv: pname 0x821B not supported yet
+    83 glGetIntegerv: pname 0x821B not supported yet
+    84 glGetIntegerv: pname 0x821B not supported yet
+    85 glGetIntegerv: pname 0x821B not supported yet
+    86 glGetIntegerv: pname 0x821B not supported yet
+    87 glGetIntegerv: pname 0x821B not supported yet
+    88 aglDestroyContext: context 0x08310E5C: freeing
+    89 device: context freed, 0 bytes of GPU memory still in use
+    90 aglDestroyContext: context 0x08310E5C (57 frames, 0 dropped, 0 binning blocks added)
+    91 timing: 57 jobs, each on average: 1910592 us of CPU work before its flush, 11289 us waiting for binning, 7977 us for the render
+    92 timing: and in each flush 149 us building the render list, 102 us for the CPU cache before the GPU, 66 us after
+    93 timing: 57 swaps, 2029721 us from one to the next on average, 576 us of it presenting
+    94 timing: per frame 19 draws, 134983 us in them; in all 0 ms in glBuffer(Sub)Data, 132 ms in glTex(Sub)Image2D
