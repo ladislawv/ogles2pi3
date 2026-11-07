@@ -6,6 +6,7 @@
 # the logs are checked: every program linked from Examples/shaders/, nothing
 # compiled, no closest variant, every context's GPU memory returned.
 #   bash tests/a1200/beta_run.sh            (Git Bash; either card)
+#   DEMOS=1 bash tests/a1200/beta_run.sh    the demos archive (ogles2-<release>-demos.lha)
 # ARCHIVE: the .lha (default: the newest ogles2-<release>.lha the build made).
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -15,7 +16,11 @@ export AMIGENT_HOST=${AMIGENT_HOST:-$(python -c "import json,sys;print(json.load
 export AMIGENT_RATE=${AMIGENT_RATE:-400}
 DIR=Stuff:amigent/beta
 if [ -z "${ARCHIVE:-}" ]; then
-    A=$(MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 bash -c 'ls -t ~/ogles2-build-pi3/release/ogles2-*.lha | grep -v -e -sdk -e -sdl | head -1')
+    if [ -n "${DEMOS:-}" ]; then
+        A=$(MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 bash -c 'ls -t ~/ogles2-build-pi3/release/ogles2-*-demos.lha | head -1')
+    else
+        A=$(MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 bash -c 'ls -t ~/ogles2-build-pi3/release/ogles2-*.lha | grep -v -e -sdk -e -sdl -e -demos | head -1')
+    fi
     ARCHIVE=$(MSYS_NO_PATHCONV=1 wsl -d Ubuntu-24.04 wslpath -w "$A" | tr -d '\r')
 fi
 NAME=$(basename "$(echo "$ARCHIVE" | tr '\\' /)")
@@ -26,9 +31,10 @@ echo "$(date +%T) $NAME: uploading"
 "$CTL" mkdir "$DIR" > /dev/null 2>&1
 ctl put "$ARCHIVE" "$DIR/$NAME" > /dev/null
 ctl put "$HERE/beta/Run-beta" "$DIR/Run-beta" > /dev/null
-echo "$(date +%T) running the examples (about 3 minutes)"
+echo "$(date +%T) running the examples (about 4 minutes)"
 "$CTL" run -t 900 -d "$DIR" "Stuff:amigent/piclock" 2>&1 | grep -E "board revision" | tee "$OUT/card.txt"
-"$CTL" run -t 900 -d "$DIR" "Execute Run-beta $NAME $DIR" 2>&1 | tr -d '\r' | tee "$OUT/run.txt"
+EX=; case $NAME in *-demos.lha) EX=" EXAMPLES=ogles2-demos" ;; esac
+"$CTL" run -t 900 -d "$DIR" "Execute Run-beta $NAME $DIR$EX" 2>&1 | tr -d '\r' | tee "$OUT/run.txt"
 ctl get -r "$DIR/logs" "$OUT/logs" > /dev/null
 echo "$(date +%T) the logs ($OUT/logs):"
 bad=0

@@ -1300,11 +1300,11 @@ the newest last. **Next, in order:**
    through amigent with the PC compiling (`BRIDGE_PORT=6804 bash tests/a1200/p5_run.sh <packages>`, as on
    the Pi 3 card: the Pi 4's amigentd answers on the same address), or `bash tests/a1200/p2_checks.sh`
    through amictl (the Amiga compiling: slower); the speed against 1.3.3's library
-   (`release/dist/ogles2-1.3.3.lha`'s `Libs/ogles2.library`) with `LIB=<library> p5_run.sh m6-1` and
+   (`git show v1.3.3:release/dist/ogles2-1.3.3.lha`'s `Libs/ogles2.library`) with `LIB=<library> p5_run.sh m6-1` and
    `m6-5 ARGS=FRAMES=0`, alternating, or `p2_speed.sh` with `REF_LIB`. dEQP on the Pi 4 is optional before
    P7 (its own baseline is in `DEVELOPMENT_PLAN.md`); `RAMCACHE=1` shortens it (item 6).
 2. **Release 1.4-beta1 from this repository (PD10, below)**: prepared and tested on both cards
-   2026-11-07 (the entries at this section's end), its archives in `release/dist/` beside 1.3.3's.
+   2026-11-07 (the entries at this section's end), its archives in `release/dist/` (1.3.3's in its tag).
    Left: a tag `v1.4-beta1` and a GitHub pre-release on `ladislawv/ogles2pi3`, when the developer
    says so.
 3. **P7: into `ogles2`** (PD8, §8), **postponed by the developer (2026-11-07)**: merge this branch there
@@ -1839,5 +1839,14 @@ were written on, read that section's "Another machine" first.
    screen with 4x MSAA. The logs' other lines are known: ERRSTAT VCMRE (item 4), boing2026's texture 0
    incomplete (1.3.3's too), the examples' mode search refusing two 16-bit modes before a 32-bit one.
    ReadMe ("four programs"), README.md's archive table (1.4-beta1's names, the Pi 3) corrected;
-   `build_release.sh dist` keeps 1.3.3's archives (the reference) and sums every archive in
-   `release/dist/`. The archives built into `release/dist/`. Left: the tag and the pre-release (item 2).
+   `release/dist/` holds only the current release's archives (1.3.3's, the Pi 4's reference, in its tag:
+   `git show v1.3.3:release/dist/ogles2-1.3.3.lha`). The archives built into `release/dist/`.
+   **A demos archive (2026-11-07, asked by the developer):** `ogles2-1.4-beta1-demos.lha` (449 KB), the four
+   examples alone, ready to run where unpacked: `ogles2-demos/` with the programs, `boing2026.txt`,
+   `shaders/` (both Pis' binaries and the records), `libs/ogles2.library`, a ReadMe of its own
+   (`release/ReadMe-Demos`) and the licences; `build_release.sh` makes it beside the others. On the Pi 3
+   card (`DEMOS=1 beta_run.sh`, `Run-beta` with `EXAMPLES=`, which now also runs boing2026 in a window
+   with MSAA): **34 links from `shaders/`, nothing compiled, no closest variant, memory returned**
+   (`tests/a1200/results/beta-20261107-180619`); boing2026 in a window 14.8 fps. On the Pi 4 not run: its
+   files are the user archive's examples (tested there) with the library in `libs/`, as that test had it.
+   Left: the tag and the pre-release (item 2).

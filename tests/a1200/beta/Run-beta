@@ -4,22 +4,27 @@
 ; empty OGLES2Cache:. Each run logs to logs/<name>.txt; beta_run.sh fetches
 ; the logs and checks them: every link from shaders/, nothing compiled, no
 ; closest variant, each context's GPU memory returned.
-;   Execute Run-beta <archive> <drawer>   (CD in that drawer, which holds the archive)
-.key ARCHIVE/A,DIR/A
+;   Execute Run-beta <archive> <drawer> [EXAMPLES=<examples' drawer>]
+; (CD in <drawer>, which holds the archive; EXAMPLES: ogles2/Examples, the
+; demos archive's ogles2-demos, which has its libs/ already)
+.key ARCHIVE/A,DIR/A,EXAMPLES/K
+.def EXAMPLES ogles2/Examples
 FailAt 21
 Avail FLUSH >NIL:
-Delete ogles2 cache logs ALL QUIET >NIL:
+Delete ogles2 ogles2-demos cache logs ALL QUIET >NIL:
 MakeDir cache logs
 LhA -q x <ARCHIVE> >NIL:
-MakeDir ogles2/Examples/libs
-Copy ogles2/Libs/ogles2.library ogles2/Examples/libs/ QUIET
+If NOT EXISTS <EXAMPLES>/libs/ogles2.library
+  MakeDir <EXAMPLES>/libs
+  Copy ogles2/Libs/ogles2.library <EXAMPLES>/libs/ QUIET
+EndIf
 Assign OGLES2Cache: cache
 Delete T:#?.vc4p T:#?.vc4k T:#?.v3dp QUIET >NIL:
 Echo "LIBS: (no ogles2.library, no v3dglslc expected):"
 List LIBS:ogles2.library LIBS:v3dglslc QUICK NOHEAD
-Echo "Examples/ (no v3dglslc expected):"
-List ogles2/Examples ogles2/Examples/libs QUICK NOHEAD
-CD ogles2/Examples
+Echo "<EXAMPLES> (no v3dglslc expected):"
+List <EXAMPLES> <EXAMPLES>/libs QUICK NOHEAD
+CD <EXAMPLES>
 
 Echo "triangle, 6 s"
 SetEnv OGLES2/LogFile <DIR>/logs/triangle.txt
@@ -48,6 +53,9 @@ Run >NIL: boing2026 TOUR NOSOUND
 Wait 75
 Break `Status COM=boing2026` C
 Wait 5
+Echo "boing2026, 150 frames"
+SetEnv OGLES2/LogFile <DIR>/logs/boing2026.txt
+boing2026 NOSOUND FRAMES=150
 Echo "boing2026 NOMSAA, 150 frames"
 SetEnv OGLES2/LogFile <DIR>/logs/boing2026-nomsaa.txt
 boing2026 NOMSAA NOSOUND FRAMES=150
@@ -56,7 +64,7 @@ SetEnv OGLES2/LogFile <DIR>/logs/boing2026-full.txt
 boing2026 FULLSCREEN NOSOUND FRAMES=150
 
 UnSetEnv OGLES2/LogFile
-CD //
+CD <DIR>
 Assign OGLES2Cache:
 Echo "cache (empty expected):"
 List cache QUICK NOHEAD

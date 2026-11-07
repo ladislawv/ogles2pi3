@@ -1,0 +1,65 @@
+ogles2.library @RELEASE@ demos for AmigaOS 3.x on PiStorm
+==========================================================
+
+Four programs that draw with OpenGL ES 2.0 on the Raspberry Pi's GPU,
+through PiStorm and Emu68, ready to run: nothing to install. The library
+is in libs/ beside them, and their shaders come compiled for the Pi 4 and
+the Pi 3 (shaders/), so no shader compiler is needed.
+
+Requirements
+------------
+- An Amiga with a PiStorm and a Raspberry Pi 4B or CM4, or a Raspberry Pi
+  3B or 3B+
+- Emu68 (tested: 1.1.0-beta.1)
+- AmigaOS 3.x (tested: 3.2) with Picasso96 or CyberGraphX
+- A 32-bit RTG screen for the programs in a window (FULLSCREEN opens a
+  screen of its own)
+
+Running them
+------------
+Unpack the archive anywhere and, from a Shell, in its drawer:
+
+    triangle            a turning coloured triangle in a window
+    cube                a textured cube with a depth buffer, in a window
+                        you can resize
+    boingocean          the Boing ball floating on a ray-marched ocean,
+                        all drawn by shaders; drag with the mouse to move
+                        the camera, keys 1 to 4 draw it at 1/1 to 1/4 size
+    boingocean FULLSCREEN
+    boing2026           the 1984 Boing Ball remade: it bounces in a neon
+                        room with a soft shadow, a reflecting floor, bloom,
+                        4x antialiasing and its "boing" on Paula
+    boing2026 TOUR      shows each effect in turn; its keys and options:
+                        boing2026.txt
+
+Close the window or press Esc to quit.
+
+Frame rates at 640 x 480, measured on a PiStorm32-lite in an A1200:
+
+                            Pi 4 (2.2 GHz)   Pi 3B (1.2 GHz)
+    boingocean                   56               19
+    boingocean FULLSCREEN        60               24
+    boing2026                    55               15
+
+If they do not start
+--------------------
+- An older ogles2.library in LIBS: (release 1.3.x, the Pi 4 only) is used
+  instead of the one in libs/: on a Pi 3 the programs then do not start.
+  Install @RELEASE@ (the archive ogles2-@RELEASE@.lha), or rename the old
+  one, then "Avail FLUSH" so the old one leaves memory.
+- The library writes what went wrong to T:ogles2.log (or to the file named
+  by SetEnv OGLES2/LogFile <file>). Please send it with a report.
+
+More
+----
+The library, the shader compiler, the installer and the SDK (headers,
+import libraries, documentation and these programs' sources) are in
+ogles2-@RELEASE@.lha and ogles2-@RELEASE@-sdk.lha.
+
+Licence
+-------
+ogles2.library incorporates PiStorm3D's V3D backend and is distributed
+under the Hyperion MiniGL Open Source License (licences/
+License_MiniGL_Library.txt): for AmigaOS only, with the source published
+(https://github.com/ladislawv/ogles2pi3). The demos are MIT. LICENSE lists
+every part.

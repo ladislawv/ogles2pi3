@@ -11,8 +11,8 @@ AmigaOS 4 has: GLES2 code from Linux, Android, the web or OS4 compiles and runs 
 Amiga.
 
 **Version 1.4 beta 1** (this repository, `ogles2pi3`): the Raspberry Pi 3 beside the Pi 4, which
-behaves as release 1.3.3. Its archives are in [`release/dist/`](release/dist/) beside 1.3.3's,
-the last Pi 4-only release; what the Pi 3 can and cannot do is in
+behaves as release 1.3.3. Its archives are in [`release/dist/`](release/dist/) (1.3.3's, the
+last Pi 4-only release, in its tag `v1.3.3`); what the Pi 3 can and cannot do is in
 [`release/ReadMe`](release/ReadMe).
 
 ## Why it matters
@@ -52,6 +52,7 @@ classic Amiga is solved; what remains is the CPU and OS code.
 | Archive | For | Contents |
 |---|---|---|
 | `ogles2-1.4-beta1.lha` | users | the library, the shader compiler, `Install-ogles2`, `OGLES2Log`, four examples with their Pi 4 and Pi 3 binaries |
+| `ogles2-1.4-beta1-demos.lha` | trying it out | the four examples with their shaders' binaries for both Pis and the library beside them: unpack and run, nothing to install |
 | `ogles2-1.4-beta1-sdk.lha` | Amiga programmers | the same plus the SDK: headers, import libraries for GCC and vbcc, the autodoc `ogles2.doc`, the guide `GettingStarted.txt`, example sources |
 | `ogles2-1.4-beta1-sdk.zip` | cross-development on a PC | the SDK alone |
 | `ogles2-1.4-beta1-sdl.lha` / `.zip` | SDL programmers | SDL2 and SDL3 with the ogles2 backend, the MiniGL SDK SDL links, two examples; unpacks over the SDK |

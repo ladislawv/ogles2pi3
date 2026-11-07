@@ -1,7 +1,8 @@
 #!/bin/bash
 # Builds the release: ~/ogles2-build-pi3/release/ogles2/ (the tree) and the
-# archives ogles2-<version>.lha (users), ogles2-<version>-sdk.lha (with the
-# SDK) and ogles2-<version>-sdk.zip (the SDK alone). Run inside WSL:
+# archives ogles2-<version>.lha (users), ogles2-<version>-demos.lha (the
+# examples, ready to run), ogles2-<version>-sdk.lha (with the SDK) and
+# ogles2-<version>-sdk.zip (the SDK alone). Run inside WSL:
 #   bash release/build_release.sh        (into ~/ogles2-build-pi3/release)
 #   bash release/build_release.sh dist   (and copies them to release/dist/)
 #   bash release/build_release.sh sdl    (also the SDL archive; with dist too)
@@ -173,6 +174,7 @@ echo "examples: GCC and vbcc builds ok"
 
 # ---- the archives
 #   ogles2-<v>.lha      for users: library, compiler, installer, examples
+#   ogles2-<v>-demos.lha the examples alone with the library, nothing to install
 #   ogles2-<v>-sdk.lha  the same with SDK/
 #   ogles2-<v>-sdk.zip  SDK/ alone (with the licences), for cross development on a PC
 # LhA archives: lh5, which every Amiga LhA/LZX/UnArc version reads.
@@ -180,6 +182,17 @@ rm -f "$OUT"/ogles2-$RELEASE*.lha "$OUT"/ogles2-$RELEASE*.zip
 (cd "$OUT" && $LHA -ao5q "ogles2-$RELEASE-sdk.lha" ogles2)
 rm -rf "$W/user" && mkdir -p "$W/user" && cp -r "$R" "$W/user/" && rm -rf "$W/user/ogles2/SDK"
 (cd "$W/user" && $LHA -ao5q "$OUT/ogles2-$RELEASE.lha" ogles2)
+# The demos alone, ready to run where they are unpacked: the examples, their
+# shaders' binaries for both Pis, the library in libs/ (OGLES2Open looks
+# there when LIBS: has none), a ReadMe of their own, the licences.
+DM=$W/demos/ogles2-demos
+rm -rf "$W/demos" && mkdir -p "$DM/libs"
+cp -r "$R/Examples/." "$DM/"
+cp "$R/Libs/ogles2.library" "$DM/libs/"
+sed "s/@RELEASE@/$RELEASE/g" "$HERE/ReadMe-Demos" > "$W/ReadMe-Demos"
+text "$W/ReadMe-Demos" "$DM/ReadMe"
+cp -r "$R/LICENSE" "$R/licences" "$DM/"
+(cd "$W/demos" && $LHA -ao5q "$OUT/ogles2-$RELEASE-demos.lha" ogles2-demos)
 S=$W/zip/ogles2-sdk-$RELEASE
 rm -rf "$W/zip" && mkdir -p "$S" && cp -r "$R/SDK/." "$S/" && cp -r "$R/LICENSE" "$R/licences" "$S/"
 python3 - "$W/zip" "ogles2-sdk-$RELEASE" "$OUT/ogles2-$RELEASE-sdk.zip" <<'EOF'
@@ -258,13 +271,10 @@ fi
 # ---- "dist": the archives into the repository (release/dist/), for those
 # who develop on Windows without WSL's build output at hand. Only on request:
 # each copy is a new 10 MB in the repository's history.
-# 1.3.3's stay beside the 1.4 betas' (PI3_PLAN PD10): the last Pi 4-only
-# release, the reference the Pi 4's checks compare with (PI3_PLAN §10).
-KEEP=1.3.3
+# Only the current release's: older ones are in their tags (1.3.3's, the Pi
+# 4's reference: git show v1.3.3:release/dist/ogles2-1.3.3.lha).
 if [ $DIST = 1 ]; then
-    for f in "$HERE"/dist/ogles2-*.lha "$HERE"/dist/ogles2-*.zip; do
-        case "$(basename "$f")" in ogles2-$KEEP.*|ogles2-$KEEP-*) ;; *) rm -f "$f" ;; esac
-    done
+    rm -f "$HERE"/dist/ogles2-*.lha "$HERE"/dist/ogles2-*.zip
     mkdir -p "$HERE/dist"
     cp "$OUT"/ogles2-$RELEASE*.lha "$OUT"/ogles2-$RELEASE*.zip "$HERE/dist/"
     (cd "$HERE/dist" && sha256sum ogles2-*.lha ogles2-*.zip > SHA256SUMS)
