@@ -1303,10 +1303,10 @@ the newest last. **Next, in order:**
    (`release/dist/ogles2-1.3.3.lha`'s `Libs/ogles2.library`) with `LIB=<library> p5_run.sh m6-1` and
    `m6-5 ARGS=FRAMES=0`, alternating, or `p2_speed.sh` with `REF_LIB`. dEQP on the Pi 4 is optional before
    P7 (its own baseline is in `DEVELOPMENT_PLAN.md`); `RAMCACHE=1` shortens it (item 6).
-2. **Release 1.4-beta1 from this repository (PD10, below)**: prepared 2026-11-07 (the entry at this
-   section's end). Left: the archive's examples on the Pi 3 card (the Pi 4's done), then the archives
-   into `release/dist/` (`build_release.sh dist sdl`), the commit, a tag `v1.4-beta1` and a GitHub
-   pre-release on `ladislawv/ogles2pi3`, each when the developer says so.
+2. **Release 1.4-beta1 from this repository (PD10, below)**: prepared and tested on both cards
+   2026-11-07 (the entries at this section's end), its archives in `release/dist/` beside 1.3.3's.
+   Left: a tag `v1.4-beta1` and a GitHub pre-release on `ladislawv/ogles2pi3`, when the developer
+   says so.
 3. **P7: into `ogles2`** (PD8, §8), **postponed by the developer (2026-11-07)**: merge this branch there
    (the build root back to `~/ogles2-build`), check both cards again, then the release
    (`release/build_release.sh`, one library and one compiler for both, one whole dEQP pass as the
@@ -1828,3 +1828,16 @@ were written on, read that section's "Another machine" first.
    user would, no compiler anywhere: 38 links from `shaders/`, no compile, no closest variant (boingocean
    55.7/59.8 fps, boing2026 55.3); boing2026's "texture 0 sampled while incomplete" is 1.3.3's too.
    Left: item 2 at this section's start.
+   **The archive on the Pi 3 card (2026-11-07):** `bash tests/a1200/beta_run.sh` (new: the archive through
+   amigent, unpacked with the Amiga's LhA, `Libs/ogles2.library` into `Examples/libs/` as the ReadMe says,
+   nothing in `LIBS:`, an empty `OGLES2Cache:`, no compiler anywhere; `tests/a1200/beta/Run-beta` runs
+   triangle, cube, boingocean and boing2026 in a window and full screen, boing2026's TOUR and NOMSAA, and
+   the logs are checked). piclock: board revision 0xa02082 (a Pi 3B), ARM 1,200 MHz, nothing throttled.
+   **28 links, every one a `.vc4p` from `shaders/` (all 12), nothing compiled, no closest variant, every
+   context's GPU memory returned, the cache empty at the end** (`tests/a1200/results/beta-20261107-174215`).
+   boingocean 19.0 fps in a window, 23.7 full screen; boing2026 15.0 without MSAA (window), 19.2 full
+   screen with 4x MSAA. The logs' other lines are known: ERRSTAT VCMRE (item 4), boing2026's texture 0
+   incomplete (1.3.3's too), the examples' mode search refusing two 16-bit modes before a 32-bit one.
+   ReadMe ("four programs"), README.md's archive table (1.4-beta1's names, the Pi 3) corrected;
+   `build_release.sh dist` keeps 1.3.3's archives (the reference) and sums every archive in
+   `release/dist/`. The archives built into `release/dist/`. Left: the tag and the pre-release (item 2).

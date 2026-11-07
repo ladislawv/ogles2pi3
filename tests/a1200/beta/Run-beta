@@ -1,0 +1,63 @@
+; The release archive's examples as a user runs them, nothing installed and
+; no compiler anywhere (docs/PI3_PLAN.md §10, the 1.4 betas): unpacked with
+; LhA, Libs/ogles2.library copied into Examples/libs/ (the ReadMe's way), an
+; empty OGLES2Cache:. Each run logs to logs/<name>.txt; beta_run.sh fetches
+; the logs and checks them: every link from shaders/, nothing compiled, no
+; closest variant, each context's GPU memory returned.
+;   Execute Run-beta <archive> <drawer>   (CD in that drawer, which holds the archive)
+.key ARCHIVE/A,DIR/A
+FailAt 21
+Avail FLUSH >NIL:
+Delete ogles2 cache logs ALL QUIET >NIL:
+MakeDir cache logs
+LhA -q x <ARCHIVE> >NIL:
+MakeDir ogles2/Examples/libs
+Copy ogles2/Libs/ogles2.library ogles2/Examples/libs/ QUIET
+Assign OGLES2Cache: cache
+Delete T:#?.vc4p T:#?.vc4k T:#?.v3dp QUIET >NIL:
+Echo "LIBS: (no ogles2.library, no v3dglslc expected):"
+List LIBS:ogles2.library LIBS:v3dglslc QUICK NOHEAD
+Echo "Examples/ (no v3dglslc expected):"
+List ogles2/Examples ogles2/Examples/libs QUICK NOHEAD
+CD ogles2/Examples
+
+Echo "triangle, 6 s"
+SetEnv OGLES2/LogFile <DIR>/logs/triangle.txt
+Run >NIL: triangle
+Wait 6
+Break `Status COM=triangle` C
+Wait 3
+
+Echo "cube, 6 s"
+SetEnv OGLES2/LogFile <DIR>/logs/cube.txt
+Run >NIL: cube
+Wait 6
+Break `Status COM=cube` C
+Wait 3
+
+Echo "boingocean, 150 frames"
+SetEnv OGLES2/LogFile <DIR>/logs/boingocean.txt
+boingocean FRAMES=150
+Echo "boingocean FULLSCREEN, 150 frames"
+SetEnv OGLES2/LogFile <DIR>/logs/boingocean-full.txt
+boingocean FULLSCREEN FRAMES=150
+
+Echo "boing2026 TOUR, 75 s"
+SetEnv OGLES2/LogFile <DIR>/logs/boing2026-tour.txt
+Run >NIL: boing2026 TOUR NOSOUND
+Wait 75
+Break `Status COM=boing2026` C
+Wait 5
+Echo "boing2026 NOMSAA, 150 frames"
+SetEnv OGLES2/LogFile <DIR>/logs/boing2026-nomsaa.txt
+boing2026 NOMSAA NOSOUND FRAMES=150
+Echo "boing2026 FULLSCREEN, 150 frames"
+SetEnv OGLES2/LogFile <DIR>/logs/boing2026-full.txt
+boing2026 FULLSCREEN NOSOUND FRAMES=150
+
+UnSetEnv OGLES2/LogFile
+CD //
+Assign OGLES2Cache:
+Echo "cache (empty expected):"
+List cache QUICK NOHEAD
+Echo "done"

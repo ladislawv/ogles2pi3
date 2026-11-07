@@ -51,16 +51,16 @@ classic Amiga is solved; what remains is the CPU and OS code.
 
 | Archive | For | Contents |
 |---|---|---|
-| `ogles2-1.3.lha` | users | the library, the shader compiler, `Install-ogles2`, `OGLES2Log`, two examples |
-| `ogles2-1.3-sdk.lha` | Amiga programmers | the same plus the SDK: headers, import libraries for GCC and vbcc, the autodoc `ogles2.doc`, the guide `GettingStarted.txt`, example sources |
-| `ogles2-1.3-sdk.zip` | cross-development on a PC | the SDK alone |
-| `ogles2-1.3-sdl.lha` / `.zip` | SDL programmers | SDL2 and SDL3 with the ogles2 backend, the MiniGL SDK SDL links, two examples; unpacks over the SDK |
+| `ogles2-1.4-beta1.lha` | users | the library, the shader compiler, `Install-ogles2`, `OGLES2Log`, four examples with their Pi 4 and Pi 3 binaries |
+| `ogles2-1.4-beta1-sdk.lha` | Amiga programmers | the same plus the SDK: headers, import libraries for GCC and vbcc, the autodoc `ogles2.doc`, the guide `GettingStarted.txt`, example sources |
+| `ogles2-1.4-beta1-sdk.zip` | cross-development on a PC | the SDK alone |
+| `ogles2-1.4-beta1-sdl.lha` / `.zip` | SDL programmers | SDL2 and SDL3 with the ogles2 backend, the MiniGL SDK SDL links, two examples; unpacks over the SDK |
 
 ### Requirements
 
 | | |
 |---|---|
-| Hardware | An Amiga with a PiStorm and a Raspberry Pi 4B or CM4 |
+| Hardware | An Amiga with a PiStorm and a Raspberry Pi 4B or CM4, or a Raspberry Pi 3B or 3B+ |
 | CPU emulation | Emu68 (tested: 1.1.0-beta.1) |
 | OS | AmigaOS 3.x with Picasso96 or CyberGraphX (tested on 3.2) |
 | Display | A 32-bit RTG screen |

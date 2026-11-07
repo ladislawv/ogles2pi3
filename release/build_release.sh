@@ -258,10 +258,15 @@ fi
 # ---- "dist": the archives into the repository (release/dist/), for those
 # who develop on Windows without WSL's build output at hand. Only on request:
 # each copy is a new 10 MB in the repository's history.
+# 1.3.3's stay beside the 1.4 betas' (PI3_PLAN PD10): the last Pi 4-only
+# release, the reference the Pi 4's checks compare with (PI3_PLAN §10).
+KEEP=1.3.3
 if [ $DIST = 1 ]; then
-    rm -f "$HERE"/dist/ogles2-*.lha "$HERE"/dist/ogles2-*.zip
+    for f in "$HERE"/dist/ogles2-*.lha "$HERE"/dist/ogles2-*.zip; do
+        case "$(basename "$f")" in ogles2-$KEEP.*|ogles2-$KEEP-*) ;; *) rm -f "$f" ;; esac
+    done
     mkdir -p "$HERE/dist"
     cp "$OUT"/ogles2-$RELEASE*.lha "$OUT"/ogles2-$RELEASE*.zip "$HERE/dist/"
-    (cd "$HERE/dist" && sha256sum ogles2-$RELEASE*.lha ogles2-$RELEASE*.zip > SHA256SUMS)
+    (cd "$HERE/dist" && sha256sum ogles2-*.lha ogles2-*.zip > SHA256SUMS)
     echo "copied to $HERE/dist"
 fi

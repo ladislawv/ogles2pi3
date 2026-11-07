@@ -130,7 +130,8 @@ nothing installed (the examples run with `ogles2.library`, and `v3dglslc` if the
 their drawer or its `libs/`: `OGLES2Open()` and the compiler look there when `LIBS:` has
 none), and once installed with `Execute Install-ogles2 ALL` (the station cannot answer the
 script's `Ask`s: its commands' input is empty, which answers no to each). §13 has the 1.3
-run.
+run. `bash tests/a1200/beta_run.sh` does the first through amigent on either card and checks
+the logs: every program linked from `Examples/shaders/`, nothing compiled (PI3_PLAN §10, 1.4-beta1).
 
 ### The remote test station
 
