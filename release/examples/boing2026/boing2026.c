@@ -46,6 +46,7 @@
 #include <proto/graphics.h>
 #include <proto/ogles2.h>
 #include "boing2026_shaders.h"
+#include "../wbstart.h"
 
 struct IntuitionBase *IntuitionBase;
 struct Device *TimerBase;
@@ -802,7 +803,7 @@ static double mark(BOOL on)
     return d;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     static const GLfloat tri[] = {-1, -1, 3, -1, -1, 3};
     static char title[120];
@@ -839,7 +840,8 @@ int main(void)
     memset(&rp, 0, sizeof(rp));
     memset(&fp, 0, sizeof(fp));
 
-    rda = ReadArgs((STRPTR) "WIDTH/N,HEIGHT/N,FRAMES/N,NOMSAA/S,NOSOUND/S,FULLSCREEN/S,TIMING/S,SHOWMAP/S,VSYNC/S,TOUR/S,SCALE/N", args, NULL);
+    wb_init(argc, argv, "boing2026");
+    rda = wb_readargs("WIDTH/N,HEIGHT/N,FRAMES/N,NOMSAA/S,NOSOUND/S,FULLSCREEN/S,TIMING/S,SHOWMAP/S,VSYNC/S,TOUR/S,SCALE/N", args);
     if (!rda) {
         printf("usage: boing2026 [WIDTH=w] [HEIGHT=h] [FRAMES=n] [NOMSAA] [NOSOUND] [FULLSCREEN] [TIMING] [SHOWMAP] "
                "[VSYNC] [TOUR] [SCALE=percent]\n");
@@ -860,7 +862,7 @@ int main(void)
     tour = args[9] != 0;
     if (args[10])
         scale = *(LONG *)args[10];
-    FreeArgs(rda);
+    wb_freeargs(rda);
 
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary((STRPTR) "intuition.library", 39))) {
         printf("needs intuition.library 39\n");
@@ -923,8 +925,9 @@ int main(void)
 
     /* What the effects need, said once. */
     ext = (const char *)glGetString(GL_EXTENSIONS);
-    printf("Boing 2026 on %s, %lux%lu, MSAA %s\n", (const char *)glGetString(GL_RENDERER), (unsigned long)width,
-           (unsigned long)height, msaa ? "4x" : "off");
+    if (!wb_started) /* from Workbench, a console window only for errors */
+        printf("Boing 2026 on %s, %lux%lu, MSAA %s\n", (const char *)glGetString(GL_RENDERER), (unsigned long)width,
+               (unsigned long)height, msaa ? "4x" : "off");
     {
         static const char *need[] = {"OES_depth_texture", "OES_standard_derivatives", "EXT_discard_framebuffer"};
         for (i = 0; i < 3; i++)
@@ -1011,7 +1014,8 @@ int main(void)
         scale = 100;
     sw = width * scale / 100;
     sh = height * scale / 100;
-    printf("render scale %d%%: the room at %dx%d\n", scale, sw, sh);
+    if (!wb_started)
+        printf("render scale %d%%: the room at %dx%d\n", scale, sw, sh);
     if (!make_shadow(0) || !make_shadow(1) || !make_rt(&scene_rt, sw, sh) || !make_rt(&refl, sw / 2, sh / 2) ||
         !make_rt(&bloom_a, sw / 4, sh / 4) || !make_rt(&bloom_b, sw / 4, sh / 4))
         goto out;
@@ -1246,7 +1250,7 @@ int main(void)
         if (max_frames && frames >= max_frames)
             break;
     }
-    if (frames) {
+    if (frames && (!wb_started || max_frames)) { /* from Workbench: only when FRAMES asked for it */
         double s = now_s() - start;
         printf("%lu frames in %.1f s: %.2f fps at %lux%lu\n", frames, s, frames / s, (unsigned long)width,
                (unsigned long)height);

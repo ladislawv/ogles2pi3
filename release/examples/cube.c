@@ -21,6 +21,7 @@
 #include <proto/intuition.h>
 #include <proto/ogles2.h>
 #include "cube_shaders.h"
+#include "wbstart.h"
 
 struct IntuitionBase *IntuitionBase;
 
@@ -141,7 +142,7 @@ static BOOL events(struct Window *w, BOOL *resized)
     return go;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     /* Each face: four corners (x, y, z, s, t), its own texture coordinates. */
     static const GLfloat vertices[] = {
@@ -163,6 +164,7 @@ int main(void)
     BOOL resized = FALSE;
     int i, rc = 20;
 
+    wb_init(argc, argv, "cube");
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary((STRPTR) "intuition.library", 39))) {
         printf("needs intuition.library 39\n");
         return 20;

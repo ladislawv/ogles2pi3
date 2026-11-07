@@ -17,6 +17,7 @@
 #include <proto/intuition.h>
 #include <proto/ogles2.h>
 #include "triangle_shaders.h"
+#include "wbstart.h"
 
 struct IntuitionBase *IntuitionBase;
 
@@ -74,7 +75,7 @@ static BOOL events(struct Window *w)
     return go;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     /* x, y, then r, g, b, for each corner */
     static const GLfloat vertices[] = {
@@ -90,6 +91,7 @@ int main(void)
     float angle = 0.0f;
     int rc = 20;
 
+    wb_init(argc, argv, "triangle");
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary((STRPTR) "intuition.library", 39))) {
         printf("needs intuition.library 39\n");
         return 20;
@@ -114,7 +116,8 @@ int main(void)
         goto out;
     }
     aglMakeCurrent(ctx);
-    printf("%s, %s\n", (const char *)glGetString(GL_RENDERER), (const char *)glGetString(GL_VERSION));
+    if (!wb_started) /* from Workbench, a console window only for errors */
+        printf("%s, %s\n", (const char *)glGetString(GL_RENDERER), (const char *)glGetString(GL_VERSION));
     if (!(prog = link_program()))
         goto out;
     angle_loc = glGetUniformLocation(prog, "u_angle");

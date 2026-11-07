@@ -15,16 +15,16 @@ VCFLAGS ?= -c99 -cpu=68020 -fpu=68881 -O1
 
 all: triangle cube boingocean
 
-triangle: triangle.c triangle_shaders.h
+triangle: triangle.c triangle_shaders.h wbstart.h
 	$(CC) $(CFLAGS) -I../include triangle.c -L../lib -logles2 -o $@
 
-cube: cube.c cube_shaders.h
+cube: cube.c cube_shaders.h wbstart.h
 	$(CC) $(CFLAGS) -I../include cube.c -L../lib -logles2 -lm881 -o $@
 
-boingocean: boingocean.c boingocean_shaders.h
+boingocean: boingocean.c boingocean_shaders.h wbstart.h
 	$(CC) $(CFLAGS) -I../include boingocean.c -L../lib -logles2 -lm881 -o $@
 
-vbcc: triangle.c triangle_shaders.h cube.c cube_shaders.h boingocean.c boingocean_shaders.h
+vbcc: triangle.c triangle_shaders.h cube.c cube_shaders.h boingocean.c boingocean_shaders.h wbstart.h
 	$(VC) $(VCFLAGS) -I../include triangle.c ../lib/ogles2.lib -lamiga -lm881 -o triangle
 	$(VC) $(VCFLAGS) -I../include cube.c ../lib/ogles2.lib -lamiga -lm881 -o cube
 	$(VC) $(VCFLAGS) -I../include boingocean.c ../lib/ogles2.lib -lamiga -lm881 -o boingocean

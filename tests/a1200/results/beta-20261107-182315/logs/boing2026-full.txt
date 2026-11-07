@@ -1,0 +1,26 @@
+   156 close (count 0)
+   157 open (count 1)
+   158 display: mode 0x50031200 has pixel format 9, needs 32-bit BGRA or RGBA
+   159 aglCreateContext2: failed, error 4
+   160 display: mode 0x50031201 has pixel format 10, needs 32-bit BGRA or RGBA
+   161 aglCreateContext2: failed, error 4
+   162 display: render bitmap at 0x395E9000, 2560 bytes a row: in memory the GPU reaches
+   163 display: fullscreen, 640x480, BGRA
+   164 aglCreateContext2: context 0x093ADBBC, 640x480
+   165 glLinkProgram: PROGDIR:shaders/b56f2c8490fb9919273d3526.vc4p (6 variants, 32000 bytes of code)
+   166 glLinkProgram: PROGDIR:shaders/5c2099f534924f5643bb4e21.vc4p (4 variants, 46280 bytes of code)
+   167 glLinkProgram: PROGDIR:shaders/869b8c574e15ca111268d3bb.vc4p (5 variants, 1704 bytes of code)
+   168 glLinkProgram: PROGDIR:shaders/25e2829ecb32c8c5720cf187.vc4p (5 variants, 1368 bytes of code)
+   169 glLinkProgram: PROGDIR:shaders/8e8e58e549d79085f8ad5002.vc4p (4 variants, 704 bytes of code)
+   170 glLinkProgram: PROGDIR:shaders/a96c30151df51cf156068de8.vc4p (5 variants, 3784 bytes of code)
+   171 job: clear 3 load 0 store 2, depth 0xFFFFFF stencil 0
+   172 job: clear 3 load 0 store 2, depth 0xFFFFFF stencil 0
+   173 texture 0 sampled while incomplete or not stored: it reads black (logged once a texture)
+   174 texture 3 changed after a draw used it in the same frame: renamed (logged once)
+   175 aglDestroyContext: context 0x093ADBBC: freeing
+   176 device: context freed, 0 bytes of GPU memory still in use
+   177 aglDestroyContext: context 0x093ADBBC (1500 frames, 0 dropped, 0 binning blocks added)
+   178 timing: 1500 jobs, each on average: 4847 us of CPU work before its flush, 87 us waiting for binning, 4088 us for the render
+   179 timing: and in each flush 118 us building the render list, 49 us for the CPU cache before the GPU, 1 us after
+   180 timing: 150 swaps, 52135 us from one to the next on average, 3 us of it presenting
+   181 timing: per frame 19 draws, 5350 us in them; in all 0 ms in glBuffer(Sub)Data, 5 ms in glTex(Sub)Image2D

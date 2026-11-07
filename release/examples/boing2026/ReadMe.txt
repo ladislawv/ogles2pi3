@@ -14,9 +14,11 @@ do at all: this needs shaders.
 
 Running it
 ----------
-Needs ogles2.library 1.3 (in LIBS:, or in libs/ beside the program) and a
-32-bit RTG screen. The shaders come compiled (shaders/), so the shader
-compiler is not needed.
+Needs ogles2.library 1.3, on a Raspberry Pi 3 1.4 (in LIBS:, or in libs/
+beside the program) and a 32-bit RTG screen. The shaders come compiled
+(shaders/), so the shader compiler is not needed. From Workbench,
+double-click its icon: the options below are its ToolTypes, switched off in
+brackets ("(TOUR)": take the brackets away to switch one on).
 
     boing2026 [WIDTH=w] [HEIGHT=h] [FRAMES=n] [NOMSAA] [NOSOUND] [FULLSCREEN]
               [TIMING] [SHOWMAP] [VSYNC] [TOUR] [SCALE=percent]

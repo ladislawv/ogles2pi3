@@ -1,0 +1,30 @@
+    82 close (count 0)
+    83 open (count 1)
+    84 display: render bitmap at 0x09E6D0AC, 2560 bytes a row: in memory the GPU reaches
+    85 display: application window, 640x480, BGRA
+    86 aglCreateContext2: context 0x0960A8EC, 640x480
+    87 glLinkProgram: PROGDIR:shaders/b56f2c8490fb9919273d3526.vc4p (6 variants, 32000 bytes of code)
+    88 glLinkProgram: PROGDIR:shaders/5c2099f534924f5643bb4e21.vc4p (4 variants, 46280 bytes of code)
+    89 glLinkProgram: PROGDIR:shaders/869b8c574e15ca111268d3bb.vc4p (5 variants, 1704 bytes of code)
+    90 glLinkProgram: PROGDIR:shaders/25e2829ecb32c8c5720cf187.vc4p (5 variants, 1368 bytes of code)
+    91 glLinkProgram: PROGDIR:shaders/8e8e58e549d79085f8ad5002.vc4p (4 variants, 704 bytes of code)
+    92 glLinkProgram: PROGDIR:shaders/a96c30151df51cf156068de8.vc4p (5 variants, 3784 bytes of code)
+    93 job: clear 3 load 0 store 2, depth 0xFFFFFF stencil 0
+    94 job: clear 3 load 0 store 2, depth 0xFFFFFF stencil 0
+    95 texture 0 sampled while incomplete or not stored: it reads black (logged once a texture)
+    96 job: the display's bitmap (0x09E6D0AC) does not start on 16 bytes or is outside the GPU's memory: drawn into a buffer of the context's and copied (logged once a context)
+    97 job: the GPU reports ERRSTAT 0x00007000 after it, 0x00005000 after its binning (logged 8 times)
+    98 job: the GPU reports ERRSTAT 0x00007000 after it, 0x00005000 after its binning (logged 8 times)
+    99 job: the GPU reports ERRSTAT 0x00007000 after it, 0x00005000 after its binning (logged 8 times)
+   100 job: the GPU reports ERRSTAT 0x00007000 after it, 0x00005000 after its binning (logged 8 times)
+   101 job: the GPU reports ERRSTAT 0x00007000 after it, 0x00005000 after its binning (logged 8 times)
+   102 job: the GPU reports ERRSTAT 0x00007000 after it, 0x00005000 after its binning (logged 8 times)
+   103 job: the GPU reports ERRSTAT 0x00007000 after it, 0x00005000 after its binning (logged 8 times)
+   104 job: the GPU reports ERRSTAT 0x00007000 after it, 0x00005000 after its binning (logged 8 times)
+   105 aglDestroyContext: context 0x0960A8EC: freeing
+   106 device: context freed, 0 bytes of GPU memory still in use
+   107 aglDestroyContext: context 0x0960A8EC (11343 frames, 0 dropped, 0 binning blocks added)
+   108 timing: 11343 jobs, each on average: 5051 us of CPU work before its flush, 103 us waiting for binning, 5083 us for the render
+   109 timing: and in each flush 158 us building the render list, 47 us for the CPU cache before the GPU, 10 us after
+   110 timing: 1495 swaps, 50340 us from one to the next on average, 2189 us of it presenting
+   111 timing: per frame 14 draws, 4333 us in them; in all 0 ms in glBuffer(Sub)Data, 5 ms in glTex(Sub)Image2D

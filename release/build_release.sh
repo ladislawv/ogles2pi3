@@ -95,7 +95,7 @@ cp "$B/vbcc/ogles2.lib" "$R/SDK/lib/"
 sed 's/\r$//' "$HERE/ogles2.doc" | awk 'NR > 1 && /^ogles2\.library\/[^ ]+ +ogles2\.library\// {printf "\f"} {print}' \
     > "$R/SDK/doc/ogles2.doc"
 text "$HERE/GettingStarted.txt" "$R/SDK/doc/GettingStarted.txt"
-for f in Makefile triangle.c triangle_shaders.h cube.c cube_shaders.h boingocean.c boingocean_shaders.h; do
+for f in Makefile wbstart.h triangle.c triangle_shaders.h cube.c cube_shaders.h boingocean.c boingocean_shaders.h; do
     text "$HERE/examples/$f" "$R/SDK/examples/$f"
 done
 # Boing 2026: a project of its own (its shaders' sources in shaders/)
@@ -166,6 +166,9 @@ done
 make -C "$W/sdk/examples/boing2026" CC="$TC/bin/m68k-amigaos-gcc" boing2026 >> "$W/examples-gcc.txt"
 $TC/bin/m68k-amigaos-strip -o "$R/Examples/boing2026" "$W/sdk/examples/boing2026/boing2026" && chmod 755 "$R/Examples/boing2026"
 text "$B26/ReadMe.txt" "$R/Examples/boing2026.txt"
+# Workbench icons (drawn by make_icons.py): the programs read their ToolTypes (examples/wbstart.h)
+python3 "$HERE/make_icons.py" examples "$R/Examples"
+python3 "$HERE/make_icons.py" drawer "$R" Examples
 mkdir -p "$W/sdk-vbcc" && cp -r "$R/SDK/." "$W/sdk-vbcc/"
 PATH=$VBCC/bin:$PATH VBCC=$VBCC make -C "$W/sdk-vbcc/examples" vbcc \
     VC="$VBCC/bin/vc +aos68k" VCFLAGS="-c99 -cpu=68020 -fpu=68881 -O1 -I$TC/m68k-amigaos/ndk-include" \
@@ -192,7 +195,9 @@ cp "$R/Libs/ogles2.library" "$DM/libs/"
 sed "s/@RELEASE@/$RELEASE/g" "$HERE/ReadMe-Demos" > "$W/ReadMe-Demos"
 text "$W/ReadMe-Demos" "$DM/ReadMe"
 cp -r "$R/LICENSE" "$R/licences" "$DM/"
-(cd "$W/demos" && $LHA -ao5q "$OUT/ogles2-$RELEASE-demos.lha" ogles2-demos)
+python3 "$HERE/make_icons.py" demos "$DM"
+python3 "$HERE/make_icons.py" drawer "$W/demos" ogles2-demos
+(cd "$W/demos" && $LHA -ao5q "$OUT/ogles2-$RELEASE-demos.lha" ogles2-demos ogles2-demos.info)
 S=$W/zip/ogles2-sdk-$RELEASE
 rm -rf "$W/zip" && mkdir -p "$S" && cp -r "$R/SDK/." "$S/" && cp -r "$R/LICENSE" "$R/licences" "$S/"
 python3 - "$W/zip" "ogles2-sdk-$RELEASE" "$OUT/ogles2-$RELEASE-sdk.zip" <<'EOF'

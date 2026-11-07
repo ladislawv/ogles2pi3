@@ -47,6 +47,7 @@
 #include <proto/graphics.h>
 #include <proto/ogles2.h>
 #include "boingocean_shaders.h"
+#include "wbstart.h"
 
 struct IntuitionBase *IntuitionBase;
 struct Device *TimerBase;
@@ -321,7 +322,7 @@ static void events(struct Window *w, struct input *in)
     }
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     static const GLfloat tri[] = {-1, -1, 3, -1, -1, 3}; /* covers the screen */
     static char title[80];
@@ -341,7 +342,8 @@ int main(void)
     int w0 = 640, h0 = 480, rc = 20;
     BOOL timer_open = FALSE;
 
-    rda = ReadArgs((STRPTR) "WIDTH/N,HEIGHT/N,SCALE/N,FRAMES/N,FULLSCREEN/S", args, NULL);
+    wb_init(argc, argv, "boingocean");
+    rda = wb_readargs("WIDTH/N,HEIGHT/N,SCALE/N,FRAMES/N,FULLSCREEN/S", args);
     if (!rda) {
         printf("usage: boingocean [WIDTH=w] [HEIGHT=h] [SCALE=1..4] [FRAMES=n] [FULLSCREEN]\n");
         return 20;
@@ -355,7 +357,7 @@ int main(void)
     if (args[3])
         max_frames = *(LONG *)args[3];
     full = args[4] != 0;
-    FreeArgs(rda);
+    wb_freeargs(rda);
 
     if (!(IntuitionBase = (struct IntuitionBase *)OpenLibrary((STRPTR) "intuition.library", 39))) {
         printf("needs intuition.library 39\n");
@@ -539,7 +541,7 @@ int main(void)
         if (max_frames && frames >= max_frames)
             break;
     }
-    if (frames) {
+    if (frames && (!wb_started || max_frames)) { /* from Workbench: only when FRAMES asked for it */
         double s = now_s() - start;
         printf("%lu frames in %.1f s: %.2f fps at %dx%d (%s %lux%lu)\n", frames, s, frames / s, target_w, target_h,
                full ? "screen" : "window", (unsigned long)width, (unsigned long)height);

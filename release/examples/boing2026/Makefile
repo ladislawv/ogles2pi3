@@ -26,7 +26,7 @@ PAIRS    := ball.vert ball.frag room.vert room.frag screen.vert blur.frag \
 
 all: boing2026
 
-boing2026: boing2026.c boing2026_shaders.h
+boing2026: boing2026.c boing2026_shaders.h ../wbstart.h
 	$(CC) $(CFLAGS) -I$(SDK)/include boing2026.c -L$(SDK)/lib -logles2 -lm881 -o $@
 
 header: $(SHADERS) tools/embed_shaders.py

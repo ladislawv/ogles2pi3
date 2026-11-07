@@ -1849,4 +1849,19 @@ were written on, read that section's "Another machine" first.
    with MSAA): **34 links from `shaders/`, nothing compiled, no closest variant, memory returned**
    (`tests/a1200/results/beta-20261107-180619`); boing2026 in a window 14.8 fps. On the Pi 4 not run: its
    files are the user archive's examples (tested there) with the library in `libs/`, as that test had it.
+   **Workbench icons for the examples (2026-11-07, asked by the developer):** `release/make_icons.py` draws
+   them (no image files, no libraries; run by `build_release.sh`): each a 46 x 46 GlowIcons image (AmigaOS
+   3.5 and newer, a glow when selected) and a 4-colour one in the Workbench's first pens for older
+   systems; the programs are tools (32 KB of stack, their options as ToolTypes in brackets), the texts
+   projects for MultiView, `Examples.info` and `ogles2-demos.info` drawers. The programs start from
+   Workbench: `release/examples/wbstart.h` (in the SDK beside them) makes the icon's ToolTypes their
+   Shell arguments (those in brackets left out) and sends their output to a console window that opens
+   only when something is printed; the start-up lines and the frame count (without FRAMES) are not
+   printed from Workbench. On the Pi 3 card (CaffeineOS, Directory Opus Magellan as the desktop, icon.library
+   51.4) through `WBRun`: boingocean with a test icon (`FRAMES=100`, `(FULLSCREEN)`) ran in a window and
+   printed its 100 frames in the console window; boing2026 and boingocean from their own icons ran and quit
+   with Esc without a window of messages, linking from `shaders/`, memory returned; a Directory Opus
+   lister drew the icons in colour. The Shell's way again with the changed programs
+   (`DEMOS=1 beta_run.sh`): 34 links, nothing compiled (`tests/a1200/results/beta-20261107-182315`).
+   Not seen: the 4-colour images on a system without GlowIcons; the programs from Workbench on the Pi 4.
    Left: the tag and the pre-release (item 2).
