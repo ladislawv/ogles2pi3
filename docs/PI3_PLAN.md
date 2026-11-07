@@ -1303,10 +1303,9 @@ the newest last. **Next, in order:**
    (`git show v1.3.3:release/dist/ogles2-1.3.3.lha`'s `Libs/ogles2.library`) with `LIB=<library> p5_run.sh m6-1` and
    `m6-5 ARGS=FRAMES=0`, alternating, or `p2_speed.sh` with `REF_LIB`. dEQP on the Pi 4 is optional before
    P7 (its own baseline is in `DEVELOPMENT_PLAN.md`); `RAMCACHE=1` shortens it (item 6).
-2. **Release 1.4-beta1 from this repository (PD10, below)**: prepared and tested on both cards
-   2026-11-07 (the entries at this section's end), its archives in `release/dist/` (1.3.3's in its tag).
-   Left: a tag `v1.4-beta1` and a GitHub pre-release on `ladislawv/ogles2pi3`, when the developer
-   says so.
+2. (Done 2026-11-07.) **Release 1.4-beta1 from this repository (PD10, below)**: tested on both cards,
+   its archives in `release/dist/` (1.3.3's in its tag), tag `v1.4-beta1` (a14831e) and a GitHub
+   pre-release on `ladislawv/ogles2pi3` with the six archives and `SHA256SUMS`; nothing in `ogles2`.
 3. **P7: into `ogles2`** (PD8, §8), **postponed by the developer (2026-11-07)**: merge this branch there
    (the build root back to `~/ogles2-build`), check both cards again, then the release
    (`release/build_release.sh`, one library and one compiler for both, one whole dEQP pass as the
@@ -1864,4 +1863,6 @@ were written on, read that section's "Another machine" first.
    lister drew the icons in colour. The Shell's way again with the changed programs
    (`DEMOS=1 beta_run.sh`): 34 links, nothing compiled (`tests/a1200/results/beta-20261107-182315`).
    Not seen: the 4-colour images on a system without GlowIcons; the programs from Workbench on the Pi 4.
-   Left: the tag and the pre-release (item 2).
+   **Published (2026-11-07):** tag `v1.4-beta1` on a14831e and the GitHub pre-release "ogles2 1.4 beta 1" on
+   `ladislawv/ogles2pi3` (private: seen only by those with access), its assets the six archives of
+   `release/dist/` and `SHA256SUMS`, uploaded through GitHub's API (no `gh` on the build machine).
