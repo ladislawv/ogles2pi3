@@ -1287,7 +1287,7 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 
 ## 10. Status and next steps
 
-**Where it stands, for whoever picks it up (2026-11-07, branch `pi3-p5`, pushed):** the Pi 3 side is
+**Where it stands, for whoever picks it up (2026-11-07, branch `main`; `pi3-p5` merged into it):** the Pi 3 side is
 finished and tested on the card. P5 (the VC4 backend) is done; P6 on the Pi 3 card is done: dEQP-GLES2's
 whole list 17,047 of 17,165 pass, its 18 failures all in Mesa vc4's own baseline (item 6 below); every
 regression package without a FAIL; Quake III 32.8 fps, glmark2 70; glCopyTex* and glGenerateMipmap on

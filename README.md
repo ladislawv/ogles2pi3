@@ -10,10 +10,46 @@ It is the same API that phones, browsers and game engines use, and the same libr
 AmigaOS 4 has: GLES2 code from Linux, Android, the web or OS4 compiles and runs on the classic
 Amiga.
 
-**Version 1.4 beta 1** (this repository, `ogles2pi3`): the Raspberry Pi 3 beside the Pi 4, which
-behaves as release 1.3.3. Its archives are in [`release/dist/`](release/dist/) (1.3.3's, the
-last Pi 4-only release, in its tag `v1.3.3`); what the Pi 3 can and cannot do is in
-[`release/ReadMe`](release/ReadMe).
+## Version 1.4 beta 1: the Raspberry Pi 3 joins the Pi 4
+
+Up to release 1.3.3, ogles2 needed a Raspberry Pi 4 in the PiStorm. Version 1.4 also runs on a
+**Raspberry Pi 3** (3B and 3B+), whose VideoCore IV is an older and quite different GPU. The
+library now carries a back end for each GPU, and the shader compiler produces code for both. On a
+Pi 4 nothing has changed: the same tests, the same pictures and the same speed as 1.3.3.
+
+**One library, one program, both Pis.** `ogles2.library` finds out which Pi it is running on
+when a program opens it. The program doesn't need to know: there is no Pi 3 build, no `#ifdef`,
+no second set of calls. The same 68k executable, built once against the same SDK, runs on either
+card. Both offer the same OpenGL ES 2.0 API, the same GLSL ES 1.00 shaders and the same 33
+extensions. Where the Pi 3's GPU lacks something the Pi 4 has, the library makes up for it in
+the shaders it compiles. Anisotropic filtering, LOD bias, mirrored-clamp wrapping, several render
+targets and many blending, texture and vertex formats all work the same way from the program's
+side. Khronos' dEQP-GLES2 suite passes 17,047 of its 17,165 cases on the Pi 3. The 18 failures
+also fail with Mesa's own VideoCore IV driver on Linux on the same Pi.
+
+**What is different.** The Pi 3 is the slower machine, in its GPU and above all in its CPU, which
+runs Emu68's 68k emulation. Quake III's timedemo runs at about 33 fps against 89 on a Pi 4 at
+2.2 GHz, glmark2 scores 70, and the demos run at 15 to 24 fps instead of 55 to 60. Its limits
+are smaller too: textures and framebuffers up to 2048 x 2048 (4096 on the Pi 4) and 8 vertex
+attributes (16). A program that asks `glGetIntegerv` for its limits, rather than assuming them,
+runs on both. The full list of differences is in the SDK's `ogles2.doc`.
+
+**Developing for both.** Write and test your program on whichever Pi you have; it will run on
+the other. The one thing to plan for is shader binaries, if your users shouldn't need the 19 MB
+compiler. Each Pi needs its own: a `.v3dp` file for the Pi 4, and a `.vc4p` with its `.vc4k` for
+the Pi 3. All of them are made from the same GLSL, named by the same hash, and kept side by side
+in your program's `shaders/` drawer, where the library picks the right one. On the Pi 3, a shader
+also needs a variant for each combination of blending and formats it draws with. So run your
+program once on a Pi 3 with the compiler installed, through every effect it has, then take the
+files from `OGLES2Cache:`. `GettingStarted.txt` (section 5) walks through it. The included demos
+are built exactly this way: they carry both sets and run on either Pi with no compiler
+installed.
+
+**Getting it.** The archives are in [`release/dist/`](release/dist/) and on the
+[`v1.4-beta1` pre-release](https://github.com/ladislawv/ogles2pi3/releases/tag/v1.4-beta1). To
+just try it, take `ogles2-1.4-beta1-demos.lha`: unpack it, open the drawer and double-click a
+demo. Nothing needs installing. 1.3.3, the last Pi 4-only release, is in the tag `v1.3.3`. This
+is a beta: please report what you find, with the library's log (`release/ReadMe`, "Logging").
 
 ## Why it matters
 
