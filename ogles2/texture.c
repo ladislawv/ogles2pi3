@@ -1278,6 +1278,15 @@ void ogles2_texture_params_copy(struct OGLES2Texture *t, struct OGLES2TexParams 
     t->pver++;
 }
 
+/* After ogles2_texture_params_copy: one level sampled, LINEAR (a mipmap level
+ * drawn from the level above: copy.c). */
+void ogles2_texture_params_level(struct OGLES2Texture *t, int level)
+{
+    t->min_filter = t->mag_filter = GL_LINEAR;
+    t->base_level = t->max_level = level;
+    t->pver++;
+}
+
 void ogles2_texture_params_restore(struct OGLES2Texture *t, const struct OGLES2TexParams *saved)
 {
     t->min_filter = saved->min_filter;
@@ -1889,7 +1898,7 @@ static BOOL generate_tfu(struct OGLES2Context *ctx, struct OGLES2TexState *ts, s
         ogles2_job_flush(user, FALSE);
         ogles2_job_finish(user);
     }
-    r = ogles2_backend->tex_generate(t, n);
+    r = ogles2_backend->tex_generate(ctx, t, n);
     if (r) {
         if (r == -2)
             ogles2_log("glGenerateMipmap: the TFU did not finish (texture %ld, %ldx%ld): "
@@ -1900,7 +1909,8 @@ static BOOL generate_tfu(struct OGLES2Context *ctx, struct OGLES2TexState *ts, s
     f->blank &= ~made;
     if (!ts->logged_tfu) {
         ts->logged_tfu = TRUE;
-        ogles2_log("glGenerateMipmap: the TFU (texture %ld, %ldx%ld, %ld levels; logged once)",
+        ogles2_log(ogles2_backend->device == 21 ? "glGenerateMipmap: drawn on the GPU (texture %ld, %ldx%ld, %ld levels; logged once)"
+                                                : "glGenerateMipmap: the TFU (texture %ld, %ldx%ld, %ld levels; logged once)",
                    (ULONG)t->name, (ULONG)f->w[0], (ULONG)f->h[0], (ULONG)n);
     }
     return TRUE;

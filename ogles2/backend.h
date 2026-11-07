@@ -168,7 +168,7 @@ struct OGLES2Backend
     int (*tex_levels)(const struct OGLES2Texture *t);
     BOOL (*tex_holds)(const struct OGLES2Texture *t, int k, int l);
     BOOL (*tex_can_generate)(const struct OGLES2Texture *t, int n);
-    int (*tex_generate)(struct OGLES2Texture *t, int n);
+    int (*tex_generate)(struct OGLES2Context *ctx, struct OGLES2Texture *t, int n);
     int (*tex_from_raster)(struct OGLES2Context *ctx, struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w,
                            UWORD h, BOOL bgra);
     /* Framebuffer targets: a depth or stencil renderbuffer's storage (mem,

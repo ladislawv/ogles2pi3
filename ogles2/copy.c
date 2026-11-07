@@ -27,6 +27,37 @@
 #include "ogles2_internal.h"
 #include "backend.h"
 
+/* glGenerateMipmap on a GPU without a TFU (VC4, as Mesa's vc4): levels 1 to n-1 of a
+ * 2D texture, each drawn from the level above, LINEAR, a job a level (the program,
+ * the target and the order as a copy's). TRUE: all drawn, rendered in time like any
+ * render to texture. FALSE at a level it cannot: the caller makes them on the CPU. */
+BOOL ogles2_copy_levels(struct OGLES2Context *ctx, struct OGLES2Texture *t, int n)
+{
+    static const GLfloat whole[4] = {0.0f, 0.0f, 1.0f, 1.0f};
+    struct OGLES2Framebuffer *saved = ctx->draw_fb, *fb;
+    struct OGLES2TexParams params;
+    struct OGLES2Surface surf;
+    BOOL ok = TRUE;
+    int l;
+    ogles2_texture_params_copy(t, &params);
+    for (l = 1; l < n && ok; l++) {
+        UWORD w, h;
+        GLenum f, ty;
+        ok = ogles2_texture_image(t, 0, l, &w, &h, &f, &ty) && ogles2_backend->tex_surface(ctx, t, 0, l, &surf) &&
+             (fb = ogles2_fbo_copy_target(ctx, t, 0, l)) != 0;
+        if (ok) {
+            ogles2_texture_params_level(t, l - 1);
+            ctx->draw_fb = fb;
+            ogles2_fb_update(ctx);
+            ok = ogles2_draw_copy(ctx, t, whole, 0, 0, w, h);
+        }
+    }
+    ctx->draw_fb = saved;
+    ogles2_fb_update(ctx);
+    ogles2_texture_params_restore(t, &params);
+    return ok;
+}
+
 BOOL ogles2_copy_gpu(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int level, GLint xoffset,
                      GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height)
 {

@@ -186,6 +186,8 @@ void ogles2_vc4_sampler_emu(const struct OGLES2Texture *t, int kind, int first, 
 const struct vc4_tex_format *ogles2_vc4_storage(const struct OGLES2Texture *t);
 int ogles2_vc4_tex_from_raster(struct OGLES2Context *ctx, struct OGLES2Texture *t, ULONG src, ULONG stride, UWORD w,
                                UWORD h, BOOL bgra);
+BOOL ogles2_vc4_tex_can_generate(const struct OGLES2Texture *t, int n);
+int ogles2_vc4_tex_generate(struct OGLES2Context *ctx, struct OGLES2Texture *t, int n);
 struct OGLES2State;
 struct OGLES2Program;
 void ogles2_vc4_stencil_words(const struct OGLES2State *s, ULONG w[3], BOOL *twoside, BOOL *full);

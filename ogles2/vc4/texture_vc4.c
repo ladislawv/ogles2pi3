@@ -595,6 +595,24 @@ BOOL ogles2_vc4_tex_surface(struct OGLES2Context *ctx, struct OGLES2Texture *t, 
     return TRUE;
 }
 
+/* glGenerateMipmap on the GPU (texture.c, generate_tfu; copy.c draws the levels):
+ * the stores VC4's tile buffer has, a chain already laid out, and a power-of-two
+ * level 0. The TMU takes every level above 0 at its power-of-two size (tiling.c),
+ * so a level of 100x60 lies in 128x64 of memory, which a render of GL's size does
+ * not fill (m6_tfu's 200x120, level 3 wrong by 192): those on the CPU. */
+BOOL ogles2_vc4_tex_can_generate(const struct OGLES2Texture *t, int n)
+{
+    const struct vc4_tex *g = VT(t);
+    return g && g->cls != CLASS_FLOAT && (int)g->lay.levels >= n && !(g->lay.width & (g->lay.width - 1)) &&
+           !(g->lay.height & (g->lay.height - 1)) &&
+           (g->f->hw_type == VC4_TEX_RGBA8888 || g->f->hw_type == VC4_TEX_RGBX8888 || g->f->hw_type == VC4_TEX_RGB565);
+}
+
+int ogles2_vc4_tex_generate(struct OGLES2Context *ctx, struct OGLES2Texture *t, int n)
+{
+    return ogles2_copy_levels(ctx, t, n) ? 0 : -1;
+}
+
 /* glCopyTex* from the display (copy.c, texture.c's scratch texture): level 0 of t
  * filled with the whole picture at src, a raster image of w pixels a row, by a job
  * with no draws that loads the raster and stores the level (T or LT); no TFU here

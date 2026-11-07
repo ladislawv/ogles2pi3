@@ -16,6 +16,7 @@
 #include <string.h>
 #include <GLES2/gl2.h>
 #include "key_vc4.h"
+#include "vc4core.h"
 
 int main(int argc, char **argv)
 {
@@ -60,6 +61,17 @@ int main(int argc, char **argv)
             vc4_key_vs(rec, &vs, 1); /* its vertex variant pairs with this fragment one */
             fwrite(rec, 1, VC4_KEY_VS_BYTES, out);
             n++;
+            /* glGenerateMipmap's levels below the first: a texture into itself, one
+             * level above 0 sampled by an explicit LOD (copy.c, ogles2_copy_levels) */
+            if (f->key_format != VC4K_B8G8R8A8_UNORM && (f->hw_type == VC4_TEX_RGB565) == (targets[t] == VC4K_B5G6R5_UNORM) &&
+                (f->hw_type == VC4_TEX_RGB565 || f->hw_type == VC4_TEX_RGBA8888 || f->hw_type == VC4_TEX_RGBX8888)) {
+                fs.samp[0].force_first = 1;
+                vc4_key_fs(rec, &fs, 1);
+                fwrite(rec, 1, VC4_KEY_FS_BYTES, out);
+                vc4_key_vs(rec, &vs, 1);
+                fwrite(rec, 1, VC4_KEY_VS_BYTES, out);
+                n++;
+            }
         }
     fclose(out);
     printf("%s: %d fragment and vertex key pairs\n", argv[1], n);

@@ -3,9 +3,8 @@
  * the Raspberry Pi 3's VideoCore IV on vc4core. Here the capabilities, the
  * device, GPU memory and the contexts; the groups in job_vc4.c, draw_vc4.c,
  * texture_vc4.c, fbo_vc4.c and program_vc4.c; the built-in image (clears of
- * part of a framebuffer: tools/clear_vc4) and the copy program (glCopyTex*:
- * tools/copy_tex). Not written, and refused: glGenerateMipmap on the GPU (the front
- * end's CPU path runs instead).
+ * part of a framebuffer: tools/clear_vc4) and the copy program (glCopyTex* and
+ * glGenerateMipmap: tools/copy_tex).
  *
  * Contexts: the front end keeps a context's backend object in ctx->v3d, the
  * V3D backend's type; this backend keeps its own struct vc4_ctx there
@@ -258,10 +257,6 @@ static void context_free(struct V3DContext *v)
     ogles2_log("device: context freed, %lu bytes of GPU memory still in use", bytes_in_use);
 }
 
-/* ---- not written yet: refused (the front end's CPU paths run instead) ---- */
-
-static BOOL tex_can_generate(const struct OGLES2Texture *t, int n) { (void)t; (void)n; return FALSE; }
-static int tex_generate(struct OGLES2Texture *t, int n) { (void)t; (void)n; return GL_INVALID_OPERATION; }
 
 /* ---- the built-in image: tools/clear_vc4's program, loaded at its first
  * use (its code in GPU memory), kept while a context is (freed with the
@@ -369,8 +364,8 @@ const struct OGLES2Backend ogles2_backend_vc4 = {
     ogles2_vc4_tex_rename,
     ogles2_vc4_tex_levels,
     ogles2_vc4_tex_holds,
-    tex_can_generate,
-    tex_generate,
+    ogles2_vc4_tex_can_generate,
+    ogles2_vc4_tex_generate,
     ogles2_vc4_tex_from_raster,
     ogles2_vc4_rb_zs_storage,
     ogles2_vc4_rb_surface,

@@ -548,9 +548,10 @@ BOOL ogles2_v3d_tex_can_generate(const struct OGLES2Texture *t, int n)
            v3d_tfu_supports_mipmaps(t->hw_type);
 }
 
-int ogles2_v3d_tex_generate(struct OGLES2Texture *t, int n)
+int ogles2_v3d_tex_generate(struct OGLES2Context *ctx, struct OGLES2Texture *t, int n)
 {
     int r;
+    (void)ctx;
     CacheClearE(0, ~0UL, CACRF_ClearD); /* the CPU's writes to level 0 in memory */
     if (!v3d_gpu_lock(ogles2_device_gpu_lock(), TFU_LOCK_TIMEOUT_MS))
         return -3;

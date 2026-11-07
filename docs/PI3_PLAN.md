@@ -1674,9 +1674,16 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    `ogles2_vc4_tex_from_raster`; from the context's buffer when the bitmap is one the stores cannot reach), and
    the quad samples the region. A whole-screen copy at 640x480: 17.3 ms a frame against the CPU's 166.8 (m7-6,
    36 of 36; `texture`, `fbo` as before; m5-1 261 of 261, the same three contexts' memory).
+   **glGenerateMipmap on the GPU (2026-11-07):** each level drawn from the level above, LINEAR, a job a level, with
+   the copy program (`copy.c`, `ogles2_copy_levels`; force_first's variants in its image), as Mesa's vc4. A
+   512x512 target each frame 268 ms to 9.2 (the CPU read it back first), a 256x256 upload 37 ms to 15. Only a
+   power-of-two level 0: the TMU takes every level above 0 at its power-of-two size (`tiling.c`), so a level of
+   100x60 lies in 128x64, which a render of GL's size does not fill (m6_tfu's 200x120, wrong by 192); those stay
+   on the CPU, as do the formats the tile buffer does not store (RGBA4, RGB5_A1, luminance and alpha), cube maps
+   and the first call on a chain not laid out, as on the Pi 4. m6-8 121, m6-6 395, m2-4 152, m3-2 147, none FAIL;
+   `texture`, `fbo` as before.
 
    Left for P6: the free memory that falls about 2 MB a minute during dEQP (logging or a leak: not known);
    a program compiled twice on the Pi 3, at its link and at its first draw (the reference draw's RGBA8
-   target and float attributes against what a draw has: looked at, not settled); the GPU path of
-   glGenerateMipmap (speed only: 36 ms a 256x256 texture on the CPU, 265 ms a frame for a 512x512 target,
-   read back first); the benchmarks on both cards; the Pi 4 card's regression.
+   target and float attributes against what a draw has: looked at, not settled); the benchmarks on both
+   cards; the Pi 4 card's regression.

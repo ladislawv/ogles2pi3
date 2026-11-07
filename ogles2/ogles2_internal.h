@@ -667,6 +667,8 @@ struct OGLES2TexParams
 };
 void ogles2_texture_params_copy(struct OGLES2Texture *t, struct OGLES2TexParams *saved);
 void ogles2_texture_params_restore(struct OGLES2Texture *t, const struct OGLES2TexParams *saved);
+void ogles2_texture_params_level(struct OGLES2Texture *t, int level);
+BOOL ogles2_copy_levels(struct OGLES2Context *ctx, struct OGLES2Texture *t, int n);
 BOOL ogles2_copy_gpu(struct OGLES2Context *ctx, struct OGLES2Texture *t, int k, int level, GLint xoffset,
                      GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
 BOOL ogles2_draw_copy(struct OGLES2Context *ctx, struct OGLES2Texture *src, const GLfloat *tc, GLint x, GLint y,
