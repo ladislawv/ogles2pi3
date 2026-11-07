@@ -21,8 +21,16 @@ jobs:
           python3 gen/gen_ogles2.py --out build/gen --impl-dir ogles2
           git diff --exit-code gen/abi_order.txt
 
+      # tools/amictl is a submodule (ladislawv/amictl), not checked out here: its
+      # tests run in its own repository, and the Pi 3 card's station is amigent
+      # (private). Run only where the submodule is present.
       - name: Remote test station (amictld host build + amictl client)
-        run: make amictl-test B=build
+        run: |
+          if [ -f tools/amictl/server/amictld.c ]; then
+            make amictl-test B=build
+          else
+            echo "::notice::tools/amictl (submodule) not checked out: skipped"
+          fi
 
       - name: Mesa at the pinned commit (src/util and include only)
         run: |
