@@ -31,22 +31,46 @@ build() { # package
         (cd "$REPO" && bash tests/a1200/build_package.sh "$1") > /dev/null 2>&1
     fi
 }
-newest() { ls -d "$RES"/$1-* 2>/dev/null | tail -1; }
+newest() { ls -d "$RES"/$1-2[0-9]* 2>/dev/null | tail -1; } # dated: not an old "-run3", which sorts after them
+# amictl's status 4 is "STATION DOWN": the rest would only report older runs (2026-11-07: the
+# Amiga left the network during m5-1, and the next packages printed that morning's results)
+down() { local rc=$?; [ $rc = 4 ] && { echo "$(date +%T) STATION DOWN during $1: stopped"; exit 4; }; return 0; }
+WORK=
+station_work() { [ -n "$WORK" ] || WORK=$(amictl run CD 2> /dev/null | tr -d '\r' | tail -1); echo "$WORK"; } # runpkg's drawer
+fresh() { local r; r=$(newest "$1"); [ -n "$r" ] && ! [[ "${r##*$1-}" < "$2" ]]; } # a results drawer of this run
 
 for t in $WANT; do
     case $t in
     q3)
+        # probe V's copy if tests/a1200/p2_vc4keys.sh made one, else the plain package (built here)
+        Q3=${Q3PKG:-p2v-m6-5}
+        if [ ! -d "$HERE/out/$Q3" ]; then
+            Q3=ogles2-m6-5
+            build m6-5 || { echo "q3: build failed"; continue; }
+        fi
         lib=$HOME/ogles2-build-pi3/m68k/ogles2.library
         [ $WSL = 1 ] && lib=$(MSYS_NO_PATHCONV=1 wsl -d "$WSLD" sh -c 'wslpath -w "$HOME/ogles2-build-pi3/m68k/ogles2.library"' | tr -d '\r')
-        cp "$lib" "$HERE/out/p2v-m6-5/libs/ogles2.library" || exit 1
-        amictl runpkg "$HERE/out/p2v-m6-5" -t 1800 -a "FRAMES=0" > /dev/null
-        echo "q3: $(grep -h 'frames.*fps' "$(newest p2v-m6-5)"/results/qconsole.log)"
+        [ -n "${LIB:-}" ] && lib=$LIB
+        cp "$lib" "$HERE/out/$Q3/libs/ogles2.library" || exit 1
+        stamp=$(date +%Y%m%d-%H%M%S)
+        amictl runpkg "$HERE/out/$Q3" -t 1800 -a "FRAMES=0" > /dev/null
+        down q3
+        fresh "$Q3" "$stamp" || { echo "q3: NO RESULTS from this run"; continue; }
+        echo "q3: $(grep -h 'frames.*fps' "$(newest $Q3)"/results/qconsole.log)"
         ;;
     *)
         build "$t" || { echo "$t: build failed"; continue; }
         # LIB=<a library>: run the package with that one (P2's acceptance: 1.3.3's)
         [ -n "${LIB:-}" ] && { cp "$LIB" "$HERE/out/ogles2-$t/libs/ogles2.library" || exit 1; }
+        # runpkg uploads what changed and deletes nothing: a package without a compiler of its own
+        # kept the Pi 3 runs' 78-byte stand-in on the station, which made every compile wait 60 s
+        # (m5-1's link step 13 minutes, 2026-11-07)
+        [ -e "$HERE/out/ogles2-$t/libs/v3dglslc" ] ||
+            amictl run "Delete \"$(station_work)/ogles2-$t/libs/v3dglslc\" QUIET" > /dev/null 2>&1
+        stamp=$(date +%Y%m%d-%H%M%S)
         amictl runpkg "$HERE/out/ogles2-$t" -t 1200 > /dev/null
+        down "$t"
+        fresh "ogles2-$t" "$stamp" || { echo "$t: NO RESULTS from this run"; continue; }
         R=$(newest "ogles2-$t")/results
         case $t in
         m5-1 | m7-6 | m2-4 | m7-2 | m7-4 | m7-5 | m1-5 | m6-6 | m6-8 | m6-10 | m7-3 | m7-9) echo "$t: $(grep -h '^PASS' "$R"/*.txt | wc -l) PASS, $(grep -h '^FAIL' "$R"/*.txt | wc -l) FAIL" ;;

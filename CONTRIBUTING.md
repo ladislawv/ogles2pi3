@@ -24,7 +24,7 @@ station's large-reply stall, postponed) is in §13's "Next" list.
 This repository (`ogles2pi3`) adds the Raspberry Pi 3 (VideoCore IV) beside the Pi 4: its plan
 and status are [`docs/PI3_PLAN.md`](docs/PI3_PLAN.md): §10 starts with where it stands and what
 is next (2026-11-07: the Pi 3 side finished and tested on the card, dEQP-GLES2 within Mesa vc4's
-baseline; next the Pi 4 card's regression, then P7, the merge into `ogles2`). Testing with the
+baseline; the Pi 4 card's regression done against 1.3.3; next P7, the merge into `ogles2`). Testing with the
 Pi 3 card: "The Pi 3 card and the amigent station" below.
 
 ## Setting up a build machine

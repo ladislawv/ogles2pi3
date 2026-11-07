@@ -16,7 +16,20 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 REPO=$(cd "$HERE/../.." && pwd)
 RES=$HERE/results
 WREPO=$(echo "$REPO" | sed -E 's#^/([a-z])/#/mnt/\1/#')
-wsl() { MSYS_NO_PATHCONV=1 command wsl -d "${OGLES2_WSL:-Ubuntu-24.04}" "$@"; } # OGLES2_WSL: as `wsl -l` names it
+# From Git Bash the builds are WSL's (OGLES2_WSL: the distribution, as `wsl -l` names it); inside
+# WSL everything is here (a station only WSL reaches: the second build machine's, 2026-11-07).
+if [ -n "${WSL_DISTRO_NAME:-}" ]; then
+    wsl() { "$@"; }
+    winpath() { echo "$1"; }
+    PY=python3
+else
+    wsl() { MSYS_NO_PATHCONV=1 command wsl -d "${OGLES2_WSL:-Ubuntu-24.04}" "$@"; }
+    winpath() { wsl wslpath -w "$1" | tr -d '\r'; }
+    PY=python
+fi
+# Quake III: probe V's copy if tests/a1200/p2_vc4keys.sh made one, else the plain package
+Q3=${Q3PKG:-p2v-m6-5}
+[ -d "$HERE/out/$Q3" ] || Q3=ogles2-m6-5
 
 if [ "${1:-}" = ref ]; then
     wsl bash -c "set -e; rm -rf ~/p2head ~/p2head-build; mkdir -p ~/p2head
@@ -28,10 +41,10 @@ if [ "${1:-}" = ref ]; then
 fi
 RUNS=${1:-3}
 WHOME=$(wsl sh -c 'echo $HOME' | tr -d '\r') # the WSL home (its user differs between machines)
-REF=$(wsl wslpath -w "${REF_LIB:-$WHOME/p2head-build/m68k/ogles2.library}" | tr -d '\r') # REF_LIB: another (a WSL path)
-NEW=$(wsl wslpath -w "$WHOME/ogles2-build-pi3/m68k/ogles2.library" | tr -d '\r')
+REF=$(winpath "${REF_LIB:-$WHOME/p2head-build/m68k/ogles2.library}") # REF_LIB: another (a WSL path)
+NEW=$(winpath "$WHOME/ogles2-build-pi3/m68k/ogles2.library")
 [ -f "$REF" ] || { echo "no reference library: bash $0 ref"; exit 1; }
-amictl() { python "$REPO/tools/amictl/amictl.py" "$@"; }
+amictl() { "$PY" "$REPO/tools/amictl/amictl.py" "$@"; }
 newest() { ls -d "$RES"/$1-* 2>/dev/null | tail -1; }
 
 gears() { # library label
@@ -41,9 +54,9 @@ gears() { # library label
         sed -E 's/.*gl4es +([A-Z]+) +([a-z]+).*= *([0-9.]+) fps/\2-\1 \3/' | tr '\n' ' ')"
 }
 q3() {
-    cp "$1" "$HERE/out/p2v-m6-5/libs/ogles2.library" || exit 1
-    amictl runpkg "$HERE/out/p2v-m6-5" -t 1800 -a "FRAMES=0" > /dev/null
-    echo "q3 $2: $(grep -h 'frames.*fps' "$(newest p2v-m6-5)"/results/qconsole.log | sed -E 's/.* ([0-9.]+) fps.*/\1/') fps"
+    cp "$1" "$HERE/out/$Q3/libs/ogles2.library" || exit 1
+    amictl runpkg "$HERE/out/$Q3" -t 1800 -a "FRAMES=0" > /dev/null
+    echo "q3 $2: $(grep -h 'frames.*fps' "$(newest $Q3)"/results/qconsole.log | sed -E 's/.* ([0-9.]+) fps.*/\1/') fps"
 }
 for i in $(seq "$RUNS"); do gears "$REF" ref; gears "$NEW" new; done
 for i in $(seq "$RUNS"); do q3 "$REF" ref; q3 "$NEW" new; done

@@ -1288,15 +1288,16 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 finished and tested on the card. P5 (the VC4 backend) is done; P6 on the Pi 3 card is done: dEQP-GLES2's
 whole list 17,047 of 17,165 pass, its 18 failures all in Mesa vc4's own baseline (item 6 below); every
 regression package without a FAIL; Quake III 32.8 fps, glmark2 70; glCopyTex* and glGenerateMipmap on
-the GPU; a program compiles once (at its link) for the usual first draw; the disk cache has a size. The
-details are in the dated entries below, the newest last. **Next, in order:**
-1. **The Pi 4 card: regression and benchmarks** (P6's other half, §5.1: the Pi 4 must behave as release
-   1.3.3). Swap the card (a reboot), then from Git Bash or WSL with amictl (CONTRIBUTING.md, "The remote
-   test station"): `bash tests/a1200/p2_checks.sh` (m5-1, m7-6, m2-5's 14 pictures against
-   `REF`, m6-1, Quake III), the texture packages (`p2_checks.sh m2-4 m7-2 m7-4 m7-5 m6-6 m6-8 m6-10`),
-   m7-9 (the cache's trim, which is the one change on purpose: it is in the shared front end), and
-   `p2_speed.sh` with `REF_LIB` set to 1.3.3's library for the speed (`release/dist/ogles2-1.3.3.lha`'s
-   `Libs/ogles2.library`, or built from tag `v1.3.3`). dEQP on the Pi 4 is optional before
+the GPU; a program compiles once (at its link) for the usual first draw; the disk cache has a size. **The
+Pi 4 card's regression and speed against 1.3.3 are done too (2026-11-07, the last entry below): every
+package as before, Quake III as fast, gears about 1 % slower.** The details are in the dated entries below,
+the newest last. **Next, in order:**
+1. (Done 2026-11-07.) The Pi 4 card: regression and benchmarks. To repeat it: swap the card (a reboot);
+   through amigent with the PC compiling (`BRIDGE_PORT=6804 bash tests/a1200/p5_run.sh <packages>`, as on
+   the Pi 3 card: the Pi 4's amigentd answers on the same address), or `bash tests/a1200/p2_checks.sh`
+   through amictl (the Amiga compiling: slower); the speed against 1.3.3's library
+   (`release/dist/ogles2-1.3.3.lha`'s `Libs/ogles2.library`) with `LIB=<library> p5_run.sh m6-1` and
+   `m6-5 ARGS=FRAMES=0`, alternating, or `p2_speed.sh` with `REF_LIB`. dEQP on the Pi 4 is optional before
    P7 (its own baseline is in `DEVELOPMENT_PLAN.md`); `RAMCACHE=1` shortens it (item 6).
 2. **P7: into `ogles2`** (PD8, §8): merge this branch there (the build root back to `~/ogles2-build`), check
    both cards again, then the release (`release/build_release.sh`, one library and one compiler for both,
@@ -1761,5 +1762,21 @@ were written on, read that section's "Another machine" first.
    m7-9: 18 of 18 on the card (100 files of 1 KB against 64 KB: the 52 oldest gone; other names, a second
    compile of the load, the limit 0 and a cache under it untouched).
 
-   Left for P6: the Pi 4 card's regression and benchmarks, now with the trim (they need the card in); Mesa's
-   mipmap picture for `vc4_draw` (the Pi 3 under Linux).
+   **The Pi 4 card on the final library (2026-11-07), against release 1.3.3:** through amigent, the
+   programs compiled on the PC (the Pi 4's compiler output is byte for byte 1.3.3's, `compile_bridge.py
+   --check`): m5-1 259 PASS, m7-6 36 of 36, m2-5's 14 pictures identical to 2026-10-14's, m2-4 152, m7-2
+   66, m7-4 129, m7-5 162, m6-6 395, m6-8 121, m6-10 210, m1-5 59, m7-3 105, m7-9 18 of 18 (the cache's
+   trim, the one change on the Pi 4 on purpose): none FAIL. **Speed**, 1.3.3's library and this one
+   alternating three times each, the plain (not sync-logging) builds: Quake III renderergl2's timedemo
+   67.1 against 67.0 fps (66.6, 66.4, 68.2 against 66.5, 67.7, 66.7); gears (m6-1, TEETH=1) 0.3 to 1.3 %
+   slower in every mode, every round (bitmap arrays 749.5 against 740.4 fps, screen 939.1 against
+   928.2, window 399.7 against 398.5), the size of the placement effects P2 measured and accepted (P2's
+   acceptance above: gears within 1 %). Both libraries ran below October's figures alike (Quake III 89 then): the day's
+   set-up (the A1200 on Wi-Fi with this card too, Quake III's settings reset), not the library.
+   On the way: `p2_checks.sh` took an old results drawer for a run that left none (a station drop, and a
+   78-byte compiler stand-in that `runpkg`, which deletes nothing, had left in 12 of the station's package
+   drawers: each compile waited 60 s). It stops at a drop now, takes only a run's own results and removes a
+   station-side compiler a package does not ship; `p5_run.sh` takes `LIB=` for speed runs.
+
+   Left: P7 (item 2 of the list at this section's start); Mesa's mipmap picture for `vc4_draw` (the Pi 3
+   under Linux, optional).

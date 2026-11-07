@@ -13,6 +13,7 @@
 #   bash tests/a1200/p5_run.sh m2-4 [m1-5 ...]      (Git Bash, or inside WSL)
 # AMIGENT_CTL: the amigent-ctl to use; AMIGENT_HOST: the A1200 (default: amictl's station.local);
 # OGLES2_WSL: the WSL distribution, from Git Bash (as `wsl -l` names it);
+# LIB: a library to run instead of the sync-logging one built here (speed runs);
 # BRIDGE_PORT: the bridge's port on the station (default 6803). The newest
 # connection to it wins, so another bridge on the network takes this run's
 # compiles, with its own compiler: such a run needs a port of its own
@@ -81,6 +82,11 @@ for t in "$@"; do
         make -j8 B=\$HOME/ogles2-build-pi3/m68k-sync EXTRA_CFLAGS=-DOGLES2_LOG_SYNC && \
         cp ~/ogles2-build-pi3/m68k-sync/ogles2.library tests/a1200/out/ogles2-$t/libs/" > /dev/null 2>&1 ||
         { echo "$t: build failed"; continue; }
+    # LIB=<a library>: that one instead (a speed run: the sync-logging one is slower; on the Pi 4
+    # card, release 1.3.3's against this one, 2026-11-07)
+    if [ -n "${LIB:-}" ]; then
+        cp "$LIB" "$HERE/out/ogles2-$t/libs/ogles2.library" || { echo "$t: no $LIB"; continue; }
+    fi
     PKG=$HERE/out/ogles2-$t
     mkdir -p "$PKG/libs"
     # With out/ogles2-<package>.keep-bin the bin/ the station has stays, not uploaded or checked
