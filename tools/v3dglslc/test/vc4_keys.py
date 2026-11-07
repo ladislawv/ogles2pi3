@@ -231,13 +231,34 @@ HINT_KEYS_C = r"""
  * draw on a BGRA display builds, without and with a depth test: those the hints must give */
 int main(void)
 {
-    unsigned char h[VC4_KEY_HINT_BYTES], k[VC4_KEY_FS_BYTES];
+    unsigned char h[VC4_KEY_HINT_BYTES], k[VC4_KEY_FS_BYTES], kv[VC4_KEY_VS_BYTES];
     struct vc4_fs_state s;
-    FILE *f = fopen("hints.bin", "wb"), *w = fopen("want.bin", "wb");
+    struct vc4_vs_state vs;
+    FILE *f = fopen("hints.bin", "wb"), *w = fopen("want.bin", "wb"), *wv = fopen("want_vs.bin", "wb");
+    unsigned char all[64];
+    unsigned n;
     int depth;
+    /* hints.bin: the library's own buffer for a BGRA display with a depth buffer; each
+     * record a stage of 5 to 15 (the compiler refuses the rest); want_vs.bin: a vec4 at
+     * slot 0 fed 3 floats */
+    memset(all, 0xa5, sizeof(all));
+    n = vc4_key_link_hints(all, sizeof(all), VC4K_B8G8R8A8_UNORM, 1);
+    if (n != 3 * VC4_KEY_HINT_BYTES)
+        return 1;
+    for (depth = 0; depth < 3; depth++) /* the vertex hint, then the display's without and with depth */
+        if (all[depth * VC4_KEY_HINT_BYTES] != (depth ? 5 : 6) || (depth && all[depth * VC4_KEY_HINT_BYTES + 8] != depth - 1))
+            return 2;
+    fwrite(all, 1, n, f);
+    if (vc4_key_link_hints(h, sizeof(h), VC4K_B8G8R8A8_UNORM, 1) != 0 ||
+        vc4_key_link_hints(all, sizeof(all), VC4K_R8G8B8A8_UNORM, 0) != VC4_KEY_HINT_BYTES)
+        return 3;
+    memset(&vs, 0, sizeof(vs));
+    vs.nattrs = 1;
+    vs.attr_format[0] = VC4K_R32G32B32_FLOAT;
+    vc4_key_vs(kv, &vs, 1);
+    fwrite(kv, 1, sizeof(kv), wv);
+    fclose(wv);
     for (depth = 0; depth < 2; depth++) {
-        vc4_key_hint(h, VC4K_B8G8R8A8_UNORM, depth);
-        fwrite(h, 1, sizeof(h), f);
         memset(&s, 0, sizeof(s));
         s.color_format = VC4K_B8G8R8A8_UNORM;
         s.depth_test = (unsigned char)depth;
@@ -300,6 +321,55 @@ def check_hints(v, tmp):
     ok = all(fs_inputs_of_fs(b) == fs_inputs_of_fs(pv[[struct.unpack("<I", x[:4])[0] for x in pv].index(4)]) for b in new)
     print("flat         the reference's vertex variant pairs with them: %s" % ("yes" if ok else "NO"))
     bad += not ok
+    # The vertex hint: nothing for flat's vec3 (above: two variants, both fragment); for a vec4
+    # position the vertex and coordinate variants with slot 0 three floats, the library's key.
+    open(os.path.join(d, "pos4.vert"), "w").write("attribute vec4 pos;\nvoid main() { gl_Position = pos; }\n")
+    open(os.path.join(d, "pos4.frag"), "w").write(open(os.path.join(SHADERS, "flat.frag")).read())
+    for sub, keys in (("pos4plain", None), ("pos4hinted", os.path.join(d, "hints.bin"))):
+        os.makedirs(os.path.join(d, sub), exist_ok=True)
+        subprocess.run([v, "-g", "21"] + (["-k", keys] if keys else []) + ["-o", sub, "pos4.vert", "pos4.frag"],
+                       cwd=d, check=True, capture_output=True)
+    pv = [b for t, b in sections(os.path.join(d, "pos4plain", "pos4-pos4.vc4p")) if t == 7]
+    hv = [b for t, b in sections(os.path.join(d, "pos4hinted", "pos4-pos4.vc4p")) if t == 7]
+    new = [b for b in hv if b not in pv]
+    stages = sorted(struct.unpack("<I", b[:4])[0] for b in new)
+    ok = stages == [0, 1, 4, 4]
+    print("pos4         hints add a vertex and a coordinate variant and the two fragment ones: %s" %
+          ("yes" if ok else "NO, stages %s" % stages))
+    bad += not ok
+    want_vs = open(os.path.join(d, "want_vs.bin"), "rb").read()
+    found = [b for b in new if struct.unpack("<I", b[:4])[0] == 0 and b[4:4 + 288] == want_vs[4:4 + 288] and
+             b[4 + 289:4 + 291] == want_vs[4 + 289:4 + 291]]
+    ok = len(found) == 1
+    print("pos4         a vec4 position fed 3 floats: the library's own vertex key %s" %
+          ("is in the file" if ok else "IS NOT IN THE FILE: THE HINT IS WASTED"))
+    bad += not ok
+    return bad
+
+
+def check_order(v, tmp):
+    """A file does not depend on the program compiled before it, in a compiler that outlives
+    programs as the library's and the bridge's do: the driver's sampler views were kept, so a
+    program's reference keys held the last one's samplers and no draw asked for them
+    (2026-11-07, vc4_variants_drop_views). 0, or the checks failed."""
+    bad = 0
+    d = os.path.join(tmp, "order")
+    alone = {}
+    os.makedirs(os.path.join(d, "alone"), exist_ok=True)
+    for vert, frag in (("flat.vert", "flat.frag"), ("texture.vert", "texture.frag")):
+        alone[vert] = open(compile_(v, os.path.join(d, "alone"), None, None, None, vert, frag), "rb").read()
+    together = os.path.join(d, "together")
+    os.makedirs(together, exist_ok=True)
+    subprocess.run([v, "-g", "21", "-o", together, "texture.vert", "texture.frag", "flat.vert", "flat.frag", "texture.vert", "texture.frag"],
+                   cwd=SHADERS, check=True, capture_output=True)
+    for name, vert in (("flat-flat", "flat.vert"), ("texture-texture", "texture.vert")):
+        ok = open(os.path.join(together, name + ".vc4p"), "rb").read() == alone[vert]
+        print("%-12s after another program: %s" % (name, "the same file" if ok else "A DIFFERENT FILE"))
+        bad += not ok
+    fs = [b for t, b in sections(os.path.join(together, "flat-flat.vc4p")) if t == 7 and struct.unpack("<I", b[:4])[0] == 4]
+    ok = bool(fs) and all(not any(b[4:4 + 256]) for b in fs)
+    print("flat         after a program with a sampler, its keys hold no sampler: %s" % ("yes" if ok else "NO"))
+    bad += not ok
     return bad
 
 
@@ -329,6 +399,7 @@ def main():
                 bad += not same
         bad += check_draw_buffers(v, tmp)
         bad += check_hints(v, tmp)
+        bad += check_order(v, tmp)
     print("all identical" if not bad else "%d compile(s) differ" % bad)
     return 1 if bad else 0
 

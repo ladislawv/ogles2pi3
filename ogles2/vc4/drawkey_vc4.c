@@ -157,22 +157,15 @@ static const unsigned short target_format[4] = {VC4K_R8G8B8A8_UNORM, VC4K_B8G8R8
  * corpus 52 first drew to the display (BGRA on RTG) and 31 with a depth test (probe
  * V, PI3_PLAN §10): each then compiled again at its first draw. The fragment variants
  * for this context's display, with and without depth when it has a depth buffer,
- * come with the link. A draw in another state compiles what it needs, as before. */
+ * come with the link. And the vertex variants with attribute slot 0 three floats
+ * when the program declares it vec4: a vec4 position fed (x, y, z) is the common
+ * case (m2-5 on the card: 10 of 15 programs' first draws, 2026-11-07); the
+ * compiler makes nothing when slot 0 is not a vec4. A draw in another state
+ * compiles what it needs, as before. */
 ULONG ogles2_vc4_link_hints(const struct OGLES2Context *ctx, UBYTE *buf, ULONG size)
 {
-    unsigned format = ctx->display.rb_swap ? VC4K_B8G8R8A8_UNORM : VC4K_R8G8B8A8_UNORM;
-    ULONG n = 0;
-    if (size < 2 * VC4_KEY_HINT_BYTES)
-        return 0;
-    if (format != VC4K_R8G8B8A8_UNORM) { /* that one without depth is the reference draw's */
-        vc4_key_hint(buf, format, 0);
-        n += VC4_KEY_HINT_BYTES;
-    }
-    if (ctx->depth_bits) {
-        vc4_key_hint(buf + n, format, 1);
-        n += VC4_KEY_HINT_BYTES;
-    }
-    return n;
+    return vc4_key_link_hints(buf, size, ctx->display.rb_swap ? VC4K_B8G8R8A8_UNORM : VC4K_R8G8B8A8_UNORM,
+                              ctx->depth_bits != 0);
 }
 
 static BOOL y_down(const struct OGLES2Context *ctx)

@@ -184,6 +184,29 @@ void vc4_key_hint(unsigned char *out, unsigned color_format, int depth)
     *o = 0;
 }
 
+void vc4_key_vs_hint(unsigned char *out, unsigned slots)
+{
+    put32(put32(put32(out, 6), slots), 0);
+}
+
+unsigned vc4_key_link_hints(unsigned char *buf, unsigned size, unsigned display_format, int depth_buffer)
+{
+    unsigned n = 0;
+    if (size < 3 * VC4_KEY_HINT_BYTES)
+        return 0;
+    vc4_key_vs_hint(buf, 1);
+    n += VC4_KEY_HINT_BYTES;
+    if (display_format != VC4K_R8G8B8A8_UNORM) { /* that one without depth is the reference draw's */
+        vc4_key_hint(buf + n, display_format, 0);
+        n += VC4_KEY_HINT_BYTES;
+    }
+    if (depth_buffer) {
+        vc4_key_hint(buf + n, display_format, 1);
+        n += VC4_KEY_HINT_BYTES;
+    }
+    return n;
+}
+
 void vc4_key_fs(unsigned char *out, const struct vc4_fs_state *s, int canonical)
 {
     unsigned char *o = put32(out, 4);

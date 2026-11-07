@@ -855,6 +855,19 @@ static void file_path(char *path, const char *dir, const char *hex)
  * itself), the disk cache (OGLES2Cache:, or T: when it is not assigned:
  * that is where compiled programs go then), the on-target compiler, else the
  * sources go to T:ogles2_missing_shaders.txt. */
+/* text in a compiler's log (no C library's strstr here) */
+static BOOL log_has(const char *log, const char *text)
+{
+    ULONG i, j;
+    for (i = 0; log[i]; i++) {
+        for (j = 0; text[j] && log[i + j] == text[j]; j++)
+            ;
+        if (!text[j])
+            return TRUE;
+    }
+    return FALSE;
+}
+
 static struct OGLES2Image *load_image(const struct OGLES2Context *ctx, struct OGLES2Program *p, const UBYTE *hash,
                                       const char *hex, const char *bindings)
 {
@@ -873,17 +886,25 @@ static struct OGLES2Image *load_image(const struct OGLES2Context *ctx, struct OG
     }
     if (ogles2_compiler_installed()) {
         char *log = AllocVec(4096, MEMF_ANY | MEMF_CLEAR);
-        UBYTE hints[32];
+        UBYTE hints[48];
         ULONG nhints = ogles2_backend->link_hints ? ogles2_backend->link_hints(ctx, hints, sizeof(hints)) : 0;
-        BOOL ok;
+        BOOL ok = FALSE;
         if (!log) {
             set_log(p, "out of memory", 0);
             return 0;
         }
         file_path(path, dirs[2], hex);
-        ok = nhints ? ogles2_compile_program_keys(p->vs->source, p->fs->source, bindings, path, hints, nhints, log, 4096)
-           : bindings ? ogles2_compile_program_bound(p->vs->source, p->fs->source, bindings, path, log, 4096)
-                      : ogles2_compile_program(p->vs->source, p->fs->source, path, log, 4096);
+        if (nhints) {
+            ok = ogles2_compile_program_keys(p->vs->source, p->fs->source, bindings, path, hints, nhints, log, 4096);
+            /* a compiler older than the hints refuses their records: once more without */
+            if (!ok && log_has(log, "vc4 keys"))
+                log[0] = 0;
+            else
+                nhints = 0xffffffffUL; /* done, either way */
+        }
+        if (nhints != 0xffffffffUL)
+            ok = bindings ? ogles2_compile_program_bound(p->vs->source, p->fs->source, bindings, path, log, 4096)
+                          : ogles2_compile_program(p->vs->source, p->fs->source, path, log, 4096);
         if (ok && (im = try_file(p, hash, path, &refused))) {
             FreeVec(log);
             return im;

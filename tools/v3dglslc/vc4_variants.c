@@ -32,6 +32,7 @@ struct vc4_compiled_shader *vc4_compile_variant(struct vc4_context *vc4, enum qs
 
 void vc4_variants_install(FILE *f);
 void vc4_variants_capture(int on);
+void vc4_variants_drop_views(void);
 int vc4_variants_compile_keys(const char *path);
 int vc4_variants_compile_key_buffer(const void *keys, size_t size);
 
@@ -232,6 +233,8 @@ static const char *uniform_name(enum quniform_contents c)
  * draw's, which a hint record (below) builds on. */
 static struct vc4_fs_key reference_fs_key;
 static int reference_fs_valid;
+static struct vc4_vs_key reference_vs_key; /* and its first vertex key (not the coordinate one) */
+static int reference_vs_valid;
 
 static void variant(enum qstage stage, const struct vc4_key *key, uint32_t key_size,
                     const struct vc4_compiled_shader *sh, const uint64_t *qpu, uint32_t n)
@@ -244,8 +247,13 @@ static void variant(enum qstage stage, const struct vc4_key *key, uint32_t key_s
             reference_fs_key = *(const struct vc4_fs_key *)key;
             reference_fs_valid = 1;
         }
-    } else
+    } else {
         last_vs_state = key->shader_state;
+        if (capture && stage == QSTAGE_VERT && !reference_vs_valid) {
+            reference_vs_key = *(const struct vc4_vs_key *)key;
+            reference_vs_valid = 1;
+        }
+    }
     if (capture)
         serialize(stage, key, key_size, sh, qpu, n);
     if (!out)
@@ -286,7 +294,25 @@ void vc4_variants_capture(int on)
 {
     capture = on;
     if (on)
-        reference_fs_valid = 0;
+        reference_fs_valid = reference_vs_valid = 0;
+}
+
+/* The driver's sampler views dropped, as in a fresh process, after a program's
+ * reference draw: the state tracker sends a stage's views only while its program
+ * reads samplers, so the next program without any kept these in its key, and one
+ * with fewer kept the rest. A compiler that outlives a program (the library's, the
+ * bridge's) then wrote keys no draw of that program asks for: each compiled again at
+ * its first draw, and a file depended on the program compiled before it (2026-11-07;
+ * V3D's own in v3dglslc.c, bind_samplers). */
+void vc4_variants_drop_views(void)
+{
+    struct vc4_context *vc4 = vc4_compiled_variant_context;
+    if (!vc4)
+        return;
+    if (vc4->fragtex.num_textures)
+        vc4->base.set_sampler_views(&vc4->base, MESA_SHADER_FRAGMENT, 0, 0, vc4->fragtex.num_textures, NULL);
+    if (vc4->verttex.num_textures)
+        vc4->base.set_sampler_views(&vc4->base, MESA_SHADER_VERTEX, 0, 0, vc4->verttex.num_textures, NULL);
 }
 
 /* ---- keys from a file (docs/PI3_PLAN.md §4.2, PD7) ----
@@ -299,13 +325,15 @@ void vc4_variants_capture(int on)
  * the vertex and coordinate variants for it. All little-endian. They go
  * through the hook like the reference draw's, after it, for its program.
  *
- * Stage 5, a hint (VC4_KEY_HINT_STAGE, ogles2/vc4/key_vc4.h): a u32 target
- * format, a u8 depth test, three bytes of padding: the reference draw's fragment
- * key with those two fields changed, what ogles2.library expects a first draw to
- * need (the display's format, a depth test), so that draw has its variant without
- * a second compile. Its vertex variants are the reference's: neither field
- * changes the fragment shader's inputs. A hint that does not compile is left out:
- * the draw compiles what it needs, as without one. */
+ * Stages 5 to 15, hints (ogles2/vc4/key_vc4.h): 8 bytes each, what ogles2.library
+ * expects a first draw to need, so that draw has its variant without a second
+ * compile; a kind not known here is skipped. Stage 5: a u32 target format, a u8
+ * depth test, three bytes of padding: the reference draw's fragment key with those
+ * two fields changed (the display's format, a depth test). Its vertex variants are
+ * the reference's: neither field changes the fragment shader's inputs. Stage 6: a
+ * u32 mask of attribute slots, a u32 0: the reference's vertex key (and coordinate
+ * twin) with each of those slots that is four floats fed three. A hint that does
+ * not compile is left out: the draw compiles what it needs, as without one. */
 
 struct rd {
     const unsigned char *p;
@@ -451,27 +479,45 @@ int vc4_variants_compile_key_buffer(const void *keys, size_t size)
                     return -1;
                 }
             }
-        } else if (stage == 5) {
-            uint32_t format = r_u32(&r);
-            unsigned depth = r_u8(&r);
-            r_u8(&r);
-            r_u8(&r);
-            r_u8(&r);
+        } else if (stage >= 5 && stage < 16) { /* a hint: 8 bytes, a kind not known skipped */
+            uint32_t a = r_u32(&r), b = r_u32(&r);
             if (r.bad)
                 break;
-            if (reference_fs_valid) {
+            if (stage == 5 && reference_fs_valid) {
                 struct vc4_fs_key k = reference_fs_key;
                 struct vc4_compiled_shader *sh;
-                k.color_format = format;
-                k.depth_enabled = depth;
+                k.color_format = a;
+                k.depth_enabled = b & 0xff;
                 k.base.shader_state = last_fs_state;
                 sh = vc4_compile_variant(vc4_compiled_variant_context, QSTAGE_FRAG, &k.base);
                 if (!sh || sh->failed)
                     fprintf(stderr, "v3dglslc: vc4 keys: a hint (format %u, depth %u) did not compile: left out\n",
-                            (unsigned)format, depth);
+                            (unsigned)a, (unsigned)(b & 0xff));
+            } else if (stage == 6 && reference_vs_valid) {
+                /* the reference's vertex key with the vec4 attributes of the mask fed three
+                 * floats, and its coordinate twin; nothing if no slot of it is a vec4 */
+                struct vc4_vs_key k = reference_vs_key;
+                int i, changed = 0, coord;
+                for (i = 0; i < 8; i++)
+                    if ((a >> i & 1) && k.attr_formats[i] == PIPE_FORMAT_R32G32B32A32_FLOAT) {
+                        k.attr_formats[i] = PIPE_FORMAT_R32G32B32_FLOAT;
+                        changed = 1;
+                    }
+                for (coord = 0; changed && coord < 2; coord++) {
+                    struct vc4_compiled_shader *sh;
+                    k.base.shader_state = last_vs_state;
+                    k.fs_inputs = coord ? NULL : reference_vs_key.fs_inputs;
+                    k.is_coord = coord;
+                    sh = vc4_compile_variant(vc4_compiled_variant_context, coord ? QSTAGE_COORD : QSTAGE_VERT, &k.base);
+                    if (!sh || sh->failed) {
+                        fprintf(stderr, "v3dglslc: vc4 keys: a hint (attributes 0x%x) did not compile: left out\n",
+                                (unsigned)a);
+                        break;
+                    }
+                }
             }
         } else {
-            fprintf(stderr, "v3dglslc: vc4 keys: record %d: stage %u is not 4, 0 or 5\n", records + 1,
+            fprintf(stderr, "v3dglslc: vc4 keys: record %d: stage %u is not 4, 0 or a hint (5 to 15)\n", records + 1,
                     (unsigned)stage);
             return -1;
         }

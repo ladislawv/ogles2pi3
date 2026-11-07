@@ -129,10 +129,18 @@ struct vc4_vs_state
 void vc4_key_fs(unsigned char *out, const struct vc4_fs_state *s, int canonical);
 void vc4_key_vs(unsigned char *out, const struct vc4_vs_state *s, int canonical);
 
-/* A hint record for a link's request (tools/v3dglslc/vc4_variants.c): the variant of
- * the reference draw's state with this target format and depth test too, for the
- * program's first draw. */
+/* Hint records for a link's request (tools/v3dglslc/vc4_variants.c), for the
+ * program's first draw: 12 bytes each, a u32 stage of 5 to 15 and 8 bytes; a
+ * compiler skips a kind it does not know. Stage 5: the reference draw's fragment
+ * variant with this target format and depth test. Stage 6: its vertex variants with
+ * the attributes at the slots of the mask that it declares vec4 (four floats) fed
+ * three floats instead (glVertexAttribPointer's size 3 for a vec4 position). */
 #define VC4_KEY_HINT_BYTES 12
 void vc4_key_hint(unsigned char *out, unsigned color_format, int depth);
+void vc4_key_vs_hint(unsigned char *out, unsigned slots);
+/* A link's hints for a context (ogles2_vc4_link_hints): the vertex hint for slot 0;
+ * the display's format without depth unless it is the reference's RGBA8; with depth
+ * when the context has a depth buffer. The bytes written (0 if size is short). */
+unsigned vc4_key_link_hints(unsigned char *buf, unsigned size, unsigned display_format, int depth_buffer);
 
 #endif

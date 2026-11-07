@@ -77,6 +77,7 @@ struct renderonly;
 struct pipe_screen *vc4_screen_create(int fd, const struct pipe_screen_config *config, struct renderonly *ro);
 void vc4_variants_install(FILE *f); /* vc4_variants.c */
 void vc4_variants_capture(int on);
+void vc4_variants_drop_views(void);
 int vc4_variants_compile_keys(const char *path);
 int vc4_variants_compile_key_buffer(const void *keys, size_t size);
 static const char *vc4_key_file; /* -k: variants for these keys too (vc4_variants.c) */
@@ -997,6 +998,7 @@ static int draw_vc4_reference(GLuint p)
         _mesa_ActiveTexture(GL_TEXTURE0);
     }
     _mesa_Flush(); /* submits the job to the fake device */
+    vc4_variants_drop_views();
     for (i = 0; i < 8; i++)
         _mesa_DisableVertexAttribArray(i);
     _mesa_UseProgram(0);

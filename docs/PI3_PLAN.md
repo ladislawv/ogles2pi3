@@ -1695,19 +1695,33 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    a part (17:43 to 17:48 on 2026-11-06); what looked like 2 MB a minute was the first minutes of a run.
 
    **The link compiles what a first draw is likely to need (2026-11-07):** a program was compiled twice on
-   the Pi 3, at its link and at its first draw, because the reference draw's RGBA8 target without depth is
-   rarely what a program draws to first: probe V's 63 programs, 52 first drew to the display (BGRA on RTG), 31
-   with a depth test. The link now sends hints, a key record of stage 5 (`VC4_KEY_HINT_STAGE`, a target format
-   and a depth test): the reference draw's fragment key with those two fields changed, one for the display's
-   format and one more with depth when the context has a depth buffer (`ogles2_vc4_link_hints`,
-   `link_hints` in the backend table, 0 on V3D). The compiler compiles them after the reference draw; a hint
-   that does not compile is left out. So a link has one or two small fragment variants more. What a link cannot
-   know still compiles at the first draw: blending, textures not RGBA8 (RGB is stored rgbx), attributes not
-   float arrays of the declared size. By probe V's logs, the link holds the first draw's fragment variant for
-   35 of the 63 programs (5 before), and both stages' for 23 (4 before). The file's name stays the hash of
-   the sources: a `.vc4p` written without hints keeps working, its draws compile as before. Host against m68k
-   9 of 9 files identical, `compile_bridge.py --check` 8 of 8, `vc4_keys.py` (the key builder's key is in the
-   file). On the card: results below when they are in.
+   the Pi 3, at its link and at its first draw. Three causes, by the keys of m2-5's files on the card (each
+   `.vc4k` against its `.vc4p`):
+   - **A compiler bug: the reference draw kept the last program's sampler views.** The state tracker sends a
+     stage's views only while its program reads samplers, and the VC4 path never dropped them (V3D's does,
+     `bind_samplers`): in a compiler that outlives a program (the library's, the bridge's) a program's link
+     keys held the samplers of the one compiled before it, which no draw of it asks for. Each such program
+     compiled again at its first draw, and a file depended on what was compiled before. Now
+     `vc4_variants_drop_views` after each reference draw; `vc4_keys.py` checks that a file is the same after
+     another program (it failed on the old compiler).
+   - **The target:** the reference draw is into RGBA8 without depth; of probe V's 63 programs 52 first drew to
+     the display (BGRA on RTG), 31 with a depth test. The link sends hints, 12-byte key records of stage 5 to
+     15 (`ogles2/vc4/key_vc4.h`; a compiler skips a kind it does not know): stage 5, the reference's fragment
+     key with the display's format, and with a depth test when the context has a depth buffer.
+   - **A vec4 position fed three floats** (`glVertexAttribPointer` size 3): 10 of m2-5's 15 vertex misses. Stage
+     6: the reference's vertex key and its coordinate twin with slot 0 three floats, compiled only when slot 0
+     is a vec4.
+   `ogles2_vc4_link_hints` (`vc4_key_link_hints`, `link_hints` in the backend table, 0 on V3D). A hint that
+   does not compile is left out; a compiler that refuses the records (older than them) gets the link again
+   without (`program.c`). A link has one to two fragment variants and a vertex pair more. The file's name
+   stays the hash of the sources: a `.vc4p` written before keeps working, its draws compile as before.
+   **On the card:** programs compiled again at a draw, against the same packages at 01:35 that day: m2-5 22
+   to 11 (14 pictures identical to that run's), m5-1 25 to 19 (261 PASS), m7-6 4 to 2 (36 of 36); m6-3 and
+   m6-4 6 and 5 (their earlier runs took files from an old cache: no count). m2-5's 9 programs that still
+   compile at a draw all draw in a state a link cannot know: RGB textures (stored rgbx), a depth buffer on an
+   FBO, points, blending, stencil. dEQP's `texture` group (807 cases, the programs with samplers) the same as
+   the night before, part for part (796 pass, the same 11 known failures). Host against m68k 9 of 9 files identical, `compile_bridge.py --check` 8 of
+   8 (V3D unchanged), `vc4_keys.py` all (the library's own hint buffer and keys in the files).
    **The disk cache has a size (2026-11-07):** every program left its files in `OGLES2Cache:` for good, and a
    drawer that grows makes each new file slower (dEQP's above; `ogles3`'s run reached a million files). The
    first compile of a library's load (`compiler.c`, `cache_trim`) looks at the cache: over 8192 files or
@@ -1716,8 +1730,8 @@ Everything that can run here runs here first (the developer, 2026-11-03).
    at and 2048 removed a load. "Oldest" is the date written, not the last use: a program still in use may
    compile once more. This is in the front end, so **it changes the Pi 4 too, a deliberate exception to §5.1
    the user asked for**; V3D's compiler output and the rest stay as 1.3.3's. Test: `tests/m7_cache`, package
-   m7-9.
+   m7-9: 18 of 18 on the card (100 files of 1 KB against 64 KB: the 52 oldest gone; other names, a second
+   compile of the load, the limit 0 and a cache under it untouched).
 
-   Left for P6: both of the above on the card (m7-9, the first-draw count against the same packages'
-   earlier logs; needs the Amiga on with the Pi 3 card); the Pi 4 card's regression and benchmarks, now with the
-   trim (they need the card in); Mesa's mipmap picture for `vc4_draw` (the Pi 3 under Linux).
+   Left for P6: the Pi 4 card's regression and benchmarks, now with the trim (they need the card in); Mesa's
+   mipmap picture for `vc4_draw` (the Pi 3 under Linux).
