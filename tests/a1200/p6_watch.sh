@@ -34,7 +34,13 @@ last=""
 since=$(date +%s)
 down=0
 note() { echo "$(date +%T) $*" >> "$LOG"; }
-resets() { timeout 30 "$CTL" tail -n 20000 "$NLOG" 2> /dev/null | tr -d '\r' | grep -c 'resetting'; }
+# The reset lines in netwatch's log; nothing when the log cannot be read (a station that is booting
+# answered "0", and a watch started then took the last old reset for a new one, 2026-11-07)
+resets() {
+    local t
+    t=$(timeout 30 "$CTL" tail -n 20000 "$NLOG" 2> /dev/null) || return 0
+    printf '%s\n' "$t" | tr -d '\r' | grep -c 'resetting'
+}
 kill_run() { # the PC's side: a client that lost its station may ignore a TERM
     pkill -f 'amigent-ctl runpkg'
     sleep 3
@@ -81,6 +87,10 @@ ensure_netwatch() { # 0: it runs, or was only now started the first time; 1: it 
 }
 note "watch: every $POLL s, a stall after $STALL s, on $(basename "$SUM")"
 known=$(resets)
+until [ -n "$known" ] || ! pgrep -f 'p6_deqp\.sh' > /dev/null; do # the count from a log read, not a guess
+    sleep 10
+    known=$(resets)
+done
 known=${known:-0}
 slow=0
 back_at=""

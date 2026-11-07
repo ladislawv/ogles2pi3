@@ -1,0 +1,3421 @@
+#sessionInfo releaseName unknown
+#sessionInfo releaseId 0xcafebabe
+#sessionInfo targetName "AmigaOS3"
+#sessionInfo logFormatVersion "0.3.4"
+#sessionInfo vendor "ogles2.library"
+#sessionInfo renderer "V3D 4.2.14 (PiStorm), 8 QPUs, 64 KB VPM"
+#sessionInfo commandLineParameters "--deqp-caselist-file M7R1:caselists/shaders-keywords.txt --deqp-archive-dir=M7R1:bin --deqp-log-filename=M7R1:results/shaders-keywords.qpa --deqp-log-images=disable --deqp-log-shader-sources=disable --deqp-surface-width=256 --deqp-surface-height=256 --deqp-gl-config-name=rgba8888d24s8ms0"
+
+#beginSession
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.attribute_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.attribute_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float attribute = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected ATTRIBUTE, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">113.071999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">39.595001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">169154</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.attribute_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.attribute_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float attribute = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected ATTRIBUTE, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">36.422001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">40.398998</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">80913</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.const_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.const_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float const = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected CONST_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">28.972000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.643000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">38387</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.const_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.const_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float const = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected CONST_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.722000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">27.617001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">32799</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.uniform_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.uniform_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float uniform = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected UNIFORM, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">32.860001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.638000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">42793</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.uniform_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.uniform_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float uniform = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected UNIFORM, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.721000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">42.361000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">51988</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.varying_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.varying_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float varying = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected VARYING, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">28.101000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.621000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">32996</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.varying_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.varying_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float varying = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected VARYING, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.716000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">27.761000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37451</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.break_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.break_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float break = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected BREAK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">24.219999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.852000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">34065</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.break_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.break_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float break = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected BREAK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.949000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">38.054001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">47539</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.continue_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.continue_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float continue = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected CONTINUE, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">39.844002</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.630000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">57770</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.continue_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.continue_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float continue = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected CONTINUE, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.718000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">27.746000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37507</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.do_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.do_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float do = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected DO, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">24.110001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.856000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">38121</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.do_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.do_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float do = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected DO, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.743000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">33.666000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">38509</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.for_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.for_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float for = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected FOR, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">32.598000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.186000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">49224</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.for_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.for_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float for = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected FOR, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">2.414000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">27.079000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">39071</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.while_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.while_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float while = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected WHILE, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">28.806000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.861000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">42757</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.while_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.while_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float while = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected WHILE, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.734000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">42.800999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">56221</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.if_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.if_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float if = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected IF, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">39.516998</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.637000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">52588</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.if_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.if_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float if = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected IF, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.721000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.055000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">38734</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.else_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.else_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float else = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected ELSE, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">23.231001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.858000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37136</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.else_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.else_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float else = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected ELSE, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.938000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.621000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35511</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.in_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.in_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float in = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected IN_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">27.570000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.867000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37255</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.in_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.in_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float in = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected IN_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.950000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">26.542999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36641</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.out_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.out_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float out = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected OUT_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">26.066000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.548000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">43989</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.out_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.out_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float out = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected OUT_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.820000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">28.444000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">33858</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.inout_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.inout_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float inout = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected INOUT_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">28.120001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.853000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">42013</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.inout_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.inout_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float inout = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected INOUT_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.739000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">42.198002</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">46893</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.float_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.float_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float float = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected BASIC_TYPE_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">29.483999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.863000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">34629</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.float_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.float_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float float = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected BASIC_TYPE_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.723000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">31.955999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37326</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.int_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.int_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float int = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected BASIC_TYPE_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">28.481001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.864000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">33862</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.int_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.int_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float int = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected BASIC_TYPE_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.708000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">27.052000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">40700</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.void_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.void_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float void = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected VOID_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">28.516001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.646000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36888</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.void_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.void_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float void = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected VOID_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.723000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">38.160999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">47017</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.bool_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.bool_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float bool = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected BASIC_TYPE_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">25.610001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.850000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">30353</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.bool_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.bool_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float bool = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected BASIC_TYPE_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.721000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">32.131001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">41924</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.lowp_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.lowp_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float lowp = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected LOWP, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">23.976999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.849000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">33663</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.lowp_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.lowp_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float lowp = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected LOWP, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.795000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">35.952000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">45047</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.mediump_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.mediump_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float mediump = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected MEDIUMP, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">35.421001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.858000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">53048</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.mediump_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.mediump_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float mediump = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected MEDIUMP, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.744000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">34.706001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">43722</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.highp_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.highp_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float highp = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected HIGHP, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">24.764999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.861000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">39338</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.highp_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.highp_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float highp = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected HIGHP, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.727000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">37.494999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">55732</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.precision_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.precision_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float precision = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected PRECISION, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">36.215000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.387000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">48679</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.precision_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.precision_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float precision = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected PRECISION, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.865000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">30.870001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">48473</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.invariant_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.invariant_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float invariant = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected INVARIANT, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.995001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.643000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">44852</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.invariant_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.invariant_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float invariant = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected INVARIANT, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.726000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">43.964001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">56793</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.discard_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.discard_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float discard = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected DISCARD, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">35.341000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.635000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">39895</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.discard_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.discard_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float discard = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected DISCARD, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.719000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">27.957001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">41488</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.return_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.return_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float return = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected RETURN, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">24.915001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.867000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">43540</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.return_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.return_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float return = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected RETURN, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.938000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">28.587000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">38366</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.vec4_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.vec4_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float vec4 = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected BASIC_TYPE_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.966000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">43.696999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">57675</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.struct_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.struct_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float struct = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected STRUCT, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">39.298000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.633000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">43951</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.keywords.struct_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.keywords.struct_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float struct = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected STRUCT, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.720000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">27.986000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">34744</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.asm_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.asm_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float asm = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `asm&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">29.848000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.867000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35213</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.asm_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.asm_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float asm = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `asm&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.721000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">31.962999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">39957</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.class_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.class_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float class = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `class&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">29.235001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.652000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">34313</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.class_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.class_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float class = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `class&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.731000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">30.101999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36414</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.typedef_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.typedef_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float typedef = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `typedef&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.538000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.853000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37679</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.typedef_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.typedef_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float typedef = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `typedef&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.733000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">28.393999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">34485</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.template_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.template_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float template = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `template&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">30.225000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.872000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36332</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.template_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.template_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float template = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `template&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.748000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.736000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35373</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.this_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.this_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float this = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `this&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.384001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.644000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37257</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.this_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.this_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float this = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `this&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.742000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.000000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35387</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.goto_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.goto_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float goto = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `goto&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">33.383999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.456000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">42540</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.goto_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.goto_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float goto = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `goto&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.743000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">23.080999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">28416</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.switch_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.switch_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float switch = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `switch&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.906000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.854000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">38260</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.switch_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.switch_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float switch = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `switch&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.954000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">30.593000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">40971</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.default_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.default_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float default = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `default&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">43.131001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.632000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">48591</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.default_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.default_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float default = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `default&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.740000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">30.496000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36493</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.inline_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.inline_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float inline = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `inline&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.025000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.954000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37034</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.inline_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.inline_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float inline = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `inline&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.737000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">31.990999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">38467</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.volatile_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.volatile_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float volatile = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `volatile&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">29.327000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.643000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">34688</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.volatile_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.volatile_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float volatile = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `volatile&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.973000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.523001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35205</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.static_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.static_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float static = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `static&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">33.021999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.875000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">40183</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.static_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.static_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float static = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `static&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.743000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">23.983999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">30357</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.extern_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.extern_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float extern = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `extern&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.037001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.953000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37573</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.extern_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.extern_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float extern = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `extern&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.739000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">27.837000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">33706</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.interface_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.interface_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float interface = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `interface&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.420000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.863000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36816</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.interface_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.interface_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float interface = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `interface&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.729000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.306000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36590</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.flat_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.flat_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float flat = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `flat&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">33.282001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.341000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">41317</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.flat_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.flat_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float flat = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `flat&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.790000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">38.769001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">46187</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.short_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.short_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float short = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `short&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">32.747002</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.640000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">39109</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.short_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.short_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float short = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `short&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.723000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">31.066000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37955</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.unsigned_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.unsigned_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float unsigned = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `unsigned&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.080999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.973000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36889</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.unsigned_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.unsigned_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float unsigned = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `unsigned&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.755000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">28.464001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">33916</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.superp_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.superp_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float superp = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `superp&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">33.362999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.862000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">39928</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.superp_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.superp_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float superp = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `superp&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.748000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">28.886999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35207</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.namespace_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.namespace_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float namespace = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: illegal use of reserved word `namespace&apos;
+0:9(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">31.589001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.499000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">41290</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.reserved_keywords.namespace_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.reserved_keywords.namespace_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float namespace = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: illegal use of reserved word `namespace&apos;
+0:8(8): error: syntax error, unexpected ERROR_TOK, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.156000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">39.599998</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">45646</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.gl_begin_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.gl_begin_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float gl_Invalid = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(2): error: identifier `gl_Invalid&apos; uses reserved `gl_&apos; prefix
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">33.120998</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.640000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">38441</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.gl_begin_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.gl_begin_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float gl_Invalid = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(2): error: identifier `gl_Invalid&apos; uses reserved `gl_&apos; prefix
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.720000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">31.287001</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37067</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float 0123 = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected INTCONSTANT, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">30.813000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.967000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36962</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float 0123 = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected INTCONSTANT, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.730000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.872000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35909</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_begin_vertex
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_begin_vertex" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+attribute highp vec4 dEQP_Position;
+
+
+void main()
+{
+    
+    float 0invalid = 1.0;
+    gl_Position = dEQP_Position;
+
+}
+</ShaderSource>
+   <InfoLog>0:9(8): error: syntax error, unexpected INTCONSTANT, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">32.860001</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.872000</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">39505</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_begin_fragment
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.shaders.keywords.invalid_identifiers.digit_begin_fragment" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Expecting shader compilation to fail.</Text>
+ <ShaderProgram LinkStatus="Fail">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="Fail">
+   <ShaderSource>precision mediump float;
+
+
+
+void main()
+{
+    
+    float 0invalid = 1.0;
+    gl_FragColor = vec4(1.0);
+
+}
+</ShaderSource>
+   <InfoLog>0:8(8): error: syntax error, unexpected INTCONSTANT, expecting &apos;,&apos; or &apos;;&apos;
+</InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.970000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">29.646999</Number>
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37204</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+Run took 4.62 seconds
+
+#endSession

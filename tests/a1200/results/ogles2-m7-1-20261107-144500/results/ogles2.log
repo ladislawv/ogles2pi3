@@ -1,0 +1,22 @@
+     1 ogles2.library 1.3 init
+     2 open (count 1)
+     3 GPU submission lock "V3D 4.2 submit" at 0x0835B610
+     4 device: V3D 4.2.14 (PiStorm), 8 QPUs, 64 KB VPM, clipper granularity 256
+     5 device: GPU-visible RAM (device tree memory): 0x01000000-0x2E9FFFFF
+     6 device: GPU-visible RAM (device tree memory): 0x40000000-0x79DFFFFF
+     7 device: memory region "expansion memory" 0x08000020-0x2E9FFFFF fast: the GPU reaches it
+     8 device: memory region "expansion memory" 0x01000020-0x07FFFFFF fast: the GPU reaches it
+     9 device: memory region "expansion memory" 0x41000020-0x79DFFFFF fast: the GPU reaches it
+    10 device: memory region "memory" 0x00C00020-0x00C7FFFF fast: OUTSIDE the GPU-visible RAM
+    11 device: memory region "chip memory" 0x00001020-0x001FFFFF chip: OUTSIDE the GPU-visible RAM
+    12 display: render bitmap at 0x0A7C8644, 1024 bytes a row: in memory the GPU reaches
+    13 display: own window, 256x256, BGRA
+    14 device: context pools for 256x256, D32F, 17783168 bytes of GPU memory in use
+    15 aglCreateContext2: context 0x08751F24, 256x256
+    16 aglDestroyContext: context 0x08751F24: freeing
+    17 device: context freed, 0 bytes of GPU memory still in use
+    18 aglDestroyContext: context 0x08751F24 (6 frames, 0 dropped, 0 binning blocks added)
+    19 timing: 6 jobs, each on average: 1598 us of CPU work before its flush, 26 us waiting for binning, 79 us for the render
+    20 timing: and in each flush 148 us building the render list, 80 us for the CPU cache before the GPU, 54 us after
+    21 timing: 6 swaps, 6689 us from one to the next on average, 353 us of it presenting
+    22 timing: per frame 0 draws, 0 us in them; in all 0 ms in glBuffer(Sub)Data, 1 ms in glTex(Sub)Image2D

@@ -1290,7 +1290,8 @@ whole list 17,047 of 17,165 pass, its 18 failures all in Mesa vc4's own baseline
 regression package without a FAIL; Quake III 32.8 fps, glmark2 70; glCopyTex* and glGenerateMipmap on
 the GPU; a program compiles once (at its link) for the usual first draw; the disk cache has a size. **The
 Pi 4 card's regression and speed against 1.3.3 are done too (2026-11-07, the last entry below): every
-package as before, Quake III as fast, gears about 1 % slower.** The details are in the dated entries below,
+package as before, Quake III as fast, gears about 1 % slower; dEQP-GLES2's whole list as the Pi 4's
+earlier runs (one case once, not reproduced).** The details are in the dated entries below,
 the newest last. **Next, in order:**
 1. (Done 2026-11-07.) The Pi 4 card: regression and benchmarks. To repeat it: swap the card (a reboot);
    through amigent with the PC compiling (`BRIDGE_PORT=6804 bash tests/a1200/p5_run.sh <packages>`, as on
@@ -1780,7 +1781,28 @@ were written on, read that section's "Another machine" first.
    package and library ran 66.7 fps that day too. `gpu_mem=256` (the 4 November memory map again:
    0x01000000-0x2E9FFFFF) alone changed nothing (67.2 fps); **with the ARM at 2.2 GHz again, Quake III
    89.3 fps on this library, 89.1 on 1.3.3's** (loads 13.93 and 13.92 s), 4 November's figures. The
-   gears figures above are at 1.5 GHz. `piclock`'s ARM query answers nothing under the overclock (the
+   gears figures above are at 1.5 GHz; at 2.2 GHz, alternating three times each (59 °C at the end,
+   nothing throttled): bitmap immediate 432.9 against 432.1 fps, arrays 783.9 against 774.0 (1.3 %
+   slower), list 740.5 against 729.3 (1.5 %), window 452.6 against 448.9 (0.8 %), screen 1,115.1
+   against 1,093.7 (1.9 %): the same pattern, every round, a little above P2's 1 % in screen mode.
+   Probe P on both, twice each: the draws together cost the same (bitmap arrays 173.9 against 174.9 us a
+   frame, screen 181.0 against 181.8); the uniform stage 7 % more (35.1 to 37.6 us), shaders and checks
+   less, the wait for binning 2 to 3 us more, the rest of the frame-to-frame time (1,294 to 1,307 us) in
+   gears and gl4es. The uniform stage's code is 1.3.3's line for line (`write_uniforms`,
+   `vertex_uniforms`, `default_attribs`, `claim`: renamed fields only); the library is 351 KB against
+   236 KB (the VC4 backend, never run on the Pi 4). Where code lands under Emu68's translation, as P2
+   found at the split: left as it is.
+   **dEQP-GLES2's whole list on the Pi 4 card, the final library (2026-11-07, 2.2 GHz)**, through amigent,
+   compiled on the PC, in parts of 250 (`CARD="Pi 4" p6_deqp.sh` with `p6_watch.sh`): 2 h 17 min, four Wi-Fi
+   drops reset by netwatch and one slow-link reboot, each costing its part a retry. **17,131 of 17,181
+   pass; 59 of 60 groups exactly as the Pi 4's newest earlier result of each** (4 and 5 November; 17,132),
+   the known ones included (`texture` 24, `shaders-texture_functions` 1: vertex cube maps; `flush_finish` 3
+   and `rasterization` 3 warnings; `multisample` without MSAA not supported, 16 of 16 in 4x MSAA). The one
+   difference, `texture.format.a8_cube_pot` (one cube face's alpha off by 143, the part's first texture
+   case), passed run again three times alone and once in its group (36 of 36): not reproduced.
+   `p6_watch.sh` started while the station booted counted the log it could not read as no resets and took
+   the last old one for new (it killed nothing: only runs older than the reset are stopped); it counts from a
+   log it read now. `piclock`'s ARM query answers nothing under the overclock (the
    other clocks, the voltage, 1.035 V, and the temperature, 55 °C after the demo, do).
    On the way: `p2_checks.sh` took an old results drawer for a run that left none (a station drop, and a
    78-byte compiler stand-in that `runpkg`, which deletes nothing, had left in 12 of the station's package

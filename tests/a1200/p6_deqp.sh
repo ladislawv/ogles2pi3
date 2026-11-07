@@ -78,7 +78,7 @@ run() { # group, extra Run-M1 arguments, name
 
 [ -d "$PKG/caselists" ] || bash "$HERE/build_package.sh" m7-1 > /dev/null 2>&1
 GROUPS_=${*:-$(ls "$PKG/caselists" | grep -v -- '-p[0-9][0-9]*\.txt$' | sed 's/\.txt$//')}
-say "P6, dEQP-GLES2 must-pass on the Pi 3 card: $(echo $GROUPS_ | wc -w) groups, bridge port ${BRIDGE_PORT:-6803}${CHUNK:+, parts of $CHUNK cases}"
+say "P6, dEQP-GLES2 must-pass on the ${CARD:-Pi 3} card: $(echo $GROUPS_ | wc -w) groups, bridge port ${BRIDGE_PORT:-6803}${CHUNK:+, parts of $CHUNK cases}"
 # The parts' lists, made first: build_package.sh makes the package anew for each run (m7-1/build.sh).
 export P6_LISTS=$HERE/out/p6-lists
 rm -rf "$P6_LISTS"

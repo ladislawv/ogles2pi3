@@ -1,0 +1,1259 @@
+#sessionInfo releaseName unknown
+#sessionInfo releaseId 0xcafebabe
+#sessionInfo targetName "AmigaOS3"
+#sessionInfo logFormatVersion "0.3.4"
+#sessionInfo vendor "ogles2.library"
+#sessionInfo renderer "V3D 4.2.14 (PiStorm), 8 QPUs, 64 KB VPM"
+#sessionInfo commandLineParameters "--deqp-caselist-file M7R1:caselists/texformat.txt --deqp-archive-dir=M7R1:bin --deqp-log-filename=M7R1:results/texformat-1.qpa --deqp-log-images=disable --deqp-log-shader-sources=disable --deqp-surface-width=256 --deqp-surface-height=256 --deqp-gl-config-name=rgba8888d24s8ms0"
+
+#beginSession
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.a8_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.a8_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_ALPHA, GL_UNSIGNED_BYTE, 128x128,
+  fill with (R: 0 -&gt; 0, G: 0 -&gt; 0, B: 0 -&gt; 0, A: 0 -&gt; 1) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">109.528999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">39.839001</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">43.668999</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (0, 0, 0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">256075</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.a8_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.a8_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_ALPHA, GL_UNSIGNED_BYTE, 63x112,
+  fill with (R: 0 -&gt; 0, G: 0 -&gt; 0, B: 0 -&gt; 0, A: 0 -&gt; 1) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.761000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.571000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.143000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (0, 0, 0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">40699</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.a8_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.a8_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_ALPHA, GL_UNSIGNED_BYTE, 64x64,
+  fill with (R: 0 -&gt; 0, G: 0 -&gt; 0, B: 0 -&gt; 0, A: 0 -&gt; 1) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">26.372999</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">36.948002</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">43.018002</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (0, 0, 0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">237382</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.a8_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.a8_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_ALPHA, GL_UNSIGNED_BYTE, 57x57,
+  fill with (R: 0 -&gt; 0, G: 0 -&gt; 0, B: 0 -&gt; 0, A: 0 -&gt; 1) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.764000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.571000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.098000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (0, 0, 0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">104540</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.l8_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.l8_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_LUMINANCE, GL_UNSIGNED_BYTE, 128x128,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.773000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.574000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">64913</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.l8_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.l8_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_LUMINANCE, GL_UNSIGNED_BYTE, 63x112,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.349000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.208000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.101000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36012</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.l8_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.l8_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_LUMINANCE, GL_UNSIGNED_BYTE, 64x64,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.768000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.571000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">127320</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.l8_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.l8_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_LUMINANCE, GL_UNSIGNED_BYTE, 57x57,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.761000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.573000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.102000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">108315</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.la88_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.la88_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 128x128,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.778000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.571000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.104000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">65832</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.la88_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.la88_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 63x112,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.763000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.574000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.101000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">35905</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.la88_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.la88_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 64x64,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.768000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.569000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">138613</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.la88_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.la88_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 57x57,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.752000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.573000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.101000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">115895</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgb565_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgb565_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 128x128,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.330000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.906000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.109000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">74746</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgb565_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgb565_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 63x112,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.755000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.572000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">36713</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgb565_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgb565_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 64x64,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.769000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.572000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.102000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">141318</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgb565_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgb565_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 57x57,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.769000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.572000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.102000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">114524</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgb888_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgb888_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGB, GL_UNSIGNED_BYTE, 128x128,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.778000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.575000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.101000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">50619</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgb888_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgb888_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGB, GL_UNSIGNED_BYTE, 63x112,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.402000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.271000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.105000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">31346</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgb888_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgb888_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGB, GL_UNSIGNED_BYTE, 64x64,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.767000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.567000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.101000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">114790</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgb888_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgb888_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGB, GL_UNSIGNED_BYTE, 57x57,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 0) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.406000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.735000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.333000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">97560</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba4444_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba4444_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, 128x128,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.785000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.575000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.102000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">76447</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba4444_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba4444_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, 63x112,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.015000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.588000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">39763</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba4444_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba4444_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, 64x64,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.770000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.574000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">150465</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba4444_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba4444_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, 57x57,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.731000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.001000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.101000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">126791</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba5551_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba5551_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 128x128,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0.5 -&gt; 1.5) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.785000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.570000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.104000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (0, 0, 0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">76095</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba5551_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba5551_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 63x112,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0.5 -&gt; 1.5) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.767000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.574000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.100000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (0, 0, 0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">37952</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba5551_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba5551_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 64x64,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0.5 -&gt; 1.5) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.759000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.572000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.101000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (0, 0, 0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">149181</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba5551_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba5551_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 57x57,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0.5 -&gt; 1.5) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.421000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">1.175000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (0, 0, 0, 0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">126070</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba8888_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba8888_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGBA, GL_UNSIGNED_BYTE, 128x128,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.774000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.574000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.104000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">50724</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba8888_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba8888_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>2D texture, GL_RGBA, GL_UNSIGNED_BYTE, 63x112,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>Texture parameters:
+  WRAP_S = GL_CLAMP_TO_EDGE
+  WRAP_T = GL_CLAMP_TO_EDGE
+  MIN_FILTER = GL_NEAREST
+  MAG_FILTER = GL_NEAREST</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">1.023000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.599000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">28944</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba8888_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba8888_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGBA, GL_UNSIGNED_BYTE, 64x64,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.774000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.578000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.103000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">111317</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.rgba8888_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.rgba8888_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>Cube map texture, GL_RGBA, GL_UNSIGNED_BYTE, 57x57,
+  fill with (R: 0 -&gt; 1, G: 0 -&gt; 1, B: 0 -&gt; 1, A: 0 -&gt; 1) gradient</Text>
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ShaderProgram LinkStatus="OK">
+  <InfoLog></InfoLog>
+  <VertexShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</VertexShader>
+  <FragmentShader CompileStatus="OK">
+   <ShaderSource></ShaderSource>
+   <InfoLog></InfoLog>
+</FragmentShader>
+</ShaderProgram>
+ <Number Name="VertexCompileTime" Description="Vertex shader compile time" Tag="Time" Unit="ms">0.766000</Number>
+ <Number Name="FragmentCompileTime" Description="Fragment shader compile time" Tag="Time" Unit="ms">0.574000</Number>
+ <Number Name="LinkTime" Description="Link time" Tag="Time" Unit="ms">0.104000</Number>
+ <Text>u_sampler = 0</Text>
+ <Text>u_colorScale = (1, 1, 1, 1)</Text>
+ <Text>u_colorBias = (-0, -0, -0, -0)</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">92261</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.etc1_2d_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.etc1_2d_pot" Version="0.3.4" CaseType="SelfValidate">
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">66537</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.etc1_2d_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.etc1_2d_npot" Version="0.3.4" CaseType="SelfValidate">
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">34399</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.etc1_cube_pot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.etc1_cube_pot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">155455</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+#beginTestCaseResult dEQP-GLES2.functional.texture.format.etc1_cube_npot
+<?xml version="1.0" encoding="UTF-8"?>
+<TestCaseResult CasePath="dEQP-GLES2.functional.texture.format.etc1_cube_npot" Version="0.3.4" CaseType="SelfValidate">
+ <Text>CUBEFACE_NEGATIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_X</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Y</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_NEGATIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Text>CUBEFACE_POSITIVE_Z</Text>
+ <ImageSet Name="Result" Description="Image comparison result" />
+ <Number Name="TestDuration" Description="Test case duration in microseconds" Tag="Time" Unit="us">115848</Number>
+ <Result StatusCode="Pass">Pass</Result>
+</TestCaseResult>
+
+#endTestCaseResult
+
+Run took 3.66 seconds
+
+#endSession
