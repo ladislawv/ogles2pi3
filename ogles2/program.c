@@ -855,8 +855,8 @@ static void file_path(char *path, const char *dir, const char *hex)
  * itself), the disk cache (OGLES2Cache:, or T: when it is not assigned:
  * that is where compiled programs go then), the on-target compiler, else the
  * sources go to T:ogles2_missing_shaders.txt. */
-static struct OGLES2Image *load_image(struct OGLES2Program *p, const UBYTE *hash, const char *hex,
-                                      const char *bindings)
+static struct OGLES2Image *load_image(const struct OGLES2Context *ctx, struct OGLES2Program *p, const UBYTE *hash,
+                                      const char *hex, const char *bindings)
 {
     char path[96];
     struct OGLES2Image *im;
@@ -873,13 +873,16 @@ static struct OGLES2Image *load_image(struct OGLES2Program *p, const UBYTE *hash
     }
     if (ogles2_compiler_installed()) {
         char *log = AllocVec(4096, MEMF_ANY | MEMF_CLEAR);
+        UBYTE hints[32];
+        ULONG nhints = ogles2_backend->link_hints ? ogles2_backend->link_hints(ctx, hints, sizeof(hints)) : 0;
         BOOL ok;
         if (!log) {
             set_log(p, "out of memory", 0);
             return 0;
         }
         file_path(path, dirs[2], hex);
-        ok = bindings ? ogles2_compile_program_bound(p->vs->source, p->fs->source, bindings, path, log, 4096)
+        ok = nhints ? ogles2_compile_program_keys(p->vs->source, p->fs->source, bindings, path, hints, nhints, log, 4096)
+           : bindings ? ogles2_compile_program_bound(p->vs->source, p->fs->source, bindings, path, log, 4096)
                       : ogles2_compile_program(p->vs->source, p->fs->source, path, log, 4096);
         if (ok && (im = try_file(p, hash, path, &refused))) {
             FreeVec(log);
@@ -1255,7 +1258,7 @@ void ogles2_glLinkProgram(struct OGLES2Context *ctx, GLuint program)
     for (im = ctx->share->images; im && memcmp(im->hash, hash, 32); im = im->next)
         ;
     if (!im) {
-        im = load_image(p, hash, hex, bindings);
+        im = load_image(ctx, p, hash, hex, bindings);
         if (im && bindings && ogles2_backend->device != V3DGLSL_DEVICE_V3D42)
             im->bind_src = dup_text(bindings, str_len(bindings)); /* ogles2_image_keyed's compiles */
         if (bindings)

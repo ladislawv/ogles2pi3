@@ -195,6 +195,8 @@ void ogles2_vc4_draw_keys(struct OGLES2Context *ctx, const struct OGLES2Program 
                           UBYTE draw_buffer, const struct vc4_key_sampler key[2][16], const UBYTE n[2], int psize,
                           UBYTE *kfs, UBYTE *kvs);
 
+ULONG ogles2_vc4_link_hints(const struct OGLES2Context *ctx, UBYTE *buf, ULONG size);
+
 /* fbo_vc4.c */
 BOOL ogles2_vc4_rb_zs_storage(GLenum format, UWORD w, UWORD h, struct v3d_mem *mem, ULONG *base, ULONG *ub,
                               ULONG *bytes, UBYTE *cpp);

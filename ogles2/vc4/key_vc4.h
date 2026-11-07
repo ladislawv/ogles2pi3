@@ -129,4 +129,10 @@ struct vc4_vs_state
 void vc4_key_fs(unsigned char *out, const struct vc4_fs_state *s, int canonical);
 void vc4_key_vs(unsigned char *out, const struct vc4_vs_state *s, int canonical);
 
+/* A hint record for a link's request (tools/v3dglslc/vc4_variants.c): the variant of
+ * the reference draw's state with this target format and depth test too, for the
+ * program's first draw. */
+#define VC4_KEY_HINT_BYTES 12
+void vc4_key_hint(unsigned char *out, unsigned color_format, int depth);
+
 #endif

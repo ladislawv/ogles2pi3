@@ -193,6 +193,118 @@ static BOOL start_server(void)
     return FALSE;
 }
 
+/* ---- the disk cache's size ----
+ * Every program compiled leaves its files there and nothing else removes them: a
+ * drawer that grows without end makes each new file slower to create (a dEQP run's
+ * made a 3 ms compile take 260 ms; an ogles3 run's reached a million files). Once
+ * a library's load, before its first compile: over CACHE_MAX_FILES files or
+ * ENV:OGLES2/CacheKB kilobytes (CACHE_KB; 0: no limit), the oldest go until the
+ * cache is at 3/4 of both. Only this library's own files (24 hex digits and one of
+ * its extensions); never PROGDIR:. A file removed is compiled again if it is needed.
+ * Bounded, so a first compile never waits long: CACHE_MAX_SCAN files are looked at
+ * and CACHE_MAX_DELETE removed, the next load going on from there. */
+#define CACHE_KB         (64UL * 1024)
+#define CACHE_MAX_FILES  8192UL
+#define CACHE_MAX_SCAN   16384UL
+#define CACHE_MAX_DELETE 2048UL
+
+struct cache_file
+{
+    ULONG age, size;
+    char name[32];
+};
+
+static BOOL cache_trimmed;
+
+static BOOL cache_file_name(const char *n)
+{
+    static const char *const ext[] = {".v3dp", ".v3dw", ".v3da", ".v3ds", ".vc4p", ".vc4k"};
+    ULONG i;
+    for (i = 0; i < 24; i++)
+        if (!((n[i] >= '0' && n[i] <= '9') || (n[i] >= 'a' && n[i] <= 'f')))
+            return FALSE;
+    for (i = 0; i < sizeof(ext) / sizeof(ext[0]); i++)
+        if (!memcmp(n + 24, ext[i], 6)) /* with its end: no C library's strcmp here */
+            return TRUE;
+    return FALSE;
+}
+
+static ULONG cache_limit_kb(void)
+{
+    char var[16];
+    ULONG v = 0, i;
+    if (GetVar((STRPTR) "OGLES2/CacheKB", (STRPTR)var, sizeof(var), GVF_GLOBAL_ONLY) <= 0)
+        return CACHE_KB;
+    for (i = 0; var[i] >= '0' && var[i] <= '9'; i++)
+        v = v * 10 + (ULONG)(var[i] - '0');
+    return i ? v : CACHE_KB;
+}
+
+static void cache_trim_now(ULONG limit_kb)
+{
+    const char *dir = ogles2_cache_dir();
+    struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, 0);
+    struct cache_file *f = AllocVec(CACHE_MAX_SCAN * sizeof(*f), MEMF_ANY);
+    ULONG n = 0, kb = 0, keep_files = CACHE_MAX_FILES / 4 * 3, keep_kb = limit_kb / 4 * 3, gap, i, j, gone = 0, gone_kb = 0;
+    BPTR lock;
+    if (fib && f && (lock = Lock((STRPTR)dir, ACCESS_READ)) != 0) {
+        if (Examine(lock, fib))
+            while (n < CACHE_MAX_SCAN && ExNext(lock, fib))
+                if (fib->fib_DirEntryType < 0 && cache_file_name((const char *)fib->fib_FileName)) {
+                    f[n].age = (ULONG)fib->fib_Date.ds_Days * 86400UL + (ULONG)fib->fib_Date.ds_Minute * 60UL +
+                               (ULONG)fib->fib_Date.ds_Tick / TICKS_PER_SECOND;
+                    f[n].size = (ULONG)fib->fib_Size;
+                    strcpy(f[n].name, (const char *)fib->fib_FileName);
+                    kb += (f[n].size + 1023) / 1024;
+                    n++;
+                }
+        UnLock(lock);
+        if (n > CACHE_MAX_FILES || kb > limit_kb) {
+            /* oldest first (Shell's sort: no C library here) */
+            for (gap = n / 2; gap; gap /= 2)
+                for (i = gap; i < n; i++) {
+                    struct cache_file t = f[i];
+                    for (j = i; j >= gap && f[j - gap].age > t.age; j -= gap)
+                        f[j] = f[j - gap];
+                    f[j] = t;
+                }
+            for (i = 0; i < n && gone < CACHE_MAX_DELETE && (n - gone > keep_files || kb - gone_kb > keep_kb); i++) {
+                char path[64];
+                strcpy(path, dir);
+                strcat(path, f[i].name);
+                if (DeleteFile((STRPTR)path)) { /* a file in use stays */
+                    gone++;
+                    gone_kb += (f[i].size + 1023) / 1024;
+                }
+            }
+            ogles2_log("compiler: the cache %s held %ld files, %ld KB (limit %ld KB): the %ld oldest removed, %ld KB",
+                       (ULONG)dir, n, kb, limit_kb, gone, gone_kb);
+        }
+    }
+    if (f)
+        FreeVec(f);
+    if (fib)
+        FreeDosObject(DOS_FIB, fib);
+}
+
+/* Once a load: the first compile looks. No requester for a cache that is gone. */
+static void cache_trim(void)
+{
+    struct Process *me = (struct Process *)FindTask(0);
+    ULONG limit;
+    APTR win;
+    ObtainSemaphore(&OGLES2LibBase->compiler_lock);
+    if (!cache_trimmed) {
+        cache_trimmed = TRUE;
+        win = me->pr_WindowPtr;
+        me->pr_WindowPtr = (APTR)-1;
+        if ((limit = cache_limit_kb()) != 0)
+            cache_trim_now(limit);
+        me->pr_WindowPtr = win;
+    }
+    ReleaseSemaphore(&OGLES2LibBase->compiler_lock);
+}
+
 /* Sends `r` to the server; FALSE if there is none. */
 static BOOL send(struct V3DGLSLRequest *r)
 {
@@ -216,6 +328,7 @@ static BOOL request(ULONG op, const char *vs, const char *fs, const char *bindin
 
     if (log_size)
         log[0] = 0;
+    cache_trim();
     if (!(reply = CreateMsgPort()))
         return FALSE;
     memset(&r, 0, sizeof(r));

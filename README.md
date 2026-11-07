@@ -86,7 +86,8 @@ AI assistant.
 
 **Shaders.** With the compiler installed (`LIBS:v3dglslc`, or in the program's drawer) nothing is
 needed: programs compile when they link (about 0.2 s, once), into `OGLES2Cache:` if that assign
-exists, else `T:`; `glCompileShader` reports GLSL errors with the compiler's messages. To ship
+exists, else `T:` (over 64 MB or 8192 files the oldest are removed, `ENV:OGLES2/CacheKB` sets the
+size, 0 turns this off: `ogles2.doc`); `glCompileShader` reports GLSL errors with the compiler's messages. To ship
 binaries instead: run the program once and ship the `.v3dp` files from the cache in a `shaders/`
 drawer beside it (`PROGDIR:shaders/`), or right next to it (`PROGDIR:`). Without a compiler, the library writes the sources it is missing to
 `T:ogles2_missing_shaders.txt` for the offline compiler on a PC (`tools/v3dglslc`,

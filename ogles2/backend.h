@@ -199,6 +199,10 @@ struct OGLES2Backend
     const char *(*variant_recipe)(struct OGLES2Variant *v, BOOL *clip_z, ULONG *bad);
     const struct OGLES2Variant *(*variant_choose)(const struct OGLES2Image *im, UBYTE stage, UBYTE cbufs, GLenum mode);
     const struct OGLES2Image *(*builtin_image)(void);
+    /* What a link's compile request can say of the program's first draw, into
+     * buf (at most size bytes), its length (0: nothing; VC4's hint records;
+     * the V3D backend has no such table entry: 0). */
+    ULONG (*link_hints)(const struct OGLES2Context *ctx, UBYTE *buf, ULONG size);
     const UBYTE *(*internal_program)(int which, ULONG *len);
     /* What such a program's image needs once loaded (VC4: its sources, for the
      * variants of states it does not hold); 0: nothing. */

@@ -68,6 +68,13 @@ none, the compiler v3dglslc compiles it (about 0.2 s per program; its first
 start takes about a second) and the result goes into OGLES2Cache:, so the
 next run needs no compiler.
 
+The cache does not grow without end: over 64 MB or 8192 files, the first
+compile after ogles2.library is loaded removes the oldest of its files, down
+to 3/4 of the limit, and a program that needs one again compiles it again.
+"SetEnv OGLES2/CacheKB 200000" (in S:User-Startup, to keep it) sets the size
+in KB; 0 turns this off. Keep the binaries you ship in the program's shaders/
+drawer, which is never touched.
+
 Programs that ship their binaries (as the examples do) run without the
 compiler. Where it is installed, they leave it unstarted only if they also
 ship their shaders' records (.v3ds files, in shaders/ with the binaries),

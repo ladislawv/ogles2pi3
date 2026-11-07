@@ -21,6 +21,9 @@ program writes (ogles2_vc4_output_for relies on it), and a key with draw_buffer
 1 in a state the file lacks compiles into a variant with that key and that
 output's code.
 
+Then a link's hint records (ogles2_vc4_link_hints): the variants they add are the
+ones the library's key builder asks for at a plain first draw.
+
     python3 tools/v3dglslc/test/vc4_keys.py [--compiler PATH]
 
 MIT licence (LICENSE: tools/v3dglslc).
@@ -217,6 +220,89 @@ def check_draw_buffers(v, tmp):
     return bad
 
 
+KEY_DEPTH_ENABLED = KEY_COLOR_FORMAT + 4
+BGRA8 = 105  # VC4K_B8G8R8A8_UNORM
+HINT_KEYS_C = r"""
+#include <stdio.h>
+#include <string.h>
+#include <GLES2/gl2.h>
+#include "key_vc4.h"
+/* hints.bin: what ogles2_vc4_link_hints sends; want.bin: the fragment keys a plain first
+ * draw on a BGRA display builds, without and with a depth test: those the hints must give */
+int main(void)
+{
+    unsigned char h[VC4_KEY_HINT_BYTES], k[VC4_KEY_FS_BYTES];
+    struct vc4_fs_state s;
+    FILE *f = fopen("hints.bin", "wb"), *w = fopen("want.bin", "wb");
+    int depth;
+    for (depth = 0; depth < 2; depth++) {
+        vc4_key_hint(h, VC4K_B8G8R8A8_UNORM, depth);
+        fwrite(h, 1, sizeof(h), f);
+        memset(&s, 0, sizeof(s));
+        s.color_format = VC4K_B8G8R8A8_UNORM;
+        s.depth_test = (unsigned char)depth;
+        s.colormask = 15;
+        vc4_key_fs(k, &s, 1);
+        fwrite(k, 1, sizeof(k), w);
+    }
+    fclose(f);
+    fclose(w);
+    return 0;
+}
+"""
+
+
+def check_hints(v, tmp):
+    """A link's hint records (ogles2/vc4/drawkey_vc4.c, ogles2_vc4_link_hints): the reference
+    draw's variants plus one fragment variant a hint, whose key is the one the library's own
+    builder makes for that draw (else the hint is wasted: the first draw compiles again);
+    no new vertex variant; and a file without hints as before. 0, or the checks failed."""
+    bad = 0
+    d = os.path.join(tmp, "hints")
+    os.makedirs(d, exist_ok=True)
+    c = os.path.join(d, "hints.c")
+    open(c, "w").write(HINT_KEYS_C)
+    exe = os.path.join(d, "hints")
+    subprocess.run(["gcc", "-O1", "-I" + os.path.join(REPO, "ogles2", "vc4"), "-I" + os.path.join(REPO, "vc4core", "include"),
+                    "-o", exe, c, os.path.join(REPO, "ogles2", "vc4", "key_vc4.c")], check=True)
+    subprocess.run([exe], cwd=d, check=True)
+    want = open(os.path.join(d, "want.bin"), "rb").read()
+    want = [want[:4 + FS_KEY], want[4 + FS_KEY:]]
+    plain_dir, hint_dir = os.path.join(d, "plain"), os.path.join(d, "hinted")
+    os.makedirs(plain_dir, exist_ok=True)
+    os.makedirs(hint_dir, exist_ok=True)
+    plain = compile_(v, plain_dir, None, None, None, "flat.vert", "flat.frag")
+    hinted = compile_(v, hint_dir, None, None, os.path.join(d, "hints.bin"), "flat.vert", "flat.frag")
+    pv = [b for t, b in sections(plain) if t == 7]
+    hv = [b for t, b in sections(hinted) if t == 7]
+    ok = len(hv) == len(pv) + 2 and all(x in hv for x in pv)
+    print("flat         a link's hints add two variants to the reference's %d: %s" % (len(pv), "yes" if ok else "NO, %d" % len(hv)))
+    bad += not ok
+    new = [b for b in hv if b not in pv]
+    ok = all(struct.unpack("<I", b[:4])[0] == 4 for b in new)
+    print("flat         they are fragment variants: %s" % ("yes" if ok else "NO"))
+    bad += not ok
+
+    def same_for_library(a, b):
+        """As ogles2_vc4_variant_find compares them: wraps and the comparison function aside."""
+        a, b = bytearray(a), bytearray(b)
+        for i in range(16):  # the samplers: compare_func and the wraps canonical
+            for off in (9, 10, 11):
+                a[4 + i * 16 + off] = b[4 + i * 16 + off] = 0
+        return a == b
+    for depth in (0, 1):
+        found = [b for b in new if same_for_library(b[:4 + FS_KEY], want[depth])]
+        ok = len(found) == 1
+        print("flat         BGRA target, depth test %d: the library's own key %s" %
+              (depth, "is in the file" if ok else "IS NOT IN THE FILE: THE HINT IS WASTED"))
+        bad += not ok
+    # A program's fragment-shader inputs do not change with the hint: its vertex variant serves it.
+    ok = all(fs_inputs_of_fs(b) == fs_inputs_of_fs(pv[[struct.unpack("<I", x[:4])[0] for x in pv].index(4)]) for b in new)
+    print("flat         the reference's vertex variant pairs with them: %s" % ("yes" if ok else "NO"))
+    bad += not ok
+    return bad
+
+
 def main():
     v = os.path.expanduser("~/ogles2-build-pi3/v3dglslc/host/v3dglslc")
     if "--compiler" in sys.argv:
@@ -242,6 +328,7 @@ def main():
                        "identical" if same else "DIFFERENT"))
                 bad += not same
         bad += check_draw_buffers(v, tmp)
+        bad += check_hints(v, tmp)
     print("all identical" if not bad else "%d compile(s) differ" % bad)
     return 1 if bad else 0
 

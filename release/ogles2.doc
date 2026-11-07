@@ -180,6 +180,16 @@ ogles2.library/--shaders--                         ogles2.library/--shaders--
        this) to keep compiled programs across reboots; without it they go
        to T:, and are compiled again after the next reboot.
 
+       The cache has a limit: 64 MB and 8192 files. The first compile after
+       the library is loaded looks, and when the cache is over either it
+       removes the oldest files by date, down to 3/4 of both. A program that
+       needs a removed file compiles it again. Only the library's own files
+       are touched (24 hexadecimal digits and .v3dp, .v3dw, .v3da, .v3ds,
+       .vc4p or .vc4k), never PROGDIR: or a shaders/ drawer.
+       ENV:OGLES2/CacheKB sets the size in kilobytes, 0 turns this off (in
+       S:User-Startup, to keep it across reboots):
+           SetEnv OGLES2/CacheKB 200000
+
 ogles2.library/--deviations--                   ogles2.library/--deviations--
 
    Where ogles2.library differs from the GLES 2.0 specification or from

@@ -228,6 +228,11 @@ static const char *uniform_name(enum quniform_contents c)
     return (unsigned)c < sizeof(names) / sizeof(names[0]) && names[c] ? names[c] : "?";
 }
 
+/* The program's first fragment key since vc4_variants_capture(1): the reference
+ * draw's, which a hint record (below) builds on. */
+static struct vc4_fs_key reference_fs_key;
+static int reference_fs_valid;
+
 static void variant(enum qstage stage, const struct vc4_key *key, uint32_t key_size,
                     const struct vc4_compiled_shader *sh, const uint64_t *qpu, uint32_t n)
 {
@@ -235,6 +240,10 @@ static void variant(enum qstage stage, const struct vc4_key *key, uint32_t key_s
     if (stage == QSTAGE_FRAG) {
         last_fs_state = key->shader_state;
         last_fs_inputs = sh->fs_inputs;
+        if (capture && !reference_fs_valid) {
+            reference_fs_key = *(const struct vc4_fs_key *)key;
+            reference_fs_valid = 1;
+        }
     } else
         last_vs_state = key->shader_state;
     if (capture)
@@ -276,6 +285,8 @@ void vc4_variants_install(FILE *f)
 void vc4_variants_capture(int on)
 {
     capture = on;
+    if (on)
+        reference_fs_valid = 0;
 }
 
 /* ---- keys from a file (docs/PI3_PLAN.md §4.2, PD7) ----
@@ -286,7 +297,15 @@ void vc4_variants_capture(int on)
  * fs_inputs are read and replaced by those of the fragment variant compiled
  * last). A fragment record compiles that fragment variant; a vertex record
  * the vertex and coordinate variants for it. All little-endian. They go
- * through the hook like the reference draw's, after it, for its program. */
+ * through the hook like the reference draw's, after it, for its program.
+ *
+ * Stage 5, a hint (VC4_KEY_HINT_STAGE, ogles2/vc4/key_vc4.h): a u32 target
+ * format, a u8 depth test, three bytes of padding: the reference draw's fragment
+ * key with those two fields changed, what ogles2.library expects a first draw to
+ * need (the display's format, a depth test), so that draw has its variant without
+ * a second compile. Its vertex variants are the reference's: neither field
+ * changes the fragment shader's inputs. A hint that does not compile is left out:
+ * the draw compiles what it needs, as without one. */
 
 struct rd {
     const unsigned char *p;
@@ -432,8 +451,27 @@ int vc4_variants_compile_key_buffer(const void *keys, size_t size)
                     return -1;
                 }
             }
+        } else if (stage == 5) {
+            uint32_t format = r_u32(&r);
+            unsigned depth = r_u8(&r);
+            r_u8(&r);
+            r_u8(&r);
+            r_u8(&r);
+            if (r.bad)
+                break;
+            if (reference_fs_valid) {
+                struct vc4_fs_key k = reference_fs_key;
+                struct vc4_compiled_shader *sh;
+                k.color_format = format;
+                k.depth_enabled = depth;
+                k.base.shader_state = last_fs_state;
+                sh = vc4_compile_variant(vc4_compiled_variant_context, QSTAGE_FRAG, &k.base);
+                if (!sh || sh->failed)
+                    fprintf(stderr, "v3dglslc: vc4 keys: a hint (format %u, depth %u) did not compile: left out\n",
+                            (unsigned)format, depth);
+            }
         } else {
-            fprintf(stderr, "v3dglslc: vc4 keys: record %d: stage %u is neither 4 nor 0\n", records + 1,
+            fprintf(stderr, "v3dglslc: vc4 keys: record %d: stage %u is not 4, 0 or 5\n", records + 1,
                     (unsigned)stage);
             return -1;
         }

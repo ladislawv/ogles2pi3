@@ -378,6 +378,7 @@ const struct OGLES2Backend ogles2_backend_vc4 = {
     ogles2_vc4_variant_recipe,
     ogles2_vc4_variant_choose,
     builtin_image,
+    ogles2_vc4_link_hints,
     internal_program,
     internal_loaded,
 };

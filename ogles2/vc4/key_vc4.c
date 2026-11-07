@@ -174,6 +174,16 @@ static unsigned char *samplers(unsigned char *o, int n, const struct vc4_key_sam
     return o + 16 * (16 - (n < 16 ? n : 16));
 }
 
+void vc4_key_hint(unsigned char *out, unsigned color_format, int depth)
+{
+    unsigned char *o = put32(out, 5); /* the stage of a hint */
+    o = put32(o, color_format);
+    *o++ = (unsigned char)(depth ? 1 : 0);
+    *o++ = 0;
+    *o++ = 0;
+    *o = 0;
+}
+
 void vc4_key_fs(unsigned char *out, const struct vc4_fs_state *s, int canonical)
 {
     unsigned char *o = put32(out, 4);
