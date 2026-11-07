@@ -2,7 +2,8 @@
 """Renames .v3dp files to the name the runtime looks for (FORMAT.md, PROGRAM):
 the program hash's first 24 hex digits + ".v3dp", 29 characters (FFS file
 names are at most 30); a .v3dw file (the same program's variants for
-32-bit samplers) keeps its extension. usage: v3dp_hashname.py FILE..."""
+32-bit samplers) and the Pi 3's .vc4p and .vc4k (FORMAT.md 1.1, the same
+container) keep theirs. usage: v3dp_hashname.py FILE..."""
 import os
 import struct
 import sys
@@ -19,7 +20,7 @@ def program_hash(path):
 
 
 for path in sys.argv[1:]:
-    ext = ".v3dw" if path.endswith(".v3dw") else ".v3dp"
+    ext = os.path.splitext(path)[1] if os.path.splitext(path)[1] in (".v3dw", ".vc4p", ".vc4k") else ".v3dp"
     new = os.path.join(os.path.dirname(path), program_hash(path) + ext)
     if os.path.abspath(new) != os.path.abspath(path):
         os.replace(path, new)

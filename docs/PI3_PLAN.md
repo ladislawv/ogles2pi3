@@ -1281,6 +1281,9 @@ Everything that can run here runs here first (the developer, 2026-11-03).
 - **PD9 (2026-11-03): licence.** `v3dcore` (and the V3D 4.2 backend code adapted from PiStorm3D,
   §5.3) stays under Hyperion's licence; everything else is MIT, with only permissive third-party
   notices. The built library, which contains `v3dcore`, stays under Hyperion's terms as a whole.
+- **PD10 (2026-11-07): betas from `ogles2pi3` first.** The Pi 3 work is released as 1.4 betas from this
+  repository (library version 1.4, `OGLES2_RELEASE` "1.4-beta1"); P7, the merge into `ogles2` and the
+  release from there, is postponed until the developer says so.
 
 ## 10. Status and next steps
 
@@ -1300,11 +1303,15 @@ the newest last. **Next, in order:**
    (`release/dist/ogles2-1.3.3.lha`'s `Libs/ogles2.library`) with `LIB=<library> p5_run.sh m6-1` and
    `m6-5 ARGS=FRAMES=0`, alternating, or `p2_speed.sh` with `REF_LIB`. dEQP on the Pi 4 is optional before
    P7 (its own baseline is in `DEVELOPMENT_PLAN.md`); `RAMCACHE=1` shortens it (item 6).
-2. **P7: into `ogles2`** (PD8, §8): merge this branch there (the build root back to `~/ogles2-build`), check
-   both cards again, then the release (`release/build_release.sh`, one library and one compiler for both,
-   one whole dEQP pass as the release's check). Nothing is pushed to `ogles2` before the developer says
-   so.
-3. Optional: Mesa's mipmap picture for `vc4_draw` (the Pi 3 under Linux, §6); the Wi-Fi drops of the
+2. **Release 1.4-beta1 from this repository (PD10, below)**: prepared 2026-11-07 (the entry at this
+   section's end). Left: the archive's examples on the Pi 3 card (the Pi 4's done), then the archives
+   into `release/dist/` (`build_release.sh dist sdl`), the commit, a tag `v1.4-beta1` and a GitHub
+   pre-release on `ladislawv/ogles2pi3`, each when the developer says so.
+3. **P7: into `ogles2`** (PD8, §8), **postponed by the developer (2026-11-07)**: merge this branch there
+   (the build root back to `~/ogles2-build`), check both cards again, then the release
+   (`release/build_release.sh`, one library and one compiler for both, one whole dEQP pass as the
+   release's check). Nothing is pushed to `ogles2` before the developer says so.
+4. Optional: Mesa's mipmap picture for `vc4_draw` (the Pi 3 under Linux, §6); the Wi-Fi drops of the
    A1200's link on the Pi 3 card (cause unknown, the station's and not the library's; the scripts work
    around them); ERRSTAT VCMRE, logged for some renders with right pictures (item 5).
 
@@ -1811,3 +1818,13 @@ were written on, read that section's "Another machine" first.
 
    Left: P7 (item 2 of the list at this section's start); Mesa's mipmap picture for `vc4_draw` (the Pi 3
    under Linux, optional).
+
+   **Release 1.4-beta1 prepared (2026-11-07, PD10):** library 1.4 (`OGLES2_RELEASE` "1.4-beta1"; GL_VERSION
+   and `$VER` name it; m6_ext checks "1.4"). The archive carries the Pi 3's binaries for every example
+   (12 `.vc4p` beside the 12 `.v3dp`): `build_release.sh` compiles each with the keys of every draw state the
+   examples were seen to use (probe R on the A1200, `release/examples/vc4keys/`, `release/vc4keys.py`).
+   ReadMe, Install-ogles2, GettingStarted (shipping `.vc4p`/`.vc4k`), ogles2.doc (the Pi 3's limits and
+   deviations), ReadMe-SDL and README.md updated. On the Pi 4 card the archive's examples, unpacked as a
+   user would, no compiler anywhere: 38 links from `shaders/`, no compile, no closest variant (boingocean
+   55.7/59.8 fps, boing2026 55.3); boing2026's "texture 0 sampled while incomplete" is 1.3.3's too.
+   Left: item 2 at this section's start.

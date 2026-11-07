@@ -1,15 +1,19 @@
 # ogles2.library: OpenGL ES 2.0 for the classic Amiga
 
 **Modern GPU graphics for AmigaOS 3.x.** On an Amiga with a
-[PiStorm](https://github.com/captain-amygdala/pistorm) and a Raspberry Pi 4, `ogles2.library`
-gives 68k programs real OpenGL ES 2.0, with programmable shaders, drawn by the Pi's VideoCore
-GPU (Broadcom V3D 4.2) under [Emu68](https://github.com/michalsc/Emu68).
+[PiStorm](https://github.com/captain-amygdala/pistorm) and a Raspberry Pi 4 or, new in 1.4, a
+Raspberry Pi 3, `ogles2.library` gives 68k programs real OpenGL ES 2.0, with programmable
+shaders, drawn by the Pi's GPU (the Pi 4's Broadcom V3D 4.2, the Pi 3's VideoCore IV) under
+[Emu68](https://github.com/michalsc/Emu68). One library and one shader compiler serve both.
 
 It is the same API that phones, browsers and game engines use, and the same library interface
 AmigaOS 4 has: GLES2 code from Linux, Android, the web or OS4 compiles and runs on the classic
 Amiga.
 
-**Version 1.3.** Ready-made archives are in [`release/dist/`](release/dist/).
+**Version 1.4 beta 1** (this repository, `ogles2pi3`): the Raspberry Pi 3 beside the Pi 4, which
+behaves as release 1.3.3. Its archives are in [`release/dist/`](release/dist/) beside 1.3.3's,
+the last Pi 4-only release; what the Pi 3 can and cannot do is in
+[`release/ReadMe`](release/ReadMe).
 
 ## Why it matters
 

@@ -26,7 +26,7 @@
 
 static const char LibName[] = "ogles2.library";
 static const char LibId[] = "$VER: ogles2.library " STR(OGLES2_LIB_VERSION) "." STR(OGLES2_LIB_REVISION)
-                            " (" OGLES2_LIB_DATE ") PiStorm V3D 4.2\r\n";
+                            " (" OGLES2_LIB_DATE ") " OGLES2_RELEASE " PiStorm Pi 4 (V3D 4.2) and Pi 3 (VC4)\r\n";
 
 struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;

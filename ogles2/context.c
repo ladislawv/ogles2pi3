@@ -310,7 +310,7 @@ const GLubyte *ogles2_glGetString(struct OGLES2Context *ctx, GLenum name)
     case GL_RENDERER:
         return (const GLubyte *)ogles2_backend->renderer();
     case GL_VERSION: /* must begin "OpenGL ES 2.0" (plan section 7.10) */
-        return (const GLubyte *)"OpenGL ES 2.0 ogles2.library 1.3";
+        return (const GLubyte *)"OpenGL ES 2.0 ogles2.library 1.4";
     case GL_SHADING_LANGUAGE_VERSION: /* must begin "OpenGL ES GLSL ES 1.00" */
         return (const GLubyte *)"OpenGL ES GLSL ES 1.00";
     case GL_EXTENSIONS: /* the backend's (ogles2/backend.h) */

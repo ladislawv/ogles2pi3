@@ -1,16 +1,41 @@
-ogles2.library 1.3 (release 1.3.3) for AmigaOS 3.x on PiStorm
-=============================================
+ogles2.library 1.4 beta 1 (release 1.4-beta1) for AmigaOS 3.x on PiStorm
+=========================================================================
 
-OpenGL ES 2.0 for 68k AmigaOS, drawn by the Raspberry Pi 4's GPU (Broadcom
-V3D 4.2) through PiStorm and Emu68. The API is source-compatible with
-AmigaOS 4's ogles2.library: the GLES2 functions plus the agl* context calls.
+OpenGL ES 2.0 for 68k AmigaOS, drawn by the Raspberry Pi's GPU through
+PiStorm and Emu68: the Raspberry Pi 4's (Broadcom V3D 4.2) and, new in
+1.4, the Raspberry Pi 3's (VideoCore IV). One library and one shader
+compiler for both; the library finds which Pi it runs on. The API is
+source-compatible with AmigaOS 4's ogles2.library: the GLES2 functions plus
+the agl* context calls.
+
+This is a beta
+--------------
+1.4 beta 1 is the first release with the Raspberry Pi 3. On the Pi 4 it
+behaves as release 1.3.3 (the same tests, pictures and speed); what is new
+there is only the shader cache's size limit (see "Shaders"). Please report
+what you find, with the log (see "Logging").
 
 Requirements
 ------------
-- An Amiga with a PiStorm and a Raspberry Pi 4B or CM4 (the GPU is the Pi's)
+- An Amiga with a PiStorm and a Raspberry Pi 4B or CM4, or a Raspberry Pi
+  3B or 3B+ (the GPU is the Pi's). Tested: a Pi 4B and a Pi 3B on a
+  PiStorm32-lite in an A1200.
 - Emu68 (tested: 1.1.0-beta.1)
 - AmigaOS 3.x (tested: 3.2) with Picasso96 or CyberGraphX
 - A 32-bit RTG screen for programs that render into a window
+
+The Raspberry Pi 3
+------------------
+The Pi 3's GPU is older and its Emu68 slower: Quake III's timedemo runs at
+about 33 fps (89 on a Pi 4 at 2.2 GHz), glmark2 scores 70. Textures and
+framebuffers go up to 2048 x 2048 (4096 on the Pi 4), with 8 vertex
+attributes (16). Blending, texture formats and vertex formats are done in
+the shaders on this GPU, so a program needs a shader "variant" for each
+combination of them it draws with: the compiler makes them as the program
+draws (each new combination once, then kept in OGLES2Cache: as a .vc4k
+file), or the program ships them (see "Shaders"). Programs and their
+binaries are the same source for both Pis; the binaries are not: a .v3dp
+file is the Pi 4's, a .vc4p file (with its .vc4k) the Pi 3's.
 
 What is in this archive
 -----------------------
@@ -21,7 +46,7 @@ What is in this archive
   Examples/           two small programs with their compiled shaders
   SDK/                headers, import libraries, documentation and the
                       examples' sources, for programmers (only in
-                      ogles2-1.3.3-sdk.lha; see "For programmers")
+                      ogles2-1.4-beta1-sdk.lha; see "For programmers")
   LICENSE, licences/  licences and notices
 
 Installing
@@ -61,9 +86,9 @@ and run Examples/triangle, Examples/cube or Examples/boingocean.
 Shaders
 -------
 The GPU runs machine code compiled from each program's GLSL. ogles2 finds
-a program's compiled form ("binary", a .v3dp file named by a hash of the
-GLSL text) in the program's shaders/ drawer, beside the program, or in
-OGLES2Cache: (or T:). When there is
+a program's compiled form ("binary", a file named by a hash of the GLSL
+text: .v3dp on the Pi 4, .vc4p on the Pi 3) in the program's shaders/
+drawer, beside the program, or in OGLES2Cache: (or T:). When there is
 none, the compiler v3dglslc compiles it (about 0.2 s per program; its first
 start takes about a second) and the result goes into OGLES2Cache:, so the
 next run needs no compiler.
@@ -81,6 +106,14 @@ ship their shaders' records (.v3ds files, in shaders/ with the binaries),
 as the examples do. Programs that make shaders at run time (gl4es
 and the programs built on it, for instance) need it.
 
+On the Pi 3 a program without the compiler also needs the variants of every
+state it draws in (see "The Raspberry Pi 3"): in its .vc4p, or in a .vc4k
+beside it. The examples ship theirs for a 32-bit RTG screen as PiStorm's
+VideoCore RTG driver gives it. A program that finds no variant for a draw
+and no compiler draws with the closest one it has, which can show wrong
+colours: install the compiler on a Pi 3 unless a program says it ships
+everything it needs.
+
 The examples
 ------------
   Examples/triangle   a turning coloured triangle in a window
@@ -96,8 +129,9 @@ The examples
                       antialiasing and its "boing" on Paula (about 53 fps
                       at 640 x 480); "boing2026 TOUR" shows each effect in
                       turn. Its keys and options: Examples/boing2026.txt
-Close the window or press Esc to quit. Their .v3dp files are in
-Examples/shaders/: they run without the compiler.
+Close the window or press Esc to quit. Their binaries are in
+Examples/shaders/ (.v3dp for the Pi 4, .vc4p for the Pi 3): they run
+without the compiler on either Pi. The frame rates above are the Pi 4's.
 
 Logging
 -------
@@ -108,11 +142,11 @@ usually says why there.
 
 For programmers
 ---------------
-The SDK comes in two forms: ogles2-1.3.3-sdk.lha (this archive with SDK/
-added) and ogles2-1.3.3-sdk.zip (the SDK alone, for building on a PC with a
-cross compiler). SDL2 and SDL3 with an ogles2 backend are a separate
-archive, ogles2-1.3.3-sdl.lha or .zip, which unpacks over the SDK (its
-ReadMe-SDL). It holds:
+The SDK comes in two forms: ogles2-1.4-beta1-sdk.lha (this archive with
+SDK/ added) and ogles2-1.4-beta1-sdk.zip (the SDK alone, for building on a
+PC with a cross compiler). SDL2 and SDL3 with an ogles2 backend are a
+separate archive, ogles2-1.4-beta1-sdl.lha or .zip, which unpacks over the
+SDK (its ReadMe-SDL). It holds:
 
 SDK/include    <proto/ogles2.h> (GLES2 and agl*), <libraries/ogles2.h>
                (tags, errors, extra enumerants), the dispatch table, and
@@ -126,14 +160,19 @@ SDK/examples   the examples' sources and a Makefile (GCC and vbcc)
 
 The import library and the headers are MIT-licensed: programs of any
 licence may use them. The source of everything here, the compiler's
-included, is at https://github.com/ladislawv/ogles2.
+included, is at https://github.com/ladislawv/ogles2pi3 (the 1.4 betas; the
+releases before them: https://github.com/ladislawv/ogles2).
 
 Conformance
 -----------
-The Khronos dEQP-GLES2 must-pass list (17,165 cases), run on an A1200:
-all pass except 25 cube-map cases (the GPU always filters cube maps
-seamlessly, as GLES 3 requires) and 6 timing and quality warnings. The
-SDK's ogles2.doc lists the deviations.
+The Khronos dEQP-GLES2 must-pass list (17,165 cases), run on an A1200 with
+this release's library:
+- Pi 4: all pass except 25 cube-map cases (the GPU always filters cube maps
+  seamlessly, as GLES 3 requires) and 6 timing and quality warnings.
+- Pi 3: 17,047 pass; 18 fail, each also failing with Mesa's own VideoCore
+  IV driver on Linux on the same Pi (which passes 16,906); 92 are not
+  supported (sizes and formats the GPU lacks).
+The SDK's ogles2.doc lists the deviations.
 
 Licence
 -------

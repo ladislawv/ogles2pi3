@@ -15,16 +15,18 @@ ogles2.library/aglGetProcAddress
 ogles2.library/--background--                   ogles2.library/--background--
 
    PURPOSE
-       OpenGL ES 2.0 for AmigaOS 3.x on a PiStorm with a Raspberry Pi 4
-       (or CM4) running Emu68: the GLES2 functions are drawn by the Pi's
-       GPU (Broadcom V3D 4.2). The API is source-compatible with AmigaOS 4's
+       OpenGL ES 2.0 for AmigaOS 3.x on a PiStorm with a Raspberry Pi
+       running Emu68: the GLES2 functions are drawn by the Pi's GPU, the
+       Pi 4's (Broadcom V3D 4.2) or, from 1.4, the Pi 3's (VideoCore IV).
+       One library for both: it finds which one it runs on. The API is
+       source-compatible with AmigaOS 4's
        ogles2.library: the GLES2 functions with their standard names, and
        the agl* context calls described here.
 
    REQUIREMENTS
-       A PiStorm with a Raspberry Pi 4B or CM4, Emu68, AmigaOS 3.x, an RTG
-       system (Picasso96 or CyberGraphX) and a 32-bit RTG screen for
-       windowed rendering.
+       A PiStorm with a Raspberry Pi 4B, CM4, 3B or 3B+, Emu68, AmigaOS
+       3.x, an RTG system (Picasso96 or CyberGraphX) and a 32-bit RTG
+       screen for windowed rendering.
 
    CALLING THE LIBRARY
        GettingStarted.txt (beside this file) walks through a first
@@ -111,7 +113,8 @@ ogles2.library/--background--                   ogles2.library/--background--
        of an object, go through the CPU.
 
    LIMITS
-       Textures and framebuffers up to 4096 x 4096; 16 vertex attributes.
+       Pi 4: textures and framebuffers up to 4096 x 4096; 16 vertex
+       attributes. Pi 3: up to 2048 x 2048; 8 vertex attributes.
        glGetIntegerv answers the rest.
 
    ENVIRONMENT
@@ -121,9 +124,11 @@ ogles2.library/--background--                   ogles2.library/--background--
                        without OGLES2_CCT_PISTORM_MSAA.
 
    CONFORMANCE
-       The Khronos dEQP-GLES2 must-pass list (17,165 cases) on an A1200:
-       all pass except the documented deviation below (seamless cube map
-       filtering), and timing and quality warnings. See --deviations--.
+       The Khronos dEQP-GLES2 must-pass list (17,165 cases) on an A1200.
+       Pi 4: all pass except the documented deviation below (seamless
+       cube map filtering), and timing and quality warnings. Pi 3: 17,047
+       pass; the 18 that fail also fail with Mesa's VideoCore IV driver on
+       Linux on the same Pi; 92 are not supported. See --deviations--.
 
    AUTHORS
        Developed by R-Typer and Ladislawv, with Claude Opus 5.5
@@ -175,6 +180,18 @@ ogles2.library/--shaders--                         ogles2.library/--shaders--
        glGetProgramBinaryOES returns the .v3dp file
        (GL_PROGRAM_BINARY_V3DP_PISTORM); glProgramBinaryOES takes one.
 
+   THE RASPBERRY PI 3
+       On the Pi 3 the binary is <hash>.vc4p, looked for as above. Its GPU
+       does blending, texture formats and vertex formats in the shader:
+       a program needs a variant for each combination of them it draws
+       with. The link compiles the usual first draw's (the screen's
+       format, with and without a depth test); a draw in another state
+       has the compiler make its variant then, kept in <hash>.vc4k beside
+       the .vc4p (in the cache; a program may ship it in shaders/ too).
+       Without the compiler such a draw uses the closest variant there is
+       and logs it once a program. GettingStarted.txt (section 5) shows
+       how to ship them. The .v3ds records serve both Pis.
+
    CACHE
        Make a drawer and assign OGLES2Cache: to it (the installer offers
        this) to keep compiled programs across reboots; without it they go
@@ -210,6 +227,14 @@ ogles2.library/--deviations--                   ogles2.library/--deviations--
    - Textures of 32-bit float formats are sampled with nearest filtering.
    - Without the compiler, glCompileShader cannot check a shader: it
      reports GL_COMPILE_STATUS TRUE, and errors appear at link time.
+   - On the Raspberry Pi 3, as with Mesa's VideoCore IV driver on the
+     same Pi: 18 dEQP-GLES2 cases fail (11 texture: mipmaps of
+     non-square 2D textures, mipmap filtering with mirrored and repeated
+     wraps, one ETC1 wrap; 3 clipping: wide lines and one triangle; 2
+     multisample, in 4x MSAA; 2 uniform_api random cases), and 92 are not
+     supported (sizes and formats the GPU lacks). glGenerateMipmap of a
+     non-power-of-two texture runs on the CPU there. The variants of
+     --shaders-- apply.
    - Context tags accepted but not acted on: OGLES2_CCT_RESIZE_VIEWPORT,
      OGLES2_CCT_SHADER_COMPAT_PATCH, OGLES2_CCT_SINGLE_GET_ERROR_MODE,
      OGLES2_CCT_DETECT_UNINITIALIZED_GLSL_VARS and the three SPIRV tags

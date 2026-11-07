@@ -1,9 +1,10 @@
-Getting started with ogles2.library 1.3 (release 1.3.3)
-=======================================================
+Getting started with ogles2.library 1.4 beta 1 (release 1.4-beta1)
+===================================================================
 
 How to write, build, debug and ship an AmigaOS 3.x program that draws with
-ogles2.library (OpenGL ES 2.0 on the Raspberry Pi 4's V3D GPU, through
-PiStorm and Emu68), and how to have an AI assistant help with it.
+ogles2.library (OpenGL ES 2.0 on the Raspberry Pi's GPU, through PiStorm
+and Emu68: the Pi 4's V3D 4.2 and the Pi 3's VideoCore IV), and how to
+have an AI assistant help with it.
 
 The reference for every call is ogles2.doc (in this drawer). The examples
 in ../examples are complete programs: start from them.
@@ -23,7 +24,7 @@ Contents
 
 1. What you need
 ----------------
-To run: an Amiga with a PiStorm and a Raspberry Pi 4B or CM4, Emu68,
+To run: an Amiga with a PiStorm and a Raspberry Pi 4B, CM4, 3B or 3B+, Emu68,
 AmigaOS 3.x with Picasso96 or CyberGraphX, and a 32-bit RTG screen for
 programs that draw into a window. ogles2.library installed (Install-ogles2)
 or carried by the program (section 7).
@@ -34,7 +35,7 @@ To build: one of
   - vbcc with the AmigaOS 3 target and the NDK headers.
 and this SDK: include/ and lib/.
 
-On Windows: unpack ogles2-1.3.3-sdk.zip anywhere (no spaces in the path is
+On Windows: unpack ogles2-1.4-beta1-sdk.zip anywhere (no spaces in the path is
 safest for make). Build with amiga-gcc in WSL (or a Windows build of it) or
 with vbcc for Windows. In VS Code, give the C/C++ extension the headers
 for IntelliSense, in .vscode/c_cpp_properties.json:
@@ -116,7 +117,7 @@ vbcc:
 The program needs a 68020 and an FPU, which Emu68 always provides.
 OGLES2Open() itself refuses a library older than the headers you built
 with (its function table must be at least as large), so a program built
-with this SDK runs on 1.3 or newer.
+with this SDK runs on 1.3 or newer; on a Raspberry Pi 3 it needs 1.4.
 
 
 4. Windows, screens and input
@@ -213,6 +214,23 @@ For release, ship the binaries so users need no compiler:
 A .v3dw or .v3da file next to a .v3dp (programs that sample float or depth
 textures, or use alpha to coverage) belongs with it: ship it too.
 
+The Raspberry Pi 3 needs binaries of its own: <hash>.vc4p and <hash>.vc4k,
+from the same sources (the .v3ds records serve both). Its GPU does
+blending, texture formats and vertex formats in the shader, so a program
+has a variant for each combination of them it draws with. The link compiles
+the usual first draw's; the compiler makes the others as the draws need
+them and adds them to the .vc4k. So for the Pi 3:
+  1. to 3. as above, on a Pi 3 (or run the steps once on each Pi). Take
+     the .vc4p AND the .vc4k files, after running through every effect:
+     a state the run did not show has no variant in them.
+  4. Test without the compiler as above. A draw whose variant is missing
+     uses the closest one and logs it ("closest" in the log): its colours
+     or blending may be wrong. Run that effect with the compiler, take the
+     .vc4k again.
+A .vc4k depends on the screen too: a 32-bit RTG screen in another pixel
+order needs other variants. Ship what you tested, and tell users of other
+screens to install the compiler.
+
 Without an Amiga compiler, binaries can be made on a PC with the source
 distribution's offline compiler (tools/v3dglslc; v3dp/split_shaders.py
 splits T:ogles2_missing_shaders.txt, v3dp/v3dp_hashname.py names the
@@ -262,7 +280,7 @@ headers are MIT. If you ship ogles2.library or v3dglslc, include LICENSE
 and the licences/ drawer of the ogles2 archive: the library is under the
 Hyperion MiniGL Open Source License (AmigaOS only; its source is
 published), the compiler is Mesa (MIT).
-Tell users in your ReadMe: a PiStorm with a Raspberry Pi 4 or CM4, Emu68,
+Tell users in your ReadMe: a PiStorm with a Raspberry Pi 4, CM4 or 3, Emu68,
 an RTG system and a 32-bit screen.
 
 
@@ -277,7 +295,7 @@ still running. It says why a context, a link or a texture failed.
       Not installed and not in your drawer; or an older one is in memory
       and another program is using it (quit that, or Avail FLUSH).
   aglCreateContext2: OGLES2_CCE_NO_GPU (2)
-      No usable V3D: not a PiStorm with a Pi 4 under Emu68.
+      No usable GPU: not a PiStorm with a Pi 4 or Pi 3 under Emu68.
   OGLES2_CCE_NO_DISPLAY (4)
       The window, screen or bitmap is unusable: most often a screen that
       is not 32-bit.
@@ -345,8 +363,8 @@ The prompt (copy, then fill in the task at the end):
 
 ------------------------------------------------------------------------
 I am writing a C program for AmigaOS 3.x (68020 + FPU, running on a PiStorm
-with Emu68 and a Raspberry Pi 4) that draws with ogles2.library: OpenGL ES
-2.0 on the Pi's V3D GPU, with AmigaOS 4's ogles2 API. The attached files
+with Emu68 and a Raspberry Pi 4 or 3) that draws with ogles2.library: OpenGL ES
+2.0 on the Pi's GPU, with AmigaOS 4's ogles2 API. The attached files
 are the reference: GettingStarted.txt (rules and workflow), ogles2.doc
 (every call, tag, extension and deviation), libraries/ogles2.h (tags,
 errors) and cube.c (a complete program). Follow cube.c's structure.

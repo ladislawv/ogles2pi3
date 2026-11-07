@@ -17,13 +17,15 @@
  * extension entries of AmigaOS 4's ogles2 (program binaries, glPolygonMode,
  * glProvokingVertex, glGetBufferParameterivOES). 1.3: M7's extensions
  * (docs/M7_EXTENSIONS_PLAN.md: debug markers, clip control, draw buffers).
+ * 1.4: the Raspberry Pi 3 (VideoCore IV, docs/PI3_PLAN.md) beside the Pi 4;
+ * released as betas from ogles2pi3 first.
  * glGetString's GL_VERSION (context.c) names the same revision. */
 #define OGLES2_LIB_VERSION  1
-#define OGLES2_LIB_REVISION 3
-#define OGLES2_LIB_DATE     "02.11.2026"
+#define OGLES2_LIB_REVISION 4
+#define OGLES2_LIB_DATE     "07.11.2026"
 /* the release's name (its archives, release/build_release.sh): a release may
    rebuild a library without a new version.revision */
-#define OGLES2_RELEASE      "1.3.3"
+#define OGLES2_RELEASE      "1.4-beta1"
 
 struct OGLES2Library
 {

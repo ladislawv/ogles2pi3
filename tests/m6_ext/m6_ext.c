@@ -140,8 +140,8 @@ static void test_strings(void)
         sprintf(msg, "GL_EXTENSIONS has %s", want[k]);
         check(e && strstr(e, want[k]) != 0, msg);
     }
-    sprintf(msg, "GL_VERSION \"%s\" (1.3)", v ? v : "(null)");
-    check(v && strstr(v, "1.3") != 0, msg);
+    sprintf(msg, "GL_VERSION \"%s\" (1.4)", v ? v : "(null)");
+    check(v && strstr(v, "1.4") != 0, msg);
 }
 
 /* OES_texture_npot: REPEAT and a mipmapping filter on 100x60. Left half

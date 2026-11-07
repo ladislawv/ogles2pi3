@@ -126,6 +126,29 @@ rm -rf "$W/v3dp-b26" && mkdir -p "$W/v3dp-b26"
     shadow.vert shadow.frag flare.vert flare.frag > "$W/v3dglslc-b26.txt" 2>&1) || { cat "$W/v3dglslc-b26.txt"; exit 1; }
 python3 "$REPO/v3dp/v3dp_hashname.py" "$W"/v3dp-b26/*
 cp "$W"/v3dp-b26/* "$R/Examples/shaders/"
+# The Pi 3's (.vc4p, docs/PI3_PLAN.md): each program with the variants of every draw state the
+# examples were seen to use (probe R's keys, release/examples/vc4keys/<hash>.keys, recorded with
+# the examples on the A1200: release/vc4keys.py), so on a Pi 3 they too run without the compiler.
+# A program compiled once to learn its hash, then with its keys; one without keys stops the build.
+vc4() { # directory of the sources, vertex shader, fragment shader
+    local t=$W/vc4tmp h k
+    rm -rf "$t" "$t-k" && mkdir -p "$t" "$t-k"
+    (cd "$1" && "$V/host/v3dglslc" -g 21 -o "$t" "$2" "$3") > "$W/vc4-$2-$3.txt" 2>&1 || { cat "$W/vc4-$2-$3.txt"; exit 1; }
+    h=$(python3 "$REPO/v3dp/v3dp_hashname.py" "$t"/*.vc4p | sed -n 's/.* -> \([0-9a-f]*\)\.vc4p$/\1/p')
+    k=$HERE/examples/vc4keys/$h.keys
+    [ -n "$h" ] && [ -f "$k" ] || { echo "no Pi 3 keys for $2 + $3 ($h): run the examples with probe R (release/vc4keys.py)"; exit 1; }
+    (cd "$1" && "$V/host/v3dglslc" -g 21 -k "$k" -o "$t-k" "$2" "$3") >> "$W/vc4-$2-$3.txt" 2>&1 || { cat "$W/vc4-$2-$3.txt"; exit 1; }
+    python3 "$REPO/v3dp/v3dp_hashname.py" "$t-k"/*.vc4p > /dev/null
+    cp "$t-k/$h.vc4p" "$R/Examples/shaders/"
+}
+for p in triangle cube boingocean blit height sky; do
+    vc4 "$W/src" "$p.vert" "$p.frag"
+done
+for vf in ball.vert:ball.frag room.vert:room.frag screen.vert:blur.frag screen.vert:composite.frag \
+          shadow.vert:shadow.frag flare.vert:flare.frag; do
+    vc4 "$R/SDK/examples/boing2026/shaders" "${vf%%:*}" "${vf##*:}"
+done
+echo "examples' Pi 3 binaries: $(ls "$R"/Examples/shaders/*.vc4p | wc -l), each with its draws' keys"
 # Every shader's record (.v3ds) beside them: with v3dglslc installed, a
 # shader without one starts the compiler at glCompileShader, binaries or
 # not (1.3 shipped none: the examples started it after every boot).
