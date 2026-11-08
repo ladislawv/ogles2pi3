@@ -147,6 +147,18 @@ variable OGLES2/LogFile (SetEnv OGLES2/LogFile RAM:ogles2.log). OGLES2Log
 writes the buffered log while a program still runs. A program that fails
 usually says why there.
 
+The log is kept in memory and written to the file when a program ends, and
+T: is usually in RAM: so if the Amiga crashes, the log is lost twice over.
+To find out why it crashes, log to a file on a disk and have every line
+written at once, then run the program again:
+
+    SetEnv OGLES2/LogFile Work:ogles2.log
+    SetEnv OGLES2/LogSync 1
+
+After the reboot, Work:ogles2.log holds everything up to the crash (with
+SetEnv SAVE on AmigaOS 3.2 the settings stay after a reboot too). Writing
+each line costs a little time; "UnSetEnv OGLES2/LogSync" turns it off.
+
 For programmers
 ---------------
 The SDK comes in two forms: ogles2-1.4-beta1-sdk.lha (this archive with

@@ -19,7 +19,8 @@ PYTHON ?= python3
 # tools/check_fpconv.py, plan section 2.3). The other letters are the default.
 CPU    := -mcpu=68020 -m68881 -fbbb=abcfhilmnprsz0
 # EXTRA_CFLAGS=-DOGLES2_LOG_SYNC: write every log line at once (hardware bring-up:
-# a hang loses nothing). Use its own B, e.g. B=~/ogles2-build-pi3/m68k-sync.
+# a hang loses nothing), as ENV:OGLES2/LogSync does at run time but always on,
+# from the first line. Use its own B, e.g. B=~/ogles2-build-pi3/m68k-sync.
 CFLAGS := -std=gnu99 -O2 -Wall -Wextra -Wno-unused-parameter -fno-strict-aliasing $(CPU) -mcrt=clib2 \
           $(EXTRA_CFLAGS)
 INC    := -Iinclude -I$(B)/gen/include -Iogles2 -I$(B)/gen/ogles2

@@ -121,6 +121,10 @@ ogles2.library/--background--                   ogles2.library/--background--
    ENVIRONMENT
        OGLES2/LogFile  the log's file (default T:ogles2.log). OGLES2Log
                        (C/) writes the buffered log while a program runs.
+       OGLES2/LogSync  set (and not 0): every log line is written to the
+                       file at once, not when the program ends, so a crash
+                       loses nothing (with LogFile on a disk, not in T:).
+                       Read when a program opens the library.
        OGLES2/MSAA     4 or 0: 4x multisampling for contexts created
                        without OGLES2_CCT_PISTORM_MSAA.
 

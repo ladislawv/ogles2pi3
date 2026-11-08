@@ -85,6 +85,7 @@ static struct OGLES2Library *LibOpen(REG("a6", struct OGLES2Library *, base))
 {
     base->lib.lib_OpenCnt++;
     base->lib.lib_Flags &= (UBYTE)~LIBF_DELEXP;
+    ogles2_log_recheck(); /* ENV:OGLES2/LogSync read again at the next line from a process */
     ogles2_log("open (count %ld)", (LONG)base->lib.lib_OpenCnt);
     return base;
 }

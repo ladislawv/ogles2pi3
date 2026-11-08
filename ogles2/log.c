@@ -5,6 +5,12 @@
  * Writing to the file needs a DOS process outside Forbid(); ogles2_log()
  * itself only touches memory, so it is safe anywhere, including in the
  * library's Open/Close vectors.
+ *
+ * With ENV:OGLES2/LogSync set (to anything but 0), or in builds with
+ * OGLES2_LOG_SYNC, every line is written to the file at once, when the line
+ * comes from a process outside Forbid(), with the lines buffered before it:
+ * a crash then loses at most what was logged since (a log file on a disk,
+ * not in T:, survives the reboot).
  */
 #include <stdarg.h>
 #include <exec/execbase.h>
@@ -22,6 +28,11 @@ static char ring[LOG_SIZE];
 static ULONG head, used; /* write position, bytes held */
 static ULONG lost;       /* lines dropped because the ring was full */
 static ULONG seq;        /* line number since the library was loaded */
+#ifdef OGLES2_LOG_SYNC
+static BYTE sync_mode = 1;  /* every line written at once */
+#else
+static BYTE sync_mode = -1; /* -1: ENV:OGLES2/LogSync not read yet, 0: off, 1: on */
+#endif
 
 struct line {
     char text[LINE_MAX + 2];
@@ -45,7 +56,6 @@ static BOOL caller_is_process(void)
     return DOSBase && me->tc_Node.ln_Type == NT_PROCESS;
 }
 
-#ifdef OGLES2_LOG_SYNC
 /* A line can also be logged inside the library's Open/Close vectors, which
  * exec calls under Forbid(): the per-line flush checks the nest counters
  * (-1 outside Forbid/Disable on AmigaOS; vamos does not maintain them, so
@@ -54,7 +64,22 @@ static BOOL can_flush_now(void)
 {
     return caller_is_process() && SysBase->TDNestCnt < 0 && SysBase->IDNestCnt < 0;
 }
+
+/* ENV:OGLES2/LogSync: set and not "0" */
+static BYTE read_sync(void)
+{
+    char v[8];
+    if (GetVar((STRPTR) "OGLES2/LogSync", (STRPTR)v, sizeof(v), GVF_GLOBAL_ONLY) <= 0)
+        return 0;
+    return v[0] != '0';
+}
+
+void ogles2_log_recheck(void)
+{
+#ifndef OGLES2_LOG_SYNC
+    sync_mode = -1;
 #endif
+}
 
 /* ogles2_format's output hook: a bounded buffer. */
 struct fmt_buf {
@@ -145,10 +170,12 @@ void ogles2_log(const char *fmt, ...)
     ring_put(l.text, l.len);
     Permit();
 
-#ifdef OGLES2_LOG_SYNC
-    if (can_flush_now())
-        ogles2_log_flush();
-#endif
+    if (sync_mode && can_flush_now()) {
+        if (sync_mode < 0)
+            sync_mode = read_sync();
+        if (sync_mode > 0)
+            ogles2_log_flush();
+    }
 }
 
 BOOL ogles2_log_flush(void)

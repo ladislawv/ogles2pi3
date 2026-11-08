@@ -868,8 +868,9 @@ BOOL ogles2_device_context_resize(struct V3DContext *v, UWORD w, UWORD h);
 /* ---- log (log.c; plan section 10) ----
  * Lines go to a RAM ring buffer, appended to the log file (T:ogles2.log, or
  * the path in ENV:OGLES2/LogFile) when a context is destroyed, when the
- * library is closed and when the OGLES2Log command asks. Builds with
- * OGLES2_LOG_SYNC write every line at once, so a hang loses nothing.
+ * library is closed and when the OGLES2Log command asks. With
+ * ENV:OGLES2/LogSync set (not "0"), and in builds with OGLES2_LOG_SYNC,
+ * every line is written at once, so a crash or a hang loses nothing.
  * Formats are exec RawDoFmt's: %ld/%lu/%lx for 32-bit values, %s, %c. */
 BOOL ogles2_log_init(void);
 void ogles2_log_term(void);
@@ -878,5 +879,8 @@ void ogles2_log(const char *fmt, ...);
  * Forbid(); returns FALSE (and keeps the lines) when called from a plain task.
  * Never call it from the library's Open/Close/Expunge vectors. */
 BOOL ogles2_log_flush(void);
+/* ENV:OGLES2/LogSync is read again at the next line a process logs (the
+ * library's Open vector: a change takes effect at the next open). */
+void ogles2_log_recheck(void);
 
 #endif

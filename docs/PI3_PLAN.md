@@ -1875,3 +1875,18 @@ were written on, read that section's "Another machine" first.
    512 MB (the table in §1). Not on this repository's test station (a Pi 4B and a Pi 3B): no figures of
    its own. The archives in `release/dist/` (and the pre-release's) still carry the 1.4-beta1 texts;
    the next build has these.
+   **`ENV:OGLES2/LogSync` (2026-11-08, asked by the developer: "T: is bad for logs if the Amiga crashes"):**
+   the log lived in a 32 KB ring in memory, written to its file only when a context is destroyed, the
+   library closed or OGLES2Log asked, and to `T:` (RAM) by default, so a crash lost it twice. Now
+   `OGLES2/LogSync` set (not "0") writes every line at once, as the `OGLES2_LOG_SYNC` builds always did
+   (`log.c`: the same per-line flush, from a process outside `Forbid()`, the lines before it with it). It
+   is read at the first line a process logs after an open (the Open vector, under `Forbid()`, only marks
+   it unread: `ogles2_log_recheck`), so a change takes effect at the next open of a library still in
+   memory. The default stays `T:ogles2.log` (a user's disk is not written unasked); the ReadMe's
+   "Logging" says how to catch a crash (`LogFile` on a disk with `LogSync`), `ogles2.doc` lists it.
+   Built without warnings; **not run on the A1200** (the developer skipped it): to check, a program with
+   `LogSync` 1 must have its link lines in the file while it runs, and none without it until its end,
+   and its frame rate with and without.
+   **The 1.4-beta1 archives rebuilt (2026-11-08, the developer: the pre-release's files replaced rather than a
+   beta 2):** `release/dist/` with `LogSync` and the Zero 2 W texts; the pre-release's seven files replaced
+   by them, its notes updated, and the tag `v1.4-beta1` moved to this commit (it was on a14831e).
