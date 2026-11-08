@@ -49,7 +49,9 @@ repositories: git in WSL needs credentials (CONTRIBUTING.md, "Access").
   WSL), not against a Windows checkout: git on Windows turns LF into CRLF there.
 - An ogles2.library already in memory stays there: test scripts run `Avail FLUSH` first.
 - An ogles2 installed in the Amiga's `LIBS:` (by the release's `Install-ogles2`) wins over a
-  package's `libs/` (added after it): check `List LIBS:ogles2#? LIBS:v3dglslc` before tests.
+  package's `libs/` unless the package's has a higher version.revision (`OGLES2Open`, since
+  2026-11-08; programs linked before keep the old order): at the same version (a rebuilt 1.4)
+  the installed one runs. Check `List LIBS:ogles2#? LIBS:v3dglslc` before tests.
   The station cannot answer the installer's questions: `Execute Install-ogles2 ALL`.
 - Quake III keeps settings in `home/baseq3/q3config.cfg` between runs: delete it for a clean
   comparison. A timedemo's sound is garbled by nature (it runs faster than real time).

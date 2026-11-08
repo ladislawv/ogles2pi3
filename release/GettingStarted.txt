@@ -271,10 +271,11 @@ Ship:
   - your program;
   - its .v3dp (and .v3dw/.v3da) files, beside it (section 5).
 Optionally, for users who have not installed ogles2:
-  - libs/ogles2.library in your program's drawer. OGLES2Open() uses an
-    installed one first, else the one in your libs/ (or beside the
-    program). It also replaces an installed one that is too old for your
-    program, unless another program is using it at that moment;
+  - libs/ogles2.library in your program's drawer. OGLES2Open() uses
+    whichever is newer, the installed one or the one in your libs/ (or
+    beside the program); at the same version the installed one. An older
+    one in memory is replaced unless another program is using it at that
+    moment;
   - libs/v3dglslc, only if your program makes shaders at run time
     (19 MB; most programs do not need it).
 Licences: your program may have any licence: the import library and the

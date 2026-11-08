@@ -1890,3 +1890,15 @@ were written on, read that section's "Another machine" first.
    **The 1.4-beta1 archives rebuilt (2026-11-08, the developer: the pre-release's files replaced rather than a
    beta 2):** `release/dist/` with `LogSync` and the Zero 2 W texts; the pre-release's seven files replaced
    by them, its notes updated, and the tag `v1.4-beta1` moved to this commit (it was on a14831e).
+   **`LogSync` on the A1200, and the newer library wins (2026-11-08):** the first try used release 1.4-beta1's
+   library: the developer had installed it in `LIBS:`, and an installed one won over a program's `libs/`
+   (the test's own library never ran). With the new one in `LIBS:` (the old kept as
+   `LIBS:ogles2.library.beta1`, the developer's leave), boingocean from the demos on the Pi 3 card:
+   **`LogSync` 1: 18 lines in the file while it ran, 25 at its end; unset: none while it ran, 19 at its
+   end**; both freed their GPU memory. Speed, 150 frames alternating twice: 13.56/13.61 fps without,
+   13.59/13.60 with: no cost to see. At the developer's word ("the installed library should win only when it
+   is newer") `OGLES2Open` (`client/ogles2_open.c`, the import library) now reads the `$VER` of a copy in
+   `PROGDIR:libs/` or `PROGDIR:` and tries it first when its version.revision is above the installed one's
+   (in memory, else `LIBS:`'s file); at the same version the installed one runs, as before. Programs get it
+   when linked again; the release's examples have it (the archives rebuilt the same day). Built (GCC and vbcc); the choice itself
+   not yet run on the A1200 (it needs two libraries of different revisions: both builds are 1.4).

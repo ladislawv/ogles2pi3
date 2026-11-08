@@ -69,9 +69,11 @@ ogles2.library/--background--                   ogles2.library/--background--
 
    WHERE THE LIBRARY IS FOUND
        OGLES2Open() opens the installed library (in memory, or LIBS:),
-       else PROGDIR:libs/ogles2.library, else PROGDIR:ogles2.library. A
-       program may therefore bring the library in its own drawer for
-       systems where it is not installed; see OGLES2Open().
+       else PROGDIR:libs/ogles2.library, else PROGDIR:ogles2.library; a
+       copy beside the program with a higher version.revision than the
+       installed one is taken first. A program may therefore bring the
+       library in its own drawer, for systems where it is not installed or
+       is older; see OGLES2Open().
 
    EXTENSIONS
        GL_EXTENSIONS lists: OES_element_index_uint,
@@ -266,7 +268,10 @@ ogles2.library/OGLES2Open                           ogles2.library/OGLES2Open
            PROGDIR:libs/ogles2.library
            PROGDIR:ogles2.library
        One that is too old or of another ABI is closed and the next one
-       tried, so a program may bring a newer library than the system has.
+       tried. Before that, a copy beside the program whose version.revision
+       (its $VER string) is higher than the installed one's (in memory, or
+       LIBS:) is tried first: the newer library wins, wherever it is. At
+       the same version the installed one is used.
        AmigaOS keeps one ogles2.library in memory, and an OpenLibrary of
        any path returns that one; so OGLES2Open expunges one that would not
        do before it tries the next file, if no other program has it open.
