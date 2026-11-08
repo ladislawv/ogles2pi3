@@ -21,7 +21,7 @@ is built by `release/build_release.sh`. What is left (publishing the release; th
 station's large-reply stall, postponed) is in §13's "Next" list.
 [`CLAUDE.md`](CLAUDE.md) has the short version for an AI agent.
 
-This repository (`ogles2pi3`) adds the Raspberry Pi 3 (VideoCore IV) beside the Pi 4: its plan
+This repository (`ogles2pi3`) adds the Raspberry Pi 3 and Zero 2 W (VideoCore IV, one chip) beside the Pi 4: its plan
 and status are [`docs/PI3_PLAN.md`](docs/PI3_PLAN.md): §10 starts with where it stands and what
 is next (2026-11-07: the Pi 3 side finished and tested on the card, dEQP-GLES2 within Mesa vc4's
 baseline; the Pi 4 card's regression done against 1.3.3; next P7, the merge into `ogles2`). Testing with the

@@ -2,9 +2,9 @@
 
 **Modern GPU graphics for AmigaOS 3.x.** On an Amiga with a
 [PiStorm](https://github.com/captain-amygdala/pistorm) and a Raspberry Pi 4 or, new in 1.4, a
-Raspberry Pi 3, `ogles2.library` gives 68k programs real OpenGL ES 2.0, with programmable
-shaders, drawn by the Pi's GPU (the Pi 4's Broadcom V3D 4.2, the Pi 3's VideoCore IV) under
-[Emu68](https://github.com/michalsc/Emu68). One library and one shader compiler serve both.
+Raspberry Pi 3 or Zero 2 W, `ogles2.library` gives 68k programs real OpenGL ES 2.0, with
+programmable shaders, drawn by the Pi's GPU (the Pi 4's Broadcom V3D 4.2, the VideoCore IV of the
+Pi 3 and Zero 2 W) under [Emu68](https://github.com/michalsc/Emu68). One library and one shader compiler serve both.
 
 It is the same API that phones, browsers and game engines use, and the same library interface
 AmigaOS 4 has: GLES2 code from Linux, Android, the web or OS4 compiles and runs on the classic
@@ -13,9 +13,11 @@ Amiga.
 ## Version 1.4 beta 1: the Raspberry Pi 3 joins the Pi 4
 
 Up to release 1.3.3, ogles2 needed a Raspberry Pi 4 in the PiStorm. Version 1.4 also runs on a
-**Raspberry Pi 3** (3B and 3B+), whose VideoCore IV is an older and quite different GPU. The
-library now carries a back end for each GPU, and the shader compiler produces code for both. On a
-Pi 4 nothing has changed: the same tests, the same pictures and the same speed as 1.3.3.
+**Raspberry Pi 3** (3B and 3B+) and the **Raspberry Pi Zero 2 W**, which is built on the same
+chip. Their VideoCore IV is an older and quite different GPU. Everything said below about the Pi 3
+applies to the Zero 2 W as well. The library now carries a back end for each GPU, and the shader
+compiler produces code for both. On a Pi 4 nothing has changed: the same tests, the same pictures
+and the same speed as 1.3.3.
 
 **One library, one program, both Pis.** `ogles2.library` finds out which Pi it is running on
 when a program opens it. The program doesn't need to know: there is no Pi 3 build, no `#ifdef`,
@@ -31,8 +33,9 @@ also fail with Mesa's own VideoCore IV driver on Linux on the same Pi.
 runs Emu68's 68k emulation. Quake III's timedemo runs at about 33 fps against 89 on a Pi 4 at
 2.2 GHz, glmark2 scores 70, and the demos run at 15 to 24 fps instead of 55 to 60. Its limits
 are smaller too: textures and framebuffers up to 2048 x 2048 (4096 on the Pi 4) and 8 vertex
-attributes (16). A program that asks `glGetIntegerv` for its limits, rather than assuming them,
-runs on both. The full list of differences is in the SDK's `ogles2.doc`.
+attributes (16). The Zero 2 W's CPU runs at 1.0 GHz against the Pi 3B's 1.2 GHz, so expect it
+to be a little slower again. A program that asks `glGetIntegerv` for its limits, rather than
+assuming them, runs on both. The full list of differences is in the SDK's `ogles2.doc`.
 
 **Developing for both.** Write and test your program on whichever Pi you have; it will run on
 the other. The one thing to plan for is shader binaries, if your users shouldn't need the 19 MB
@@ -97,7 +100,7 @@ classic Amiga is solved; what remains is the CPU and OS code.
 
 | | |
 |---|---|
-| Hardware | An Amiga with a PiStorm and a Raspberry Pi 4B or CM4, or a Raspberry Pi 3B or 3B+ |
+| Hardware | An Amiga with a PiStorm and a Raspberry Pi 4B or CM4, or a Raspberry Pi 3B, 3B+ or Zero 2 W |
 | CPU emulation | Emu68 (tested: 1.1.0-beta.1) |
 | OS | AmigaOS 3.x with Picasso96 or CyberGraphX (tested on 3.2) |
 | Display | A 32-bit RTG screen |

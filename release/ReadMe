@@ -3,7 +3,8 @@ ogles2.library 1.4 beta 1 (release 1.4-beta1) for AmigaOS 3.x on PiStorm
 
 OpenGL ES 2.0 for 68k AmigaOS, drawn by the Raspberry Pi's GPU through
 PiStorm and Emu68: the Raspberry Pi 4's (Broadcom V3D 4.2) and, new in
-1.4, the Raspberry Pi 3's (VideoCore IV). One library and one shader
+1.4, the VideoCore IV of the Raspberry Pi 3 and Zero 2 W. One library and
+one shader
 compiler for both; the library finds which Pi it runs on. The API is
 source-compatible with AmigaOS 4's ogles2.library: the GLES2 functions plus
 the agl* context calls.
@@ -18,14 +19,18 @@ what you find, with the log (see "Logging").
 Requirements
 ------------
 - An Amiga with a PiStorm and a Raspberry Pi 4B or CM4, or a Raspberry Pi
-  3B or 3B+ (the GPU is the Pi's). Tested: a Pi 4B and a Pi 3B on a
-  PiStorm32-lite in an A1200.
+  3B, 3B+ or Zero 2 W (the GPU is the Pi's). Tested: a Pi 4B and a Pi 3B
+  on a PiStorm32-lite in an A1200.
 - Emu68 (tested: 1.1.0-beta.1)
 - AmigaOS 3.x (tested: 3.2) with Picasso96 or CyberGraphX
 - A 32-bit RTG screen for programs that render into a window
 
 The Raspberry Pi 3
 ------------------
+The Raspberry Pi Zero 2 W has the Pi 3's chip: what this file says about
+the Pi 3 applies to it too (its CPU runs at 1.0 GHz, the Pi 3B's at 1.2,
+so it is a little slower again).
+
 The Pi 3's GPU is older and its Emu68 slower: Quake III's timedemo runs at
 about 33 fps (89 on a Pi 4 at 2.2 GHz), glmark2 scores 70. Textures and
 framebuffers go up to 2048 x 2048 (4096 on the Pi 4), with 8 vertex

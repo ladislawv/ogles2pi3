@@ -1866,3 +1866,12 @@ were written on, read that section's "Another machine" first.
    **Published (2026-11-07):** tag `v1.4-beta1` on a14831e and the GitHub pre-release "ogles2 1.4 beta 1" on
    `ladislawv/ogles2pi3` (private: seen only by those with access), its assets the six archives of
    `release/dist/` and `SHA256SUMS`, uploaded through GitHub's API (no `gh` on the build machine).
+   **The Raspberry Pi Zero 2 W supported (2026-11-08, the developer):** its chip (BCM2710A1) is the Pi 3's,
+   the same VideoCore IV; `vc4_os_present` takes it by the device tree's `brcm,bcm2837`/`brcm,bcm2710`,
+   and the memory and the mailbox come from the device tree and the firmware as on the Pi 3, so no code
+   changed. The documents name it beside the 3B and 3B+ (README.md, release/ReadMe, ReadMe-Demos,
+   ReadMe-SDL, GettingStarted, ogles2.doc, Install-ogles2, CONTRIBUTING.md, CLAUDE.md), "Pi 3" standing
+   for both where limits and binaries are concerned; its ARM runs at 1.0 GHz (the 3B's 1.2) and it has
+   512 MB (the table in §1). Not on this repository's test station (a Pi 4B and a Pi 3B): no figures of
+   its own. The archives in `release/dist/` (and the pre-release's) still carry the 1.4-beta1 texts;
+   the next build has these.
