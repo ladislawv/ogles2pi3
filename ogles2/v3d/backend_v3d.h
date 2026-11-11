@@ -43,6 +43,9 @@ UBYTE ogles2_v3d_job_render(struct OGLES2Context *ctx);
 int ogles2_v3d_wait_render(UBYTE frame);
 void ogles2_v3d_job_retire(struct OGLES2Context *ctx);
 void ogles2_v3d_job_end(struct OGLES2Context *ctx, BOOL submitted);
+BOOL ogles2_v3d_job_can_queue(struct OGLES2Context *ctx);
+void ogles2_v3d_job_queue(struct OGLES2Context *ctx);
+UBYTE ogles2_v3d_job_render_queued(struct OGLES2Context *ctx);
 void ogles2_v3d_job_report_stop(struct OGLES2Context *ctx);
 void ogles2_v3d_job_free(struct OGLES2Context *ctx);
 

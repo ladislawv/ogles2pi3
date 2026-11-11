@@ -1902,3 +1902,97 @@ were written on, read that section's "Another machine" first.
    (in memory, else `LIBS:`'s file); at the same version the installed one runs, as before. Programs get it
    when linked again; the release's examples have it (the archives rebuilt the same day). Built (GCC and vbcc); the choice itself
    not yet run on the A1200 (it needs two libraries of different revisions: both builds are 1.4).
+   **Two VC4 speed-ups from SA68 (2026-11-09, the developer: "optimize all"; uncommitted):** the
+   SA68 port (full screen 1920×1080 on the Pi 3 card) spent 2.2 ms a frame
+   in probe P's "binning list" (13 draws, ~80,000 indices: each rebased and byte-swapped into the job at
+   every draw) and 2.2 ms with the CPU waiting for binning at each flush. (1) **A kept index copy**
+   (`buffer.c` `ogles2_buffer_index_copy`): a GL_STATIC_DRAW element buffer read as 16-bit indices gets a
+   little-endian GPU copy of the whole buffer, one of its copy slots (marker type
+   `GL_ELEMENT_ARRAY_BUFFER`, no convert function, so `glBufferSubData` retires it and the next draw makes
+   it again; freed after the jobs that read it, as the attribute copies). `draw_vc4.c` uses it when every
+   array the program reads is in a static buffer, there is no base vertex and no polygon mode: the arrays
+   from vertex 0 and the indices in place (`OGLES2Elements.buf`/`offset`, filled by `draw.c`). Binning
+   list 2,170 → 115 µs a frame. (2) **The binning not waited for** (`vc4core` `vc4_job_bin_start`, the
+   last pass of `ogles2_vc4_job_bin`): the render is started at once and waits on the GPU
+   (`WAIT_ON_SEMAPHORE` after the binning list's `INCREMENT_SEMAPHORE`, DEVELOPMENT_PLAN §7.7), and the
+   render wait serves the binner's out-of-memory requests while BFC says it is not done (none was asked
+   for in these runs; a request now waits for the next flush, and a binning that does not finish is
+   reported as its render: reset and dropped). EXT_draw_buffers' earlier passes and the TFU/blit jobs
+   bin as before. Waiting for binning 2,228 → 26 µs a flush; the GPU now bins while the CPU builds the
+   next frame. `vc4/job_vc4.c` logs the binner's overflow requests (4 times). SA68: frame to
+   frame 18.4 → 16.2 ms with vsync off (with its own changes from 33.3 ms, two refreshes). **Regression on
+   the Pi 3 card (now in the A1200, no longer the standalone StormPi of the earlier runs):** m2-3 122,
+   m2-4 157, m4-1 203, m5-1 272, m6-6 404, m7-4 133 PASS, no FAIL (the counts of 2026-11-07 or more);
+   glmark2 (m6-7) with `LIB=` alternating, HEAD's library against this one: 63, 63 against 64, 64 (the
+   70 of 2026-11-07 was the standalone card). The Pi 4 path is unchanged (V3D 4.2's job code and draw
+   are not touched); not run on the Pi 4 card, and no dEQP pass yet.
+
+- **2026-11-10: a framebuffer object's job queued behind the running render (Pi 4; VC4 unchanged).**
+  Found with SA68: its dynamic caustics draw into a 128x128 texture first in every frame, and
+  that job's flush began with `ogles2_job_finish`, a wait for the whole previous frame's render; the CPU
+  stopped overlapping the GPU (1080p, vsync off: 16.9 ms a frame without the caustics, 19.6 with,
+  60 -> 30 fps with vsync). Now (`job.c`, top comment): such a job, flushed while this context's
+  default-framebuffer render still runs, is built and **binned** at once (the binner beside the running
+  render, into the target's own tile pools) and its **render submitted by `ogles2_job_finish`** after the
+  running one has ended, with the submission lock as any render: the GPU is never handed a render
+  while another runs (the render thread's `CT1QBA/QEA` queue is not relied on: nothing documents its
+  depth). `ogles2_job_finish` waits for both, so every caller keeps its meaning; fbo.c's and share.c's
+  "does a running job use it" checks look at the queued one too. Backend hooks `job_can_queue`,
+  `job_queue`, `job_render_queued` (0 on VC4: never queued). V3D: a third slot of control lists
+  (`V3DContext`'s arrays [3], `v3d_context_alloc_slot2`, ~8 MB, allocated at the first queue only;
+  programs that never queue alternate [0] and [1] as before); the queued job is counted as submitted
+  at its flush (`v3d_frame_render_submitted`), so retiring after both renders never frees the next
+  job's blocks. A small target (on the context's pools, which the running render may use) gets pools
+  of its own from its next job on (`ogles2_fbo_want_own_pools`, logged once). The decision uses only
+  what the job's start found: a first version called `ogles2_fbo_target(..., TRUE)` before the wait,
+  and that alone (nothing queued) failed m5-1's mid-frame depth check and its memory checks.
+  `ENV:OGLES2/NoQueue` (not 0) turns it off, read per context. New test **m8_queue** (package m8-1):
+  on a screen of its own, every frame clears a texture to its own colour first and draws it; every
+  second frame read back: 30 of 30 right, 29 jobs queued per context, memory back within 4 KB; the
+  same with NoQueue as the control. **Pi 4 regression (p2_checks.sh, final build):** m5-1 259 PASS,
+  0 FAIL; m7-6 36/36; m2-5 14 pictures identical; m6-1 and Quake III as before (88.4 fps).
+  SA68 with the caustics: 19.7 -> 17.0-17.7 ms a frame (1430 jobs queued, none dropped).
+  **Not yet run on the Pi 3 card** (VC4 never queues, but job.c, fbo.c and share.c are shared) and no
+  dEQP pass: both before a release.
+
+- **2026-11-11: where SA68's frame goes (Pi 4, 1920x1080, dynamic caustics, VSYNC=0;
+  probe P and the destroy-time timing lines).** Not changed yet; the order to work in:
+  - Liquid Touch off, 11.1 ms a frame: the app's CPU work 7.2 ms; per job 0.70 ms waiting for
+    binning (2 jobs) and 1.04 ms waiting for a render. In the draws (2.25 ms a frame, 16 draws)
+    the indices take 1.42 ms: `ogles2_v3d_draw` copies, byte-swaps and rebases every index of
+    every indexed draw, even from an element buffer that never changes (vertex buffers are
+    converted once, `ogles2_buffer_copy`; index buffers are not).
+  - Liquid Touch on, 19.3 ms: 3 jobs a frame, 3.0 ms render wait each. The scene's job waits
+    for the screen's running render, then its own render is waited for before the water pass
+    can go out; the CPU idles ~9.5 ms a frame. A 16-bit picture made no difference (not
+    bandwidth); 640x480 vs 1920x1080 without it: 8.5 vs 11.1 ms.
+  - Probe S (render behind its binning by the semaphore packets): no gain with Liquid Touch
+    (19.6 ms), worse without (16.2 ms: it turns the queue off), and the CPU still waits for
+    binning (0.7 ms a job). SA68 never runs the binner out of memory (0 blocks added).
+  1. Element buffers converted once (little-endian, per type, kept until glBuffer(Sub)Data;
+     rebase by the attribute addresses instead of the indices): ~1.3 ms a frame of CPU.
+  2. Binning not waited for at the flush: its render submitted at the next flush, swap or
+     glFinish (the out-of-memory case serviced then); ~0.7 ms a job.
+  3. Renders chained on the GPU: the next render given to the hardware while one runs (probe
+     the render thread's CT1QBA/QEA queue depth first; else a submitter at the end of a
+     render), so no render is waited for by the CPU unless the program reads back. Liquid
+     Touch's ~8 ms over its off case is mostly this.
+  4. Small: the cache clean before each job (75 us) and the render list (74 us).
+  - **Done 2026-11-11, item 1 (V3D):** `ogles2_v3d_draw` reads 16-bit indices from the element
+    buffer's kept little-endian copy (`ogles2_buffer_index_copy`, as VC4 already did) when every
+    array the program reads is a static buffer and there is no base vertex; the arrays from
+    vertex 0. SA68: indices 1.42 -> 0.02 ms a frame, draws 2.25 -> 0.86 ms, the app's CPU
+    frame 7.2 -> 5.7 ms; the frame 11.1 -> 10.8 ms (now waiting for the GPU), Liquid Touch
+    19.3 -> 18.1 ms. Pi 4 regression: m5-1 259 PASS 0 FAIL, m7-6 36/36, m2-5 14 identical,
+    Quake III 91.4 fps (88.4). (The Quake data is now in `Stuff:Quake3-GLES2`: run Run-M1 with
+    `Q3DATA=Stuff:Quake3-GLES2`; amictl's `-a` takes no ':'.) Pi 3 not run.
+  - **Probe H (2026-11-11):** a queued object job's render written to `CT1QBA/QEA` at once,
+    behind the running render; waited for as the count reaching pend_frame + 2 (modulo 256).
+    m8-1 passes with it (both steps); SA68 without Liquid Touch: 2226 of 2229 such
+    renders written while the previous one still ran, none dropped or timed out: **the render
+    thread holds one render queued behind the running one.** Little gain by itself (10.9 vs
+    11.1 ms): only the caustics job takes that path. Off unless `ENV:OGLES2/Probe` has H.
+  - Next (items 2+3 as one): every job binned at its flush into tile pools and a slot of its own
+    (none an in-flight render reads), its render put on the hardware queue when at most one
+    render is on the GPU (probe H's finding), the CPU waiting only for a slot or pools to come
+    free, a read-back, or a change to something an in-flight render reads.

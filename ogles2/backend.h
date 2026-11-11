@@ -61,6 +61,9 @@ struct OGLES2Elements
     GLenum type;          /* GL_UNSIGNED_BYTE, _SHORT or _INT (OES_element_index_uint) */
     GLsizei count;
     ULONG min;            /* the smallest index: subtracted from each */
+    struct OGLES2Buffer *buf; /* the GL_ELEMENT_ARRAY_BUFFER the indices are in (offset bytes on), or 0:
+                               * VC4 may read a kept GPU copy of it instead (ogles2_buffer_index_copy) */
+    ULONG offset;
 };
 
 /* One draw, its arguments checked: program p with its variants (binning,
@@ -207,6 +210,14 @@ struct OGLES2Backend
     /* What such a program's image needs once loaded (VC4: its sources, for the
      * variants of states it does not hold); 0: nothing. */
     void (*internal_loaded)(int which, struct OGLES2Image *im);
+    /* A framebuffer object's job queued behind the running render (job.c):
+     * whether it may be (its target has tile pools of its own, the next job
+     * can be built meanwhile; 0 on VC4: never); after its binning, in place
+     * of job_render: counted as submitted, its render list kept; later, its
+     * render submitted (the frame number for the wait). */
+    BOOL (*job_can_queue)(struct OGLES2Context *ctx);
+    void (*job_queue)(struct OGLES2Context *ctx);
+    UBYTE (*job_render_queued)(struct OGLES2Context *ctx);
 };
 
 /* The generic vertex attributes GL offers on this GPU: indices from it on

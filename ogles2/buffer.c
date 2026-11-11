@@ -559,6 +559,67 @@ const void *ogles2_buffer_indices(struct OGLES2Context *ctx, ULONG offset, ULONG
     return bs->element->data + offset;
 }
 
+/* The GL_ELEMENT_ARRAY_BUFFER binding, 0 without one. */
+struct OGLES2Buffer *ogles2_buffer_element(struct OGLES2Context *ctx)
+{
+    struct OGLES2BufState *bs = bs_get(ctx);
+    return bs ? bs->element : 0;
+}
+
+/* Byte-swaps 16-bit indices: a GPU copy's convert (it is never patched,
+ * see below, so the signature is all it shares with the attributes'). */
+static void swap16(UBYTE *dst, const UBYTE *src, ULONG n)
+{
+    ULONG j;
+    for (j = 0; j < n; j++) {
+        dst[2 * j] = src[2 * j + 1];
+        dst[2 * j + 1] = src[2 * j];
+    }
+}
+
+/* A GL_STATIC_DRAW element buffer read as 16-bit indices: a GPU copy of the
+ * whole of it, little-endian, kept as one of its copies (the marker type
+ * GL_ELEMENT_ARRAY_BUFFER, which no attribute has), so that VC4 can point an
+ * indexed draw at it instead of converting the indices at every draw
+ * (draw_vc4.c; 2 ms a frame of 80,000 indices on a Pi 3). It has no convert
+ * function: glBufferSubData retires it (patch_copies) and the next draw
+ * makes it again. Returns its GPU address, 0 without one (another usage, an
+ * odd size, no memory). */
+ULONG ogles2_buffer_index_copy(struct OGLES2Context *ctx, struct OGLES2Buffer *b)
+{
+    struct gpu_copy *c, *victim = 0;
+    int k;
+    if (!b || b->usage != GL_STATIC_DRAW || !b->data || b->size < 2 || b->mapped)
+        return 0;
+    for (k = 0; k < OGLES2_BUFFER_COPIES; k++) {
+        c = &b->copy[k];
+        if (c->serial == b->serial && c->mem.hostptr && c->type == GL_ELEMENT_ARRAY_BUFFER) {
+            c->used_job = ctx->job_serial;
+            return (ULONG)c->mem.hostptr;
+        }
+        if (!c->mem.hostptr && !victim)
+            victim = c;
+    }
+    if (!victim) {
+        victim = &b->copy[0];
+        drop_copy(ctx, victim);
+    }
+    c = victim;
+    if (ogles2_mem_alloc(&c->mem, (b->size & ~1UL) + 4) < 0) {
+        memset(c, 0, sizeof(*c));
+        return 0;
+    }
+    /* No cache call: the job that reads it is flushed after a clean of the
+     * whole data cache (job.c, clean_all). */
+    swap16((UBYTE *)c->mem.hostptr, b->data, b->size >> 1);
+    c->serial = b->serial;
+    c->type = GL_ELEMENT_ARRAY_BUFFER;
+    c->elem_bytes = 2;
+    c->vertices = b->size >> 1;
+    c->used_job = ctx->job_serial;
+    return (ULONG)c->mem.hostptr;
+}
+
 /* A buffer the application changes as it draws (GL_DYNAMIC_DRAW or
  * GL_STREAM_DRAW): its shadow, which a draw converts the vertices it reads
  * from into the job's state buffer, as from a client array. NULL for a

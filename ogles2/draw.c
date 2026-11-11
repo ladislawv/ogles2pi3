@@ -557,9 +557,13 @@ static void draw_elements(struct OGLES2Context *ctx, GLenum mode, GLsizei count,
             ogles2_log("%s: the indices lie outside the element buffer; nothing drawn", (ULONG)fn);
             return;
         }
-        if (in)
+        el.buf = 0;
+        el.offset = 0;
+        if (in) {
+            el.buf = ogles2_buffer_element(ctx);
+            el.offset = (ULONG)indices;
             indices = in;
-        else if (!indices)
+        } else if (!indices)
             return;
     }
 scan:

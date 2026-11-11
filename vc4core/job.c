@@ -218,7 +218,11 @@ static int wait_count(struct vc4_job *job, uint32_t reg, uint64_t t0, uint32_t t
             *took = (uint32_t)(t - t0);
             return 0;
         }
-        if (reg == V3D_BFC && (vc4_read(V3D_INTCTL) & V3D_INT_OUTOMEM)) {
+        /* While a render waits behind a binning not waited for
+         * (vc4_job_bin_start), its requests too, until the binning is done
+         * (BFC: no request left over from a finished binning is served) */
+        if ((reg == V3D_BFC || (job->bin_async && !(vc4_read(V3D_BFC) & 0xff))) &&
+            (vc4_read(V3D_INTCTL) & V3D_INT_OUTOMEM)) {
             /* The binner used up the overflow memory it had: the next chunk
              * (Linux's vc4_overflow_mem_work gives a new bin slot). */
             uint32_t size, at;
@@ -252,7 +256,7 @@ int vc4_job_end_lists(struct vc4_job *job)
     return 0;
 }
 
-int vc4_job_bin(struct vc4_job *job, uint32_t timeout_us)
+static void bin_start(struct vc4_job *job)
 {
     job->overflows = 0;
     job->out_of_overflow = 0;
@@ -268,10 +272,23 @@ int vc4_job_bin(struct vc4_job *job, uint32_t timeout_us)
     vc4_write(V3D_SLCACTL, 0x0f0f0f0fu); /* TMU1, TMU0, uniform, instruction caches of each slice */
     vc4_write(V3D_CT0CA, vc4_cl_start(&job->bcl));
     vc4_write(V3D_CT0EA, vc4_cl_end(&job->bcl)); /* starts the binner */
+}
+
+int vc4_job_bin(struct vc4_job *job, uint32_t timeout_us)
+{
+    job->bin_async = 0;
+    bin_start(job);
     if (wait_count(job, V3D_BFC, vc4_os_time_us(), timeout_us, &job->bin_us) < 0)
         return -2;
     job->errstat_bin = vc4_read(V3D_ERRSTAT);
     return 0;
+}
+
+void vc4_job_bin_start(struct vc4_job *job)
+{
+    job->bin_async = 1;
+    job->bin_us = 0;
+    bin_start(job);
 }
 
 void vc4_job_render_start(struct vc4_job *job)
@@ -287,10 +304,16 @@ void vc4_job_render_start(struct vc4_job *job)
 int vc4_job_render_wait(struct vc4_job *job, uint32_t timeout_us)
 {
     uint32_t err;
-    if (wait_count(job, V3D_RFC, job->t_render, timeout_us, &job->render_us) < 0)
+    if (wait_count(job, V3D_RFC, job->t_render, timeout_us, &job->render_us) < 0) {
+        job->bin_async = 0;
         return -3;
+    }
     err = vc4_read(V3D_ERRSTAT);
     job->errstat = err;
+    if (job->bin_async) { /* its binning's bits are this read's too */
+        job->errstat_bin = err;
+        job->bin_async = 0;
+    }
     /* The error bits stay set until written back (1 clears: found
      * 2026-11-04; else every later job reports them) */
     if (err != V3D_ERRSTAT_IDLE)

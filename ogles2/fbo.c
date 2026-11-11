@@ -100,6 +100,7 @@ struct OGLES2Framebuffer
     GLenum draw_buf[OGLES2_MAX_DRAW_BUFFERS]; /* glDrawBuffersEXT: COLOR_ATTACHMENTi or NONE */
     v3d_mem pool_alloc, pool_state; /* tile pools of its own when bigger than the context's */
     ULONG pool_tiles;
+    BOOL want_own_pools;            /* job.c's queue: pools of its own from its next job on */
 };
 
 struct OGLES2FboState
@@ -260,7 +261,7 @@ static void before_fb_change(struct OGLES2Context *ctx, struct OGLES2Framebuffer
 {
     if (ctx->job_open && ctx->job_fb == fb && fb)
         ogles2_job_flush(ctx, FALSE);
-    if (ctx->pend && ctx->pend_fb)
+    if (ctx->pend && (ctx->pend_fb || ctx->q_active)) /* a queued job is an object's */
         ogles2_job_finish(ctx);
 }
 
@@ -269,7 +270,7 @@ static void before_rb_change(struct OGLES2Context *ctx, struct OGLES2Renderbuffe
 {
     struct OGLES2Framebuffer *fb = ctx->job_fb;
     int a;
-    if (ctx->pend && ctx->pend_fb)
+    if (ctx->pend && (ctx->pend_fb || ctx->q_active))
         ogles2_job_finish(ctx);
     if (!ctx->job_open || !fb)
         return;
@@ -299,8 +300,8 @@ void ogles2_fbo_texture_changing(struct OGLES2Context *ctx, struct OGLES2Texture
 {
     if (ctx->job_open && draws_into(ctx->job_fb, t))
         ogles2_job_flush(ctx, FALSE);
-    if (ctx->pend && draws_into(ctx->pend_fb, t)) /* the running render writes it */
-        ogles2_job_finish(ctx);
+    if (ctx->pend && (draws_into(ctx->pend_fb, t) || (ctx->q_active && draws_into(ctx->q_fb, t))))
+        ogles2_job_finish(ctx); /* the running (or queued) render writes it */
 }
 
 /* A deleted renderbuffer's memory goes: the jobs that use it rendered first
@@ -1083,6 +1084,7 @@ BOOL ogles2_fbo_target(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb, 
     BOOL wide = FALSE;
     int i;
     memset(t, 0, sizeof(*t));
+    t->want_own = (UBYTE)fb->want_own_pools;
     ctx->draw_fb = fb; /* the sizes and formats of fb, whatever is bound now */
     ogles2_fb_update(ctx);
     t->w = ctx->fb_w;
@@ -1152,6 +1154,18 @@ BOOL ogles2_fbo_target(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb, 
         t->has_z = TRUE;
         t->packed_zs = TRUE;
     }
+    return TRUE;
+}
+
+/* job.c's queue: fb's jobs get tile pools of their own from the next one
+ * on (a running render may be using the context's). TRUE the first time. */
+BOOL ogles2_fbo_want_own_pools(struct OGLES2Framebuffer *fb)
+{
+    if (fb->want_own_pools)
+        return FALSE;
+    fb->want_own_pools = TRUE;
+    ogles2_log("job: framebuffer %ld drawn while a render runs: tile pools of its own from its next job on, "
+               "so that its jobs can be queued", fb->name);
     return TRUE;
 }
 

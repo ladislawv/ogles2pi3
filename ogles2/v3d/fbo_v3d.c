@@ -88,7 +88,7 @@ BOOL ogles2_v3d_target_pools(struct OGLES2Context *ctx, struct v3d_mem *pool_all
     ULONG tiles = (ULONG)((t->w + t->tile_w - 1) / t->tile_w) * ((t->h + t->tile_h - 1) / t->tile_h);
     ULONG ct = ctx->msaa ? 32 : 64, mine = (ULONG)((v->width + ct - 1) / ct) * ((v->height + ct - 1) / ct);
     t->ta_addr = t->ta_size = t->ts_addr = 0;
-    if (tiles <= mine)
+    if (tiles <= mine && !t->want_own)
         return TRUE;
     if (*pool_tiles < tiles) {
         ogles2_job_finish(ctx); /* a running render may use the old pools */

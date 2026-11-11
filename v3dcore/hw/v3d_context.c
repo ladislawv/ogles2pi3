@@ -445,6 +445,14 @@ void v3d_context_free(V3DDevice* device, V3DContext* context)
     v3d_mem_free(device, &context->render_mem[1]);
     v3d_mem_free(device, &context->binning_mem[0]);
     v3d_mem_free(device, &context->binning_mem[1]);
+    if (context->slot2_ready)
+    {
+        v3d_mem_free(device, &context->state_mem[2]);
+        v3d_mem_free(device, &context->tile_list_mem[2]);
+        v3d_mem_free(device, &context->render_mem[2]);
+        v3d_mem_free(device, &context->binning_mem[2]);
+        context->slot2_ready = 0;
+    }
     v3d_mem_free(device, &context->tile_alloc_mem);
     v3d_mem_free(device, &context->tile_state_mem);
     v3d_mem_free(device, &context->zbuffer_mem);
@@ -463,6 +471,36 @@ void v3d_context_free(V3DDevice* device, V3DContext* context)
      * v3d_backend_alloc_scratch_color below -- same "always safe to free,
      * handle may still be 0" reasoning as shader_code_mem just above. */
     v3d_mem_free(device, &context->scratch_color_mem);
+}
+
+int v3d_context_alloc_slot2(V3DDevice* device, V3DContext* context)
+{
+    static const ULONG size[4] = { V3D_INITIAL_CL_BUFFER_SIZE, V3D_INITIAL_RENDER_BUFFER_SIZE,
+                                   V3D_INITIAL_TILE_LIST_BUFFER_SIZE, V3D_INITIAL_CL_BUFFER_SIZE };
+    v3d_mem* mem[4];
+    v3d_static_buffer* buf[4];
+    int i;
+    if (context->slot2_ready)
+        return 0;
+    mem[0] = &context->binning_mem[2];   buf[0] = &context->binning_buf[2];
+    mem[1] = &context->render_mem[2];    buf[1] = &context->render_buf[2];
+    mem[2] = &context->tile_list_mem[2]; buf[2] = &context->tile_list_buf[2];
+    mem[3] = &context->state_mem[2];     buf[3] = &context->state_buf[2];
+    for (i = 0; i < 4; i++)
+    {
+        if (v3d_mem_alloc(device, mem[i], size[i]) < 0)
+        {
+            while (--i >= 0)
+                v3d_mem_free(device, mem[i]);
+            return -1;
+        }
+        buf[i]->start = (v3d_u8*)mem[i]->hostptr;
+        buf[i]->used = 0;
+        buf[i]->capacity = (int)size[i];
+        buf[i]->overflowed = 0;
+    }
+    context->slot2_ready = 1;
+    return 0;
 }
 
 int v3d_backend_alloc_scratch_color(V3DDevice* device, V3DContext* context)

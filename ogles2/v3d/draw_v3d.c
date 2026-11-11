@@ -1178,8 +1178,28 @@ BOOL ogles2_v3d_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     struct attr_src src[OGLES2_MAX_VERTEX_ATTRIBS];
     struct tex_states tst;
     ULONG unif[3], defattr, rec, idx_addr = 0, idx_size = 0;
+    ULONG direct = 0; /* the element buffer's kept GPU copy, read in place (see below) */
     int nslots = p->nslots, i;
 
+    if (el && el->buf && el->type == GL_UNSIGNED_SHORT && !(el->offset & 1) && (ULONG)first == el->min) {
+        /* 16-bit indices in a static element buffer, no base vertex, and
+         * every array the program reads in a static buffer too (its kept GPU
+         * copy, read where it lies: copy_array): the arrays from vertex 0
+         * and the indices as they are, from the element buffer's kept
+         * little-endian copy (ogles2_buffer_index_copy, as VC4 does), not
+         * rebased and swapped into the job at every draw (SA68 on the
+         * Pi 4: 1.4 ms a frame). */
+        BOOL all = TRUE;
+        for (i = 0; i < nslots && all; i++) {
+            GLuint g = p->slot_attrib[i];
+            if (g < OGLES2_MAX_VERTEX_ATTRIBS && ctx->array[g].enabled)
+                all = ctx->array[g].buffer && !ogles2_buffer_stream(ctx->array[g].buffer);
+        }
+        if (all && (direct = ogles2_buffer_index_copy(ctx, el->buf)) != 0) {
+            count = first + count;
+            first = 0;
+        }
+    }
     if (!(d = draw_state(ctx)))
         goto nomem;
     /* State buffer: uniform streams, vertex data, the record. */
@@ -1219,7 +1239,11 @@ BOOL ogles2_v3d_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     if (!(rec = shader_record(ctx, p, defattr, dc->code, unif, cs, vs, fs, mode, src, nslots)))
         goto nomem;
     mark(ctx, 5);
-    if (el) {
+    if (el && direct) {
+        idx_addr = direct + el->offset;
+        idx_size = (ULONG)el->count * 2;
+        ctx->n_indices += el->count;
+    } else if (el) {
         /* The indices, rebased to the copied range: 8-bit as they are,
          * 16- and 32-bit swapped to little-endian (plan 7.4). */
         ULONG isize = (ULONG)el->count * index_size(el->type), k;

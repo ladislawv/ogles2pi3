@@ -63,6 +63,7 @@ static UBYTE running_frame, frames;
 static ULONG running_copy_to, running_copy_len;
 static uint8_t *running_copy_from;
 static ULONG errors_logged;
+static ULONG overflows_logged;
 
 /* ---- blocks freed after a job ---- */
 
@@ -426,9 +427,16 @@ int ogles2_vc4_job_bin(struct OGLES2Context *ctx, const struct OGLES2Target *tg)
         if (vc4_job_render_wait(x, RENDER_TIMEOUT_US) < 0)
             return OGLES2_WAIT_TIMED_OUT;
     }
+    /* The last: started, not waited for. job_render follows at once and its
+     * render list waits for the binner on the GPU (WAIT_ON_SEMAPHORE after
+     * the binning list's INCREMENT_SEMAPHORE, DEVELOPMENT_PLAN §7.7), so the
+     * CPU builds the next frame while the GPU bins this one (2 ms a frame of
+     * 80,000 indices on a Pi 3, SA68); the render wait serves the
+     * binner's requests for memory meanwhile, and a binning that does not
+     * finish is reported as its render (job.c resets the core and drops the
+     * job, as for a binning). */
     c->stopped = &c->job[c->build];
-    if (vc4_job_bin(&c->job[c->build], BIN_TIMEOUT_US) < 0)
-        return c->job[c->build].out_of_overflow ? OGLES2_WAIT_ERROR : OGLES2_WAIT_TIMED_OUT;
+    vc4_job_bin_start(&c->job[c->build]);
     return OGLES2_WAIT_OK;
 }
 
@@ -481,6 +489,11 @@ void ogles2_vc4_job_retire(struct OGLES2Context *ctx)
             ogles2_log("job: the GPU reports ERRSTAT 0x%08lx after it, 0x%08lx after its binning (logged 8 times)",
                        (ULONG)j->errstat, (ULONG)j->errstat_bin);
         }
+    }
+    if (c->job[c->rendering].overflows && overflows_logged < 4) {
+        overflows_logged++;
+        ogles2_log("job: the binner asked for %ld more chunks of memory (logged 4 times)",
+                   (ULONG)c->job[c->rendering].overflows);
     }
 }
 

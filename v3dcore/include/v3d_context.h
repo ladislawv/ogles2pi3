@@ -182,11 +182,19 @@ struct V3DContext {
      * execution stays strictly serial between frames. (gl_FrameBegin
      * currently waits for the outstanding render, in MGLFlushPendingRender,
      * before it resets any slot, so the two do not overlap.) */
-    v3d_mem binning_mem[2], render_mem[2], tile_list_mem[2], state_mem[2];
-    v3d_static_buffer binning_buf[2];
-    v3d_static_buffer render_buf[2];
-    v3d_static_buffer tile_list_buf[2];
-    v3d_static_buffer state_buf[2];
+    /* ogles2: a third slot, [2], allocated only when first needed
+     * (v3d_context_alloc_slot2): a framebuffer object's job queued behind
+     * the running render (job.c) holds one slot, the running render
+     * another, and the next job builds in the third. Programs that never
+     * queue keep alternating [0] and [1]. */
+    v3d_mem binning_mem[3], render_mem[3], tile_list_mem[3], state_mem[3];
+    v3d_static_buffer binning_buf[3];
+    v3d_static_buffer render_buf[3];
+    v3d_static_buffer tile_list_buf[3];
+    v3d_static_buffer state_buf[3];
+    v3d_u8 slot2_ready;  /* ogles2: [2] allocated */
+    v3d_u8 last_slot;    /* ogles2: the slot of the last job submitted (job_v3d.c) */
+    v3d_u8 queued_slot;  /* ogles2: the queued job's slot, its render not submitted yet (job_v3d.c) */
     v3d_static_buffer* current_buf;   /* points at whichever of the above is being written -- same pattern as the earlier library's SetBuffer()/context->currentBuf */
     v3d_u8 build_slot;   /* which slot [0]/[1] the CPU is currently building into */
 
@@ -418,6 +426,10 @@ int v3d_context_init(V3DContext* context, V3DDevice* device, v3d_u16 width, v3d_
 
 /* Frees every pool/buffer allocated by v3d_context_init, the lazily allocated shader_code_mem and scratch_color_mem, and the frame's spill pool and retire list. */
 void v3d_context_free(V3DDevice* device, V3DContext* context);
+
+/* ogles2: allocates the third control-list slot ([2]) once; 0 on success
+ * (or already there), negative if out of memory (nothing kept). */
+int v3d_context_alloc_slot2(V3DDevice* device, V3DContext* context);
 
 /* Re-sizes an initialised context for a new render-target size: frees and
  * reallocates only what depends on the size (Z buffer, tile state, tile

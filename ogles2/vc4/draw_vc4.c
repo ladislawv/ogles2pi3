@@ -818,6 +818,9 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
     struct chosen ch;
     ULONG code[3], unif[3], rec;
     ULONG ib = 0, ilen = 0, imax = 0; /* the draw's 16-bit (or 8-bit) indices, shared by its passes */
+    ULONG direct = 0;                 /* the element buffer's kept GPU copy, read in place (see below) */
+    GLint vfirst = dc->first;         /* the vertices the arrays give: dc's, or from 0 with `direct` */
+    GLsizei vcount = dc->count;
     GLenum mode = dc->mode, poly = 0;
     BOOL twoside = FALSE, full = FALSE, points = mode == GL_POINTS;
     int nslots = p->nslots == 0xff ? 0 : p->nslots, i, k, pass;
@@ -861,6 +864,27 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
             ogles2_job_begin(ctx);
             if (c->bad)
                 return FALSE;
+        }
+    }
+    if (el && el->buf && !poly && el->type == GL_UNSIGNED_SHORT && !(el->offset & 1) &&
+        (ULONG)dc->first == el->min) {
+        /* 16-bit indices in a static element buffer, no base vertex, and
+         * every array the program reads in a static buffer too (its kept
+         * GPU copy, read where it lies: copy_array): the arrays from vertex
+         * 0, and the indices as they are, from the element buffer's kept
+         * little-endian copy (ogles2_buffer_index_copy), not rebased and
+         * swapped into the job at every draw (about 27 ns an index on a Pi 3:
+         * 2 ms a frame of 80,000). The largest index is the range's end
+         * still, below 65536: 16-bit indices. */
+        BOOL all = TRUE;
+        for (i = 0; i < nslots && i < 8 && all; i++) {
+            GLuint g = p->slot_attrib[i];
+            if (g < OGLES2_MAX_VERTEX_ATTRIBS && ctx->array[g].enabled)
+                all = ctx->array[g].buffer && !ogles2_buffer_stream(ctx->array[g].buffer);
+        }
+        if (all && (direct = ogles2_buffer_index_copy(ctx, el->buf)) != 0) {
+            vcount = vfirst + vcount;
+            vfirst = 0;
         }
     }
     if (!(d = draw_state(ctx)) || !im->code_mem)
@@ -917,7 +941,7 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
             for (i = 0; i < nslots; i++) {
                 GLuint g = p->slot_attrib[i];
                 BOOL ok = g < OGLES2_MAX_VERTEX_ATTRIBS && ctx->array[g].enabled
-                              ? copy_array(ctx, c, &ctx->array[g], dc->first, dc->count, &src[i])
+                              ? copy_array(ctx, c, &ctx->array[g], vfirst, vcount, &src[i])
                               : constant_attrib(ctx, c, g, &src[i]);
                 if (!ok)
                     goto nomem;
@@ -964,7 +988,11 @@ BOOL ogles2_vc4_draw(struct OGLES2Context *ctx, const struct OGLES2DrawCall *dc)
              * little-endian, 32-bit as 16-bit while they fit */
             ULONG n = (ULONG)el->count, j;
             BOOL bytes = el->type == GL_UNSIGNED_BYTE;
-            if (!pass) {
+            if (!pass && direct) {
+                imax = (ULONG)vcount - 1;
+                ib = ogles2_vc4_bus(direct) + el->offset;
+                ctx->n_indices += el->count;
+            } else if (!pass) {
                 UBYTE *x;
                 /* The largest is the front end's range (it copied that many
                  * vertices; more than 16 bits: draw_big). No branch in these

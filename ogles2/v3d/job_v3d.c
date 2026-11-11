@@ -689,13 +689,60 @@ void ogles2_v3d_job_retire(struct OGLES2Context *ctx)
     v3d_frame_retire(ogles2_device(), &ctx->v3d->frame);
 }
 
-/* The job is over; submitted: the next one builds in the other slot. */
+/* The job is over; submitted: the next one builds in another slot. Not the
+ * running render's either when this one was queued behind it (job.c sets
+ * q_active first): then the third slot. Otherwise [0] and [1] in turn (from
+ * [2], [0]: everything earlier has finished). */
 void ogles2_v3d_job_end(struct OGLES2Context *ctx, BOOL submitted)
 {
     V3DContext *v = ctx->v3d;
-    if (submitted)
-        v->build_slot = 1 - v->build_slot;
+    if (submitted) {
+        v3d_u8 s = v->build_slot;
+        if (ctx->q_active && ctx->q_serial == ctx->job_serial)
+            v->build_slot = (v3d_u8)(3 - s - v->last_slot); /* neither queued nor running */
+        else
+            v->build_slot = s == 0 ? 1 : 0;
+        v->last_slot = s;
+    }
     v->frame_active = FALSE;
+}
+
+/* job.c's queue (backend.h; job.c has checked the target's own tile
+ * pools): a third slot for the next job. Not with probe S (job_bin submits
+ * the render with the binning). */
+BOOL ogles2_v3d_job_can_queue(struct OGLES2Context *ctx)
+{
+    V3DContext *v = ctx->v3d;
+    if (ctx->probe & OGLES2_PROBE_SEMAPHORE)
+        return FALSE;
+    if (v->build_slot == v->last_slot)
+        return FALSE; /* never: the running render's slot is not the one built in */
+    if (!v->slot2_ready && v3d_context_alloc_slot2(ogles2_device(), v) < 0) {
+        ogles2_log("job: no memory for a third control-list slot: framebuffer-object jobs wait as before");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/* The queued job, binned: its blocks belong to it from now on (the next
+ * job's are tagged after it, so retiring up to it never frees those); its
+ * render list stays in its slot until job_render_queued. */
+void ogles2_v3d_job_queue(struct OGLES2Context *ctx)
+{
+    V3DContext *v = ctx->v3d;
+    v->queued_slot = v->build_slot;
+    v3d_frame_render_submitted(&v->frame);
+}
+
+/* Its render, now that nothing else renders (job.c holds the GPU lock and
+ * has waited for the running render): submitted, as job_render does. */
+UBYTE ogles2_v3d_job_render_queued(struct OGLES2Context *ctx)
+{
+    V3DContext *v = ctx->v3d;
+    v3d_u8 s = v->queued_slot;
+    v3d_invalidate_caches();
+    return v3d_submit_render((v3d_address)(ULONG)v->render_buf[s].start,
+                             (v3d_address)((ULONG)v->render_buf[s].start + v->render_buf[s].used));
 }
 
 /* A binning job that did not finish: where the control list executor

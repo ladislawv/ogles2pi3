@@ -465,6 +465,7 @@ struct OGLES2Target
     struct OGLES2Surface color[OGLES2_MAX_DRAW_BUFFERS], z, s;
     UBYTE depth_type;      /* V3D_INTERNAL_TYPE_DEPTH* for the tile buffer */
     ULONG ta_addr, ta_size, ts_addr; /* own tile pools, 4096-aligned; 0: the context's fit */
+    UBYTE want_own;                  /* pools of its own even if the context's fit (job.c's queue) */
 };
 
 struct OGLES2Context
@@ -501,6 +502,9 @@ struct OGLES2Context
     double sum_build, sum_bin, sum_render, sum_present, sum_frame;
     double sum_list, sum_pre, sum_post; /* the flush's own: render list, cache before, after */
     ULONG n_jobs, n_swaps;
+    ULONG n_queued;                 /* framebuffer-object jobs queued behind a running render (job.c) */
+    BOOL job_own_pools;             /* the open job's target has tile pools of its own (job.c) */
+    UBYTE no_queue;                 /* ENV:OGLES2/NoQueue: 0 not read yet, 1 unset, 2 set (job.c) */
     ULONG n_renames;                /* textures renamed (texture.c) */
     ULONG n_draws;                  /* draws issued (draw.c) */
     double sum_draw, sum_bufdata, sum_teximage; /* microseconds in draws, buffer data, texture images */
@@ -561,6 +565,16 @@ struct OGLES2Context
     ULONG pend_serial;              /* its job_serial */
     struct OGLES2Framebuffer *pend_fb; /* NULL: the default framebuffer */
     struct OGLES2Target pend_tg;
+    /* A framebuffer object's job queued behind the default framebuffer's
+     * running render (job.c, ogles2_job_flush): built and binned, its
+     * render submitted by ogles2_job_finish after pend's. Only while pend. */
+    BOOL q_active;
+    ULONG q_serial;                 /* its job_serial */
+    struct OGLES2Framebuffer *q_fb;
+    struct OGLES2Target q_tg;
+    ULONG n_hw_busy;                /* probe H: renders written while pend's still ran */
+    BOOL q_hw;                      /* probe H: its render already on the hardware's queue */
+    UBYTE q_frame;                  /* then waited for as the render counted after pend_frame */
     UBYTE marker_depth;             /* EXT_debug_marker: groups pushed (debug.c) */
     UBYTE job_discard;              /* EXT_discard_framebuffer: OGLES2_DISCARD_* the open job does not store */
     UBYTE job_noload;               /* and those it does not load (discarded before it began) */
@@ -597,6 +611,7 @@ struct OGLES2Context
 #define OGLES2_PROBE_CPU_UPLOAD 512UL /* U: texture uploads tiled by the CPU, not the TFU (texture.c) */
 #define OGLES2_PROBE_CPU_COPY 1024UL /* K: glCopyTex* through the CPU, not drawn by the GPU (copy.c) */
 /* The Pi 3 port's measurement (docs/PI3_PLAN.md §4.2, P2): */
+#define OGLES2_PROBE_HWQUEUE 8192UL /* H: a queued job's render given to the hardware at once, behind the running one (job.c) */
 #define OGLES2_PROBE_VC4KEYS 2048UL /* V: log the distinct VC4 shader keys each program's draws need (vc4keys.c) */
 #define OGLES2_PROBE_VC4RECORDS 4096UL /* R: write each program's VC4 key records to T:ogles2-vc4keys/ for the
                                         * offline corpus (ogles2/vc4/drawkey_vc4.c) */
@@ -708,6 +723,7 @@ GLenum ogles2_fb_status(struct OGLES2Context *ctx);     /* of the draw framebuff
 BOOL ogles2_fb_ready(struct OGLES2Context *ctx);        /* complete; else GL_INVALID_FRAMEBUFFER_OPERATION */
 BOOL ogles2_fbo_target(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb, BOOL surfaces,
                        struct OGLES2Target *t);
+BOOL ogles2_fbo_want_own_pools(struct OGLES2Framebuffer *fb);
 void ogles2_fbo_rendered(struct OGLES2Context *ctx, struct OGLES2Framebuffer *fb);
 UBYTE ogles2_fbo_take_discarded(struct OGLES2Framebuffer *fb); /* OGLES2_DISCARD_* since its last job */
 /* glReadPixels from the bound framebuffer object: RGBA8 rows, GL's order. */
@@ -769,6 +785,8 @@ struct OGLES2Buffer *ogles2_buffer_array(struct OGLES2Context *ctx);
 GLuint ogles2_buffer_name(const struct OGLES2Buffer *b);
 ULONG ogles2_buffer_size(const struct OGLES2Buffer *b);
 const void *ogles2_buffer_indices(struct OGLES2Context *ctx, ULONG offset, ULONG bytes, BOOL *bad);
+struct OGLES2Buffer *ogles2_buffer_element(struct OGLES2Context *ctx);
+ULONG ogles2_buffer_index_copy(struct OGLES2Context *ctx, struct OGLES2Buffer *b);
 const UBYTE *ogles2_buffer_stream(const struct OGLES2Buffer *b);
 const UBYTE *ogles2_buffer_shadow(const struct OGLES2Buffer *b);
 ULONG ogles2_buffer_copy(struct OGLES2Context *ctx, struct OGLES2Buffer *b, ULONG offset, GLint size,

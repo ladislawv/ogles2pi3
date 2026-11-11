@@ -381,4 +381,7 @@ const struct OGLES2Backend ogles2_backend_vc4 = {
     ogles2_vc4_link_hints,
     internal_program,
     internal_loaded,
+    0, /* job_can_queue: VC4 jobs never queue behind a running render (job.c) */
+    0, /* job_queue */
+    0, /* job_render_queued */
 };

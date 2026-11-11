@@ -95,7 +95,8 @@ struct OGLES2Context *ogles2_job_user(struct OGLES2Context *ctx, ULONG serial)
         return 0;
     m = ctx->share ? ctx->share->first : ctx;
     for (; m; m = ctx->share ? m->share_next : 0)
-        if ((m->job_open && serial == m->job_serial) || (m->pend && serial == m->pend_serial))
+        if ((m->job_open && serial == m->job_serial) || (m->pend && serial == m->pend_serial) ||
+            (m->pend && m->q_active && serial == m->q_serial))
             return m;
     return 0;
 }

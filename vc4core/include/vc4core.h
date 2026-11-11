@@ -259,6 +259,7 @@ struct vc4_job
     int caller_flushes;    /* the caller makes the CPU's writes visible itself, after
                             * vc4_job_end_lists (ogles2.library: one clean of the whole cache) */
     uint64_t t_render;     /* when the render was started */
+    int bin_async;         /* binning started by vc4_job_bin_start: the render wait serves it */
 };
 
 int vc4_job_init(struct vc4_job *job);
@@ -286,6 +287,11 @@ int vc4_job_run(struct vc4_job *job, uint32_t timeout_us);
  * starts after the last render finished. */
 int vc4_job_end_lists(struct vc4_job *job);
 int vc4_job_bin(struct vc4_job *job, uint32_t timeout_us);
+/* The binning started, not waited for: the render (vc4_job_render_start,
+ * at once) waits for it on the GPU (the lists' semaphore packets), and
+ * vc4_job_render_wait serves the binner's out-of-memory requests until
+ * it is done. The CPU goes on meanwhile (2 ms a frame of 80,000 indices). */
+void vc4_job_bin_start(struct vc4_job *job);
 void vc4_job_render_start(struct vc4_job *job);
 int vc4_job_render_wait(struct vc4_job *job, uint32_t timeout_us);
 
