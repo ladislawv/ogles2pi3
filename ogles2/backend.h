@@ -210,14 +210,14 @@ struct OGLES2Backend
     /* What such a program's image needs once loaded (VC4: its sources, for the
      * variants of states it does not hold); 0: nothing. */
     void (*internal_loaded)(int which, struct OGLES2Image *im);
-    /* A framebuffer object's job queued behind the running render (job.c):
-     * whether it may be (its target has tile pools of its own, the next job
-     * can be built meanwhile; 0 on VC4: never); after its binning, in place
-     * of job_render: counted as submitted, its render list kept; later, its
-     * render submitted (the frame number for the wait). */
+    /* A job whose render goes to the GPU behind this context's running one
+     * (job.c's chain): whether the next job can be built meanwhile (a third
+     * slot of lists; 0 on VC4: never chained); after job_render, the job's
+     * sequence number; after the older of two renders has finished, the
+     * blocks up to its sequence number freed (the newer one's kept). */
     BOOL (*job_can_queue)(struct OGLES2Context *ctx);
-    void (*job_queue)(struct OGLES2Context *ctx);
-    UBYTE (*job_render_queued)(struct OGLES2Context *ctx);
+    ULONG (*job_seq)(struct OGLES2Context *ctx);
+    void (*job_retire_upto)(struct OGLES2Context *ctx, ULONG seq);
 };
 
 /* The generic vertex attributes GL offers on this GPU: indices from it on

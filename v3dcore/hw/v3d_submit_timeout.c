@@ -163,7 +163,10 @@ v3d_wait_result v3d_wait_render_timeout(v3d_u8 lastFrame)
     {
         currentFrameCount = v3d_get_render_frame_count();
 
-        if (currentFrameCount > lastFrame || (currentFrameCount == 0 && lastFrame == 255))
+        /* Done once the count has passed lastFrame, modulo 256 (ogles2: up
+         * to two renders on the GPU, job.c, so the count may also be one
+         * short of lastFrame, or two past it). */
+        if ((v3d_u8)(currentFrameCount - lastFrame - 1) < 128)
             break;
 
         status = V3D_CT1CS;

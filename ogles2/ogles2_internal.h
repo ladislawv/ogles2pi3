@@ -502,7 +502,8 @@ struct OGLES2Context
     double sum_build, sum_bin, sum_render, sum_present, sum_frame;
     double sum_list, sum_pre, sum_post; /* the flush's own: render list, cache before, after */
     ULONG n_jobs, n_swaps;
-    ULONG n_queued;                 /* framebuffer-object jobs queued behind a running render (job.c) */
+    ULONG n_queued;                 /* jobs chained behind a running render (job.c) */
+    ULONG n_chain_waits;            /* of them, those that waited for the older of two renders first */
     BOOL job_own_pools;             /* the open job's target has tile pools of its own (job.c) */
     UBYTE no_queue;                 /* ENV:OGLES2/NoQueue: 0 not read yet, 1 unset, 2 set (job.c) */
     ULONG n_renames;                /* textures renamed (texture.c) */
@@ -565,16 +566,17 @@ struct OGLES2Context
     ULONG pend_serial;              /* its job_serial */
     struct OGLES2Framebuffer *pend_fb; /* NULL: the default framebuffer */
     struct OGLES2Target pend_tg;
-    /* A framebuffer object's job queued behind the default framebuffer's
-     * running render (job.c, ogles2_job_flush): built and binned, its
-     * render submitted by ogles2_job_finish after pend's. Only while pend. */
-    BOOL q_active;
-    ULONG q_serial;                 /* its job_serial */
-    struct OGLES2Framebuffer *q_fb;
-    struct OGLES2Target q_tg;
-    ULONG n_hw_busy;                /* probe H: renders written while pend's still ran */
-    BOOL q_hw;                      /* probe H: its render already on the hardware's queue */
-    UBYTE q_frame;                  /* then waited for as the render counted after pend_frame */
+    ULONG pend_seq;                 /* the backend's sequence number of pend's job (job_seq) */
+    ULONG pend_ta;                  /* its tile pools: an object's own (ta_addr), 0 the context's */
+    /* The chain (job.c, ogles2_job_flush): pend's render went to the GPU
+     * behind this older one, which may still run. The GPU renders in order,
+     * so pend's end is both's; only while pend. */
+    BOOL pp_active;
+    UBYTE pp_frame;                 /* as pend_frame: pend_frame - 1 */
+    ULONG pp_serial;
+    ULONG pp_seq;
+    struct OGLES2Framebuffer *pp_fb;
+    struct OGLES2Target pp_tg;
     UBYTE marker_depth;             /* EXT_debug_marker: groups pushed (debug.c) */
     UBYTE job_discard;              /* EXT_discard_framebuffer: OGLES2_DISCARD_* the open job does not store */
     UBYTE job_noload;               /* and those it does not load (discarded before it began) */
@@ -611,7 +613,6 @@ struct OGLES2Context
 #define OGLES2_PROBE_CPU_UPLOAD 512UL /* U: texture uploads tiled by the CPU, not the TFU (texture.c) */
 #define OGLES2_PROBE_CPU_COPY 1024UL /* K: glCopyTex* through the CPU, not drawn by the GPU (copy.c) */
 /* The Pi 3 port's measurement (docs/PI3_PLAN.md §4.2, P2): */
-#define OGLES2_PROBE_HWQUEUE 8192UL /* H: a queued job's render given to the hardware at once, behind the running one (job.c) */
 #define OGLES2_PROBE_VC4KEYS 2048UL /* V: log the distinct VC4 shader keys each program's draws need (vc4keys.c) */
 #define OGLES2_PROBE_VC4RECORDS 4096UL /* R: write each program's VC4 key records to T:ogles2-vc4keys/ for the
                                         * offline corpus (ogles2/vc4/drawkey_vc4.c) */

@@ -37,6 +37,14 @@ newest() { ls -d "$RES"/$1-2[0-9]* 2>/dev/null | tail -1; } # dated: not an old 
 down() { local rc=$?; [ $rc = 4 ] && { echo "$(date +%T) STATION DOWN during $1: stopped"; exit 4; }; return 0; }
 WORK=
 station_work() { [ -n "$WORK" ] || WORK=$(amictl run CD 2> /dev/null | tr -d '\r' | tail -1); echo "$WORK"; } # runpkg's drawer
+# The package's library also in bin/libs/ (PROGDIR:libs for the programs there): OGLES2Open takes
+# a copy beside the program when its version is higher than the installed one's, and the Run
+# scripts' "Assign LIBS: ... ADD" comes after LIBS:'s own drawers. With an ogles2.library in
+# LIBS: (the A1200's CaffeineOS:Libs has 1.3 since 2026-11-11) the packages ran that one instead
+# (that day's m5-1, m7-6, m2-5, m6-1 and m8-1 runs: "1.3 init" in their logs).
+own_lib() { mkdir -p "$1/bin/libs" && cp "$1/libs/ogles2.library" "$1/bin/libs/ogles2.library"; }
+# Which library the run initialised (its log's first line), to see that it was the package's.
+ran_lib() { grep -h ' init$' "$1"/*.log 2> /dev/null | head -1 | sed 's/^ *[0-9]* //'; }
 fresh() { local r; r=$(newest "$1"); [ -n "$r" ] && ! [[ "${r##*$1-}" < "$2" ]]; } # a results drawer of this run
 
 for t in $WANT; do
@@ -52,16 +60,18 @@ for t in $WANT; do
         [ $WSL = 1 ] && lib=$(MSYS_NO_PATHCONV=1 wsl -d "$WSLD" sh -c 'wslpath -w "$HOME/ogles2-build-pi3/m68k/ogles2.library"' | tr -d '\r')
         [ -n "${LIB:-}" ] && lib=$LIB
         cp "$lib" "$HERE/out/$Q3/libs/ogles2.library" || exit 1
+        own_lib "$HERE/out/$Q3" || exit 1
         stamp=$(date +%Y%m%d-%H%M%S)
         amictl runpkg "$HERE/out/$Q3" -t 1800 -a "FRAMES=0" > /dev/null
         down q3
         fresh "$Q3" "$stamp" || { echo "q3: NO RESULTS from this run"; continue; }
-        echo "q3: $(grep -h 'frames.*fps' "$(newest $Q3)"/results/qconsole.log)"
+        echo "q3: $(grep -h 'frames.*fps' "$(newest $Q3)"/results/qconsole.log) [$(ran_lib "$(newest $Q3)"/results)]"
         ;;
     *)
         build "$t" || { echo "$t: build failed"; continue; }
         # LIB=<a library>: run the package with that one (P2's acceptance: 1.3.3's)
         [ -n "${LIB:-}" ] && { cp "$LIB" "$HERE/out/ogles2-$t/libs/ogles2.library" || exit 1; }
+        own_lib "$HERE/out/ogles2-$t" || exit 1
         # runpkg uploads what changed and deletes nothing: a package without a compiler of its own
         # kept the Pi 3 runs' 78-byte stand-in on the station, which made every compile wait 60 s
         # (m5-1's link step 13 minutes, 2026-11-07)
@@ -72,6 +82,7 @@ for t in $WANT; do
         down "$t"
         fresh "ogles2-$t" "$stamp" || { echo "$t: NO RESULTS from this run"; continue; }
         R=$(newest "ogles2-$t")/results
+        echo "$t ran: $(ran_lib "$R")"
         case $t in
         m5-1 | m7-6 | m2-4 | m7-2 | m7-4 | m7-5 | m1-5 | m6-6 | m6-8 | m6-10 | m7-3 | m7-9) echo "$t: $(grep -h '^PASS' "$R"/*.txt | wc -l) PASS, $(grep -h '^FAIL' "$R"/*.txt | wc -l) FAIL" ;;
         m2-5)

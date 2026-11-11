@@ -110,8 +110,8 @@ const struct OGLES2Backend ogles2_backend_v3d = {
     ogles2_v3d_internal_program,
     0, /* internal_loaded */
     ogles2_v3d_job_can_queue,
-    ogles2_v3d_job_queue,
-    ogles2_v3d_job_render_queued,
+    ogles2_v3d_job_seq,
+    ogles2_v3d_job_retire_upto,
 };
 
 const struct OGLES2Backend *ogles2_backend = &ogles2_backend_v3d;

@@ -1996,3 +1996,28 @@ were written on, read that section's "Another machine" first.
     (none an in-flight render reads), its render put on the hardware queue when at most one
     render is on the GPU (probe H's finding), the CPU waiting only for a slot or pools to come
     free, a read-back, or a change to something an in-flight render reads.
+  - **Correction (2026-11-11):** the A1200's `LIBS:` now includes `CaffeineOS:Libs`, which holds
+    an ogles2.library 1.3 (13.10.2026). The packages' `Assign LIBS: ... ADD` comes after it and
+    their `Avail FLUSH` empties memory, so the day's first package runs (m5-1, m7-6, m2-5, m6-1,
+    m8-1, probe H's m8-1) and the Quake III run (91.4 fps) **ran 1.3, not the build** ("1.3
+    init" in their logs); the regression lines in commit 5a0e06d's message are those runs.
+    SA68's runs were the build (its PROGDIR:libs copy, newer than 1.3). `p2_checks.sh` now
+    puts the library in each package's `bin/libs/` too (OGLES2Open takes a copy beside the
+    program when it is newer than the installed one) and prints the version each run
+    initialised. Quake III's package binary predates that rule: run with the build held open
+    (a process that opens it by path and waits, so `Avail FLUSH` cannot remove it).
+  - **Done 2026-11-11, items 2+3, the chain (V3D):** a job flushed while this context's last
+    render still runs is binned at once and its render written to the render thread's queue
+    behind the running one (up to two renders on the GPU; a third job waits for the older);
+    replaces the software queue of 2026-11-10 and probe H. Tile pools: the job's must not be the
+    running render's (an object on the context's pools gets its own from its next job on). The
+    render wait reads the count modulo 256 (v3dcore); blocks retire per job
+    (`v3d_frame_retire_upto`). Not for a mid-frame default-framebuffer job, not on VC4, not with
+    probe S; `ENV:OGLES2/NoQueue` turns it off. SA68 1920x1080 with dynamic caustics:
+    Liquid Touch 18.1 -> 15.1 ms a frame; without it 11.2 ms, unchanged: nearly every chained
+    job found two renders on the GPU (4498 of 4500), so the GPU is now the limit (about 11 ms of
+    GPU work a frame at 1080 without Liquid Touch, 15 with). **Pi 4 regression on the build
+    (1.4 init checked):** m5-1 259 PASS 0 FAIL, m7-6 36/36, m2-5 14 identical, m6-1 within 3% of
+    2026-11-10 either way, m8-1 5/5 both steps (58 jobs chained per context, every read-back
+    right, memory back), Quake III 88.0 fps (2026-11-10 on 1.4: 88.4; it chains nothing).
+    Pi 3 not run (job.c, fbo.c, share.c shared; VC4 never chains).

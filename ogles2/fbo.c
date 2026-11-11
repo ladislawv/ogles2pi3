@@ -261,7 +261,7 @@ static void before_fb_change(struct OGLES2Context *ctx, struct OGLES2Framebuffer
 {
     if (ctx->job_open && ctx->job_fb == fb && fb)
         ogles2_job_flush(ctx, FALSE);
-    if (ctx->pend && (ctx->pend_fb || ctx->q_active)) /* a queued job is an object's */
+    if (ctx->pend && (ctx->pend_fb || (ctx->pp_active && ctx->pp_fb))) /* either render into an object */
         ogles2_job_finish(ctx);
 }
 
@@ -270,7 +270,7 @@ static void before_rb_change(struct OGLES2Context *ctx, struct OGLES2Renderbuffe
 {
     struct OGLES2Framebuffer *fb = ctx->job_fb;
     int a;
-    if (ctx->pend && (ctx->pend_fb || ctx->q_active))
+    if (ctx->pend && (ctx->pend_fb || (ctx->pp_active && ctx->pp_fb)))
         ogles2_job_finish(ctx);
     if (!ctx->job_open || !fb)
         return;
@@ -300,8 +300,8 @@ void ogles2_fbo_texture_changing(struct OGLES2Context *ctx, struct OGLES2Texture
 {
     if (ctx->job_open && draws_into(ctx->job_fb, t))
         ogles2_job_flush(ctx, FALSE);
-    if (ctx->pend && (draws_into(ctx->pend_fb, t) || (ctx->q_active && draws_into(ctx->q_fb, t))))
-        ogles2_job_finish(ctx); /* the running (or queued) render writes it */
+    if (ctx->pend && (draws_into(ctx->pend_fb, t) || (ctx->pp_active && draws_into(ctx->pp_fb, t))))
+        ogles2_job_finish(ctx); /* a running render writes it */
 }
 
 /* A deleted renderbuffer's memory goes: the jobs that use it rendered first

@@ -115,8 +115,6 @@ struct OGLES2Context *ogles2_aglCreateContext2(ULONG *errcode, struct TagItem *t
                     ctx->probe |= OGLES2_PROBE_CPU_COPY;
                 else if (*p == 'V')
                     ctx->probe |= OGLES2_PROBE_VC4KEYS;
-                else if (*p == 'H')
-                    ctx->probe |= OGLES2_PROBE_HWQUEUE;
                 else if (*p == 'R')
                     ctx->probe |= OGLES2_PROBE_VC4RECORDS;
             }
@@ -250,8 +248,8 @@ void ogles2_aglDestroyContext(struct OGLES2Context *ctx)
     ogles2_log("aglDestroyContext: context 0x%08lx (%lu frames, %lu dropped, %lu binning blocks added)",
                (ULONG)ctx, ctx->frames, ctx->frames_dropped, ctx->chained_blocks);
     if (ctx->n_queued)
-        ogles2_log("job: %lu framebuffer-object jobs queued behind a running render (probe H: %lu written "
-                   "to the hardware while it ran)", ctx->n_queued, ctx->n_hw_busy);
+        ogles2_log("job: %lu jobs chained behind a running render (%lu of them waited for an older one "
+                   "first)", ctx->n_queued, ctx->n_chain_waits);
     if (ctx->n_jobs)
         ogles2_log("timing: %lu jobs, each on average: %lu us of CPU work before its flush, %lu us "
                    "waiting for binning, %lu us for the render",

@@ -191,10 +191,15 @@ void v3d_frame_render_submitted(V3DFrame* frame)
 
 void v3d_frame_retire(V3DDevice* device, V3DFrame* frame)
 {
+    v3d_frame_retire_upto(device, frame, frame->render_seq);
+}
+
+void v3d_frame_retire_upto(V3DDevice* device, V3DFrame* frame, v3d_u32 seq)
+{
     int i = 0;
     while (i < frame->retire_count)
     {
-        if ((int)(frame->retire[i].seq - frame->render_seq) <= 0)
+        if ((int)(frame->retire[i].seq - seq) <= 0)
         {
             v3d_mem m = frame->retire[i].mem;
             int spill = frame->retire[i].is_spill;

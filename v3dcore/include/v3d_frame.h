@@ -142,6 +142,11 @@ void v3d_frame_render_submitted(V3DFrame* frame);
  * or earlier. Never call it after a failed wait -- the job may still run. */
 void v3d_frame_retire(V3DDevice* device, V3DFrame* frame);
 
+/* The same up to job `seq` only (render_seq after its render was submitted):
+ * ogles2 has up to two renders on the GPU and retires the older one's blocks
+ * when it has finished, the newer one's still in use. */
+void v3d_frame_retire_upto(V3DDevice* device, V3DFrame* frame, v3d_u32 seq);
+
 /*
  * Hands out one spill block for the binner (from the pool, or newly
  * allocated: 4096-aligned like tile_alloc, and cache-flushed once) and puts
