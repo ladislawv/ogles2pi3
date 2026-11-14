@@ -10,7 +10,7 @@ It is the same API that phones, browsers and game engines use, and the same libr
 AmigaOS 4 has: GLES2 code from Linux, Android, the web or OS4 compiles and runs on the classic
 Amiga.
 
-## Version 1.4 beta 1: the Raspberry Pi 3 joins the Pi 4
+## Version 1.4 beta 2: the Raspberry Pi 3 joins the Pi 4
 
 Up to release 1.3.3, ogles2 needed a Raspberry Pi 4 in the PiStorm. Version 1.4 also runs on a
 **Raspberry Pi 3** (3B and 3B+) and the **Raspberry Pi Zero 2 W**, which is built on the same
@@ -49,8 +49,8 @@ are built exactly this way: they carry both sets and run on either Pi with no co
 installed.
 
 **Getting it.** The archives are in [`release/dist/`](release/dist/) and on the
-[`v1.4-beta1` pre-release](https://github.com/ladislawv/ogles2pi3/releases/tag/v1.4-beta1). To
-just try it, take `ogles2-1.4-beta1-demos.lha`: unpack it, open the drawer and double-click a
+[`v1.4-beta2` pre-release](https://github.com/ladislawv/ogles2pi3/releases/tag/v1.4-beta2). To
+just try it, take `ogles2-1.4-beta2-demos.lha`: unpack it, open the drawer and double-click a
 demo. Nothing needs installing. 1.3.3, the last Pi 4-only release, is in the tag `v1.3.3`. This
 is a beta: please report what you find, with the library's log (`release/ReadMe`, "Logging").
 
@@ -90,11 +90,11 @@ classic Amiga is solved; what remains is the CPU and OS code.
 
 | Archive | For | Contents |
 |---|---|---|
-| `ogles2-1.4-beta1.lha` | users | the library, the shader compiler, `Install-ogles2`, `OGLES2Log`, four examples with their Pi 4 and Pi 3 binaries |
-| `ogles2-1.4-beta1-demos.lha` | trying it out | the four examples with their shaders' binaries for both Pis and the library beside them: unpack and run, nothing to install |
-| `ogles2-1.4-beta1-sdk.lha` | Amiga programmers | the same plus the SDK: headers, import libraries for GCC and vbcc, the autodoc `ogles2.doc`, the guide `GettingStarted.txt`, example sources |
-| `ogles2-1.4-beta1-sdk.zip` | cross-development on a PC | the SDK alone |
-| `ogles2-1.4-beta1-sdl.lha` / `.zip` | SDL programmers | SDL2 and SDL3 with the ogles2 backend, the MiniGL SDK SDL links, two examples; unpacks over the SDK |
+| `ogles2-1.4-beta2.lha` | users | the library, the shader compiler, `Install-ogles2`, `OGLES2Log`, four examples with their Pi 4 and Pi 3 binaries |
+| `ogles2-1.4-beta2-demos.lha` | trying it out | the four examples with their shaders' binaries for both Pis and the library beside them: unpack and run, nothing to install |
+| `ogles2-1.4-beta2-sdk.lha` | Amiga programmers | the same plus the SDK: headers, import libraries for GCC and vbcc, the autodoc `ogles2.doc`, the guide `GettingStarted.txt`, example sources |
+| `ogles2-1.4-beta2-sdk.zip` | cross-development on a PC | the SDK alone |
+| `ogles2-1.4-beta2-sdl.lha` / `.zip` | SDL programmers | SDL2 and SDL3 with the ogles2 backend, the MiniGL SDK SDL links, two examples; unpacks over the SDK |
 
 ### Requirements
 

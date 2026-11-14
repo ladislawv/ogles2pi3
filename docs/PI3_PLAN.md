@@ -2021,3 +2021,24 @@ were written on, read that section's "Another machine" first.
     2026-11-10 either way, m8-1 5/5 both steps (58 jobs chained per context, every read-back
     right, memory back), Quake III 88.0 fps (2026-11-10 on 1.4: 88.4; it chains nothing).
     Pi 3 not run (job.c, fbo.c, share.c shared; VC4 never chains).
+
+   **1.4-beta1's compiler, and 1.4-beta1a and 1.4-beta2 (2026-11-14):** users of the published beta 1 on
+   a Pi 3 and a Zero 2 W (Pinball Fantasies 0.9's `palette.frag`, Settlers 3) had every link that
+   compiled fail with "the program binary could not be written". Their library was 1.4, their
+   `v3dglslc` the archive's: **beta 1 shipped a compiler stamped `20261105-091149 a28b3b2`**, two days
+   older than its library's link hints, which it refused (under vamos: the palette program compiles
+   without the hints and fails with them; the current compiler compiles it both ways). The library's
+   retry looked for "vc4 keys" in the log, but the compiler wrote that only on its own output, so it
+   never retried; the beta's demos ship their binaries and compile nothing, so the archive's Pi 3 test
+   passed. Fixed (`c5acf2a`): the library retries without hints after any failed hinted link; the
+   compiler's reason goes into the request's log; a program whose fragment shader Mesa's VC4 back end
+   cannot fit (Pinball Fantasies' `crt-lottes.frag` and `hd.frag`: "Failed to register allocate") no
+   longer gets a `.vc4p` without a fragment variant written and reported as success, but fails and says
+   so; `build_release.sh` refuses an on-target compiler built before the last change to its sources.
+   **1.4-beta1a:** beta 1's archives with the compiler of `c5acf2a` in place of beta 1's (the library,
+   demos, SDK and SDL unchanged). **1.4-beta2:** this branch (`ogles2pi3-beta2`): the fixes above and the
+   faster jobs (kept index copies, queued object jobs on V3D, the VC4 binning pass not waited for).
+   Checked: host and m68k compilers 9 of 9 identical, `vc4_keys.py`, V3D programs 8 of 8; the game's
+   shaders with the beta 2 compiler under vamos (palette, copy, post compile; crt-lottes and hd fail
+   with the reason). **Owed on the Pi 3 card:** beta 2 as a whole (its job changes have run only on the
+   Pi 4) and the game's shaders compiled on the Amiga.
