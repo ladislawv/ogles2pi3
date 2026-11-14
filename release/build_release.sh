@@ -56,20 +56,20 @@ make -C "$REPO" B="$B" vbcc > /dev/null
 }
 # The compilers must be built from this tree's compiler sources: 1.4-beta1 shipped a v3dglslc two
 # days older than its library, which refused the library's link hints, and every Pi 3 link that
-# compiled failed (2026-11-14). Each build's stamp names the commit it was built from; the last
-# commit that changed tools/v3dglslc or v3dp must be in it, and both builds must name the same one.
+# compiled failed (2026-11-14). The shipped (m68k) build's stamp names the commit it was built
+# from: the last commit that changed tools/v3dglslc or v3dp must be in it. The host build has no
+# stamp: it must be no older than the m68k one (it compiles the examples' binaries, and
+# tools/v3dglslc/test/compare_vc4p.sh holds the two to the same output).
 stamp_commit() { strings "$1" | sed -n 's/.*V3DGLSLC-STAMP:[0-9-]* \([0-9a-f]*\).*/\1/p' | head -1; }
 C68=$(stamp_commit "$V/v3dglslc.stripped")
-CHOST=$(stamp_commit "$V/host/v3dglslc")
 LAST=$(git -C "$REPO" log -1 --format=%H -- tools/v3dglslc v3dp)
-for c in "$C68" "$CHOST"; do
-    if [ -z "$c" ] || ! git -C "$REPO" merge-base --is-ancestor "$LAST" "$c" 2> /dev/null; then
-        echo "a compiler is older than its sources (stamps: m68k ${C68:-none}, host ${CHOST:-none}; the sources'"
-        echo "last change ${LAST:0:12}): rebuild with tools/v3dglslc/build_host.sh and build_m68k.sh"
-        exit 1
-    fi
-done
-[ "$C68" = "$CHOST" ] || { echo "the m68k and host compilers are of different commits ($C68, $CHOST)"; exit 1; }
+if [ -z "$C68" ] || ! git -C "$REPO" merge-base --is-ancestor "$LAST" "$C68" 2> /dev/null; then
+    echo "the on-target compiler is older than its sources (its stamp ${C68:-none}; the sources' last"
+    echo "change ${LAST:0:12}): rebuild with tools/v3dglslc/build_m68k.sh (and build_host.sh)"
+    exit 1
+fi
+[ "$V/host/v3dglslc" -nt "$V/v3dglslc.stripped" ] || [ "$(stat -c %Y "$V/host/v3dglslc")" -ge "$(($(stat -c %Y "$V/v3dglslc.stripped") - 3600))" ] ||
+    { echo "the host compiler is older than the on-target one: rebuild it (tools/v3dglslc/build_host.sh)"; exit 1; }
 git -C "$REPO" diff --quiet HEAD -- tools/v3dglslc v3dp ||
     { echo "uncommitted changes in tools/v3dglslc or v3dp: commit them, then build the compilers"; exit 1; }
 
