@@ -54,6 +54,24 @@ make -C "$REPO" B="$B" vbcc > /dev/null
     echo "needs $V/v3dglslc.stripped and $V/host/v3dglslc (tools/v3dglslc/build_m68k.sh, build_host.sh)"
     exit 1
 }
+# The compilers must be built from this tree's compiler sources: 1.4-beta1 shipped a v3dglslc two
+# days older than its library, which refused the library's link hints, and every Pi 3 link that
+# compiled failed (2026-11-14). Each build's stamp names the commit it was built from; the last
+# commit that changed tools/v3dglslc or v3dp must be in it, and both builds must name the same one.
+stamp_commit() { strings "$1" | sed -n 's/.*V3DGLSLC-STAMP:[0-9-]* \([0-9a-f]*\).*/\1/p' | head -1; }
+C68=$(stamp_commit "$V/v3dglslc.stripped")
+CHOST=$(stamp_commit "$V/host/v3dglslc")
+LAST=$(git -C "$REPO" log -1 --format=%H -- tools/v3dglslc v3dp)
+for c in "$C68" "$CHOST"; do
+    if [ -z "$c" ] || ! git -C "$REPO" merge-base --is-ancestor "$LAST" "$c" 2> /dev/null; then
+        echo "a compiler is older than its sources (stamps: m68k ${C68:-none}, host ${CHOST:-none}; the sources'"
+        echo "last change ${LAST:0:12}): rebuild with tools/v3dglslc/build_host.sh and build_m68k.sh"
+        exit 1
+    fi
+done
+[ "$C68" = "$CHOST" ] || { echo "the m68k and host compilers are of different commits ($C68, $CHOST)"; exit 1; }
+git -C "$REPO" diff --quiet HEAD -- tools/v3dglslc v3dp ||
+    { echo "uncommitted changes in tools/v3dglslc or v3dp: commit them, then build the compilers"; exit 1; }
 
 rm -rf "$R" "$OUT/ogles2-$RELEASE.lha" "$OUT/work"
 mkdir -p "$R"/{Libs,C,Examples,SDK/include,SDK/lib,SDK/doc,SDK/examples,licences/Mesa} "$OUT/work"

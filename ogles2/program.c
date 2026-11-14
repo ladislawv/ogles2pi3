@@ -855,19 +855,6 @@ static void file_path(char *path, const char *dir, const char *hex)
  * itself), the disk cache (OGLES2Cache:, or T: when it is not assigned:
  * that is where compiled programs go then), the on-target compiler, else the
  * sources go to T:ogles2_missing_shaders.txt. */
-/* text in a compiler's log (no C library's strstr here) */
-static BOOL log_has(const char *log, const char *text)
-{
-    ULONG i, j;
-    for (i = 0; log[i]; i++) {
-        for (j = 0; text[j] && log[i + j] == text[j]; j++)
-            ;
-        if (!text[j])
-            return TRUE;
-    }
-    return FALSE;
-}
-
 static struct OGLES2Image *load_image(const struct OGLES2Context *ctx, struct OGLES2Program *p, const UBYTE *hash,
                                       const char *hex, const char *bindings)
 {
@@ -896,11 +883,17 @@ static struct OGLES2Image *load_image(const struct OGLES2Context *ctx, struct OG
         file_path(path, dirs[2], hex);
         if (nhints) {
             ok = ogles2_compile_program_keys(p->vs->source, p->fs->source, bindings, path, hints, nhints, log, 4096);
-            /* a compiler older than the hints refuses their records: once more without */
-            if (!ok && log_has(log, "vc4 keys"))
+            /* Failed: once more without the hints. A compiler older than them refuses their
+             * records, and says so only on its own output, not in this log (1.4-beta1 shipped
+             * one: every Pi 3 link that compiled failed, 2026-11-14); a hint's variant may also
+             * be what does not fit. A GLSL error fails again, at the cost of one compile. */
+            if (!ok) {
+                ogles2_log("glLinkProgram: the compiler failed with the link's hints (%s): again without",
+                           (ULONG)log);
                 log[0] = 0;
-            else
-                nhints = 0xffffffffUL; /* done, either way */
+            } else {
+                nhints = 0xffffffffUL; /* done */
+            }
         }
         if (nhints != 0xffffffffUL)
             ok = bindings ? ogles2_compile_program_bound(p->vs->source, p->fs->source, bindings, path, log, 4096)

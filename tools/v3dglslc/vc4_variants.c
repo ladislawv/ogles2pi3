@@ -33,6 +33,7 @@ struct vc4_compiled_shader *vc4_compile_variant(struct vc4_context *vc4, enum qs
 void vc4_variants_install(FILE *f);
 void vc4_variants_capture(int on);
 void vc4_variants_drop_views(void);
+int vc4_variants_have_fragment(void);
 int vc4_variants_compile_keys(const char *path);
 int vc4_variants_compile_key_buffer(const void *keys, size_t size);
 
@@ -295,6 +296,15 @@ void vc4_variants_capture(int on)
     capture = on;
     if (on)
         reference_fs_valid = reference_vs_valid = 0;
+}
+
+/* Whether the capture holds a fragment variant: Mesa's vc4 leaves out a shader it cannot compile
+ * (most often "Failed to register allocate": more values live at once than the QPU has registers)
+ * and the draw goes on without it, so a file without one would have been written and its draws
+ * found nothing (2026-11-14: Pinball Fantasies' CRT filter, crt-lottes.frag). */
+int vc4_variants_have_fragment(void)
+{
+    return reference_fs_valid;
 }
 
 /* The driver's sampler views dropped, as in a fresh process, after a program's

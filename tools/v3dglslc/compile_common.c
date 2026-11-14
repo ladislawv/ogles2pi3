@@ -18,6 +18,9 @@
 
 #ifdef V3DC_WRITER
 static const char *out_dir; /* -o: write .v3dp files here */
+/* Why write_program failed, for the request's log (the driver's own words go to stderr only,
+ * which the library never sees: it logged "could not be written" and no more, 2026-11-14). */
+static char write_why[320];
 #endif
 
 /* glBindAttribLocation's bindings for the next link (V3DGLSL_LINK_BOUND):
@@ -135,9 +138,13 @@ static int link_pair(const char *vs_label, const char *fs_label, const char *vs_
     }
 #ifdef V3DC_WRITER
     if (ok && target) {
+        write_why[0] = 0;
         ok = write_program(p, target, vs_src, fs_src);
-        if (!ok)
+        if (!ok) {
             log_add(log, log_size, "the program binary could not be written: ", target);
+            if (write_why[0])
+                log_add(log, log_size, ": ", write_why);
+        }
     }
 #else
     (void)target;

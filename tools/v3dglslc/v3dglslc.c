@@ -78,6 +78,7 @@ struct pipe_screen *vc4_screen_create(int fd, const struct pipe_screen_config *c
 void vc4_variants_install(FILE *f); /* vc4_variants.c */
 void vc4_variants_capture(int on);
 void vc4_variants_drop_views(void);
+int vc4_variants_have_fragment(void);
 int vc4_variants_compile_keys(const char *path);
 int vc4_variants_compile_key_buffer(const void *keys, size_t size);
 static const char *vc4_key_file; /* -k: variants for these keys too (vc4_variants.c) */
@@ -449,13 +450,31 @@ static int write_program(GLuint p, const char *path, const char *vs_src, const c
         v3dp_capture_begin();
         vc4_variants_capture(1);
         drawn = draw_vc4_reference(p);
-        if (drawn && vc4_req_keys && vc4_variants_compile_key_buffer(vc4_req_keys, vc4_req_keys_size) < 0)
+        if (!drawn)
+            snprintf(write_why, sizeof(write_why), "the Pi 3's reference draw failed (GL error)");
+        if (drawn && !vc4_variants_have_fragment()) {
+            snprintf(write_why, sizeof(write_why),
+                     "the Pi 3's GPU (VideoCore IV) cannot run this fragment shader: Mesa's VC4 compiler "
+                     "could not fit it (most often more values live at once than the GPU has registers); "
+                     "a shorter shader with fewer temporaries fits");
+            fprintf(stderr, "v3dglslc: no fragment variant: %s\n", write_why);
             drawn = 0;
-        if (drawn && vc4_key_file && vc4_variants_compile_keys(vc4_key_file) < 0)
+        }
+        if (drawn && vc4_req_keys && vc4_variants_compile_key_buffer(vc4_req_keys, vc4_req_keys_size) < 0) {
+            snprintf(write_why, sizeof(write_why), "the compiler refused the request's variant keys");
             drawn = 0;
+        }
+        if (drawn && vc4_key_file && vc4_variants_compile_keys(vc4_key_file) < 0) {
+            snprintf(write_why, sizeof(write_why), "the compiler refused the key file's variant keys");
+            drawn = 0;
+        }
         vc4_variants_capture(0);
         v3dp_capture_end();
-        return drawn && v3dp_write(path, prog, nsrc, stages, sources) == 0;
+        if (drawn && v3dp_write(path, prog, nsrc, stages, sources) != 0) {
+            snprintf(write_why, sizeof(write_why), "the file could not be written");
+            drawn = 0;
+        }
+        return drawn;
     }
 #endif
     /* The alpha-to-coverage variants: the same draws with the fragment key's
