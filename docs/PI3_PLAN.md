@@ -1314,6 +1314,11 @@ the newest last. **Next, in order:**
    A1200's link on the Pi 3 card (cause unknown, the station's and not the library's; the scripts work
    around them); ERRSTAT VCMRE, logged for some renders with right pictures (item 5).
 
+**Next on branch `ogles2pi3-beta2` (2026-11-19, the developer's request; planned, not begun):** ogles3's
+16-bit texture upload fixes, both backends, and its vsync fix (the swap on the HVS's frame counter) for
+the Pi 4 card (the Pi 3 card's postponed): the last two entries below, "Plan: ogles3's 16-bit upload
+fixes" and "Plan: ogles3's vsync fix".
+
 How to work on the card: CONTRIBUTING.md, "The Pi 3 card and the amigent station" (packages with
 `p5_run.sh`, dEQP with `p6_deqp.sh` and `p6_watch.sh`, why a program compiles at a draw with
 `p6_keydiff.sh`), and its traps; CLAUDE.md for an agent. On a machine other than the one the scripts
@@ -2042,3 +2047,187 @@ were written on, read that section's "Another machine" first.
    shaders with the beta 2 compiler under vamos (palette, copy, post compile; crt-lottes and hd fail
    with the reason). **Owed on the Pi 3 card:** beta 2 as a whole (its job changes have run only on the
    Pi 4) and the game's shaders compiled on the Amiga.
+
+   **Plan: ogles3's 16-bit upload fixes (2026-11-19, the developer's request; not begun).** A user's
+   report (`C:\- CPP\ogles3 fix\bug2`): RGB565, RGB5_A1 and RGBA4 uploads 3.7 times slower a texel than
+   RGBA8 in ogles3, **and as slow in ogles2 1.3** (the reporter's run, `glTexSubImage2D` into a
+   1024x1024 texture: 16-bit 19.7 to 21.4 Mtexel/s, RGBA8 80.6; a Pi 4, the only card 1.3 runs on).
+   ogles3 fixed it on its branch `es32` in two commits, 604f542 and b303921 (its
+   `docs/GLES3_PLAN.md`, the entries at the top, have the measurements and the reasoning). The
+   same code is here for the Pi 4 (`ogles2/v3d/texture_v3d.c`, `ogles2/texture.c`, `v3dcore`), and the
+   Pi 3's backend has its own, slower path. Line numbers below are this branch's at 085f487.
+
+   *Where the time went in ogles3 (timed by stage on the A1200, 64 tiles of 256x256):* the RGBA8 RAM
+   copy packed back into 16-bit texels one word store a texel (`pack`, 50 ms a format), the temporary
+   box's copy into the RAM copy (20 ms), `convert` (20), the CPU's UIF tiling (12 after its block path
+   took 2-byte texels too). After both commits: 16-bit as fast a byte as RGBA8
+   (`glTexSubImage3D` 256 tiles: 292-301 MB/s against 297; `glTexImage2D` 210-218 MB/s against 176).
+
+   *What applies here, and what not:*
+   - Applies: (a) the UIF block store for 2-byte texels (v3dcore); (b) a sub-image converted into the
+     RAM copy in place, the GPU's copy stored from there with its stride; (c) `pack`'s 16-bit formats
+     two texels a long store; (d) a 16-bit level given in its own packing kept as given, the GPU's copy
+     stored from that, the RGBA8 RAM copy left behind it until something reads it; (e) `glTexImage2D`
+     storing such a level once; (f) levels the GPU makes (glGenerateMipmap, rendering) dropping the kept
+     texels (ogles3 found this missing in its own `generate_tfu` and CPU mipmap path: a later store took
+     the old level's texels); (g) the byte swap as `ror.w #8; swap; ror.w #8; swap`.
+   - Does not apply: ogles3's `OES_texture_stencil8` fix (GLES2 has no stencil textures; here
+     `STENCIL_INDEX8` is a renderbuffer's), the 3D and array uploads and `glTexStorage*` (ES 3.0), and
+     ogles3's exact-texel copies (`raw[]`, which the 16-bit levels joined there): this branch has none,
+     so (d) adds a copy for the 16-bit levels alone.
+   - New here: **the VC4 backend places every texel through `vc4_texel_offset`** (`vc4core/tiling.c:97`),
+     then a switch on the texel size (`vc4_texture_store`, `:109`, whole levels) or a byte loop
+     (`ogles2/vc4/texture_vc4.c:377` `write_box`, boxes), for every format; without a TFU every
+     `glTexImage2D` and re-upload goes that way. Its `pack` (`texture_vc4.c:94`) stores 16-bit texels
+     a byte at a time (`le16`). Not measured yet.
+
+   *Steps:*
+   0. **Measure first, both cards.** `tests/perf/upload_test.c` from ogles3 (the report's test; its
+      `USE_OGLES2` build is the GLES2 one: a 1024x1024 `GL_TEXTURE_2D` from `glTexImage2D(NULL)`, then
+      `glTexSubImage2D` tiles; its RGBA-bytes-into-16-bit rows are ES 3.0's, left out there). Its
+      `IMAGE` mode (`glTexImage2D` of 256x256, each drawn once) is ES 3.0 only in ogles3: give it the
+      GLES2 build too. A package `tests/a1200/upload` for `p5_run.sh` (as ogles3's: `Run-M1` with
+      steps 1 and 2). 1.4-beta2 on the Pi 4 card and the Pi 3 card: the numbers each step is held to.
+   1. **ogles3's first commit, without its `direct16` path** (the application's words byte-swapped
+      straight to the GPU, which b303921 replaced by step 2's kept copy). The `v3d_hw.c` and `pack`
+      parts are the Pi 4's (V3D); the in-place convert in `tex_sub_image` is shared and helps the Pi 3
+      too.
+      - `v3dcore/hw/v3d_hw.c:629-708`: `v3d_store_uif32_blocks` becomes `v3d_store_uif_blocks(..., cpp)`
+        (a block 32 / cpp texels wide, 8 rows; a block row is 32 bytes of the source either way), used
+        for cpp 2 and 4 with the box on block bounds; `v3d_uif_fast_check` compares both sizes, with and
+        without XOR (four cases, a 256-byte-wide strip), against the general path.
+      - `ogles2/v3d/texture_v3d.c:132` `pack`: the 16-bit cases two texels a long (`PACK16`, `LE16X2`).
+      - `ogles2/backend.h:167`: `tex_store` gets the source's stride; `texture.c:1459`
+        `tex_sub_image` converts into `f->shadow[level]` where the box goes (no `AllocVec`, no copy) and
+        stores from there with the level's row as the stride. The other callers pass their tight rows
+        (`upload_level`, `texture.c:981`; `glCompressedTexSubImage2D`'s blocks, `:1828`; the backends'
+        uploads, `texture_v3d.c:501`, `texture_vc4.c:515`). Both backends' `tex_store` take the stride:
+        the V3D one as ogles3's `store_box_from`; the VC4 one passes it to `store_box`, which reads its
+        rows by it: the pack loops (`texture_vc4.c:416-417` and `:420-421`, `w * copy_bytes(cls)` a row today) and the
+        float scan for negative values (`:404-412`, `w * h * 4` floats in one piece today: row by row).
+   2. **Shared: a 16-bit level kept as given** (`ogles2/texture_private.h:17`, `ogles2/texture.c`).
+      - `struct OGLES2Face`: `UBYTE *raw16[MAX_LEVELS]` (the level's texels as the GPU stores them,
+        little-endian words) and `ULONG stale` (levels whose RAM copy is behind `raw16`).
+      - Kept for `GL_RGB`/`GL_UNSIGNED_SHORT_5_6_5`, `GL_RGBA`/`_4_4_4_4` and `GL_RGBA`/`_5_5_5_1` in a
+        context with a GPU (`ctx->v3d`). `tex_image` (`:1349`): the words swapped into `raw16`, the RAM
+        copy allocated without `MEMF_CLEAR` and not converted, the level stale; `set_level` (`:1418`)
+        gets a `later` flag so the level is stored once, from `raw16`, by the caller. `tex_sub_image`:
+        the box swapped into `raw16`, nothing into the RAM copy, the level stale. A level's first
+        `raw16` for a box: zeros for a blank level (`MEMF_CLEAR`), else packed from the RAM copy. Data
+        of another type into such a level (RGBA bytes into an RGBA4 texture): converted into the RAM
+        copy as now, the box packed into `raw16`, which stays the level's truth. The packing from
+        the RAM copy is shared code's now: a packer in `texture.c` for the three formats (the backends'
+        `pack` are `static`, `texture_v3d.c:132`, `texture_vc4.c:94`; the bit layouts are GL's on both
+        GPUs, so one packer serves both).
+      - `destroy` (`texture.c:275-283`) clears the stale bits as it clears `rendered`, so a deleted
+        texture's levels are not expanded by its `before_change` (ogles3 had that cost too: fixed in
+        its 1.0.1).
+      - `fresh_level(f, l)`: the RAM copy expanded from `raw16` with `convert`'s tables
+        (`texture.c:800-819`, `t565`/`t4444`/`t5551`, read in little-endian order), so it holds what
+        converting the application's texels gives today. Called from `sync` (`:958`; every reader goes
+        through it or `before_change`) and from `ogles2_texture_read`'s RAM path (`:1172`).
+        `upload_all` (`:986`) and the two uploads skip it (`sync_ex(t, FALSE)`, `before_change_ex`).
+      - `raw16` and the stale bit dropped with the level: `set_level` (a new level), `free_levels`
+        (`:121`), `ogles2_texture_rendered` (`:1117`), `generate_tfu`'s levels (`:1908`
+        `f->rendered |= made`: the TFU on the Pi 4, the GPU draw on the Pi 3, `copy.c:30`; mark them
+        through `ogles2_texture_rendered`), and the CPU `glGenerateMipmap`'s replaced levels
+        (`:1964-1969`). The other users of the RAM copy to check, by function: `read_half` (`:1141`,
+        floats only), `ogles2_texture_hidden` (`:1187`, its own), `glCompressedTexSubImage2D`
+        (`:1824`, blocks), `ogles2_texture_fallback` (`:1992`), the backends' uploads
+        (`texture_v3d.c:501`, `texture_vc4.c:515`).
+      - The backends store a level's `raw16` when it has one: the V3D one through `store_tfu` (whole
+        levels from 128x128) or `v3d_texture_store` (step 1's block path), the VC4 one as words, without
+        `pack`. The byte swap: `ror.w #8; swap; ror.w #8; swap` two texels at a time (ogles3: 40 -> 36 ms
+        for 64 `glTexImage2D` of 256x256). Not vc4core.h's `vc4_le32` (`rol.w #8; swap; rol.w #8`):
+        that reverses the whole long, a different operation.
+   3. **The Pi 3 (VC4): a utile at a time.**
+      - `vc4core/tiling.c`: a store that takes a utile at a time (64 bytes: 4 rows of 16 at 2 and 4
+        bytes a texel, 8 rows of 8 at 1, 4 rows of 16 at 8), its address from `vc4_texel_offset` once a
+        utile (T's `t_subtile` order, odd tile rows reversed; LT's utiles in raster order). The rows
+        are written with naturally aligned 32-bit stores (vc4core.h's rule: GPU memory may be device
+        memory, never `memcpy`). The bytes go as they are: `pack`'s output and `raw16` are already the
+        GPU's order (`vc4_put32` would swap them again). A box off utile bounds: the per-texel path for
+        the edge utiles. `vc4_texture_store` (whole levels) and `write_box` (boxes) both use it.
+      - `texture_vc4.c:94` `pack`: the 16-bit cases from the long (R in the top byte) two texels a
+        store, as step 1's.
+      - Checked against the per-texel path before the card, byte for byte, by a host test (`tiling.c`
+        is plain C; on the PC, and on the Linux bench as `tests/pi3`'s): T and LT, 1, 2, 4 and 8 bytes
+        a texel, sizes off the utile and tile bounds, levels above 0 (padded to powers of two), cube
+        faces, boxes at odd offsets.
+   4. **Tests, both cards** (the Pi 4 must behave as 1.3.3 does, §5.1: the same pictures):
+      - The upload package against step 0's numbers.
+      - dEQP-GLES2 `texture` and `fbo` on each card, case by case against the last runs of the same
+        groups (the Pi 4: `DEVELOPMENT_PLAN.md` §13's whole list, whose texture failures are the
+        documented cube-map cases; the Pi 3: the whole-list runs above), then the whole list once on
+        the Pi 3 card (`p6_deqp.sh`).
+      - m5-1, m6-6, m2-5 (the pictures), m7-6, and Quake III's load and timedemo on both.
+
+   *Hazards:* (1) a reader of the RAM copy that does not go through `sync` would see a stale level: every
+   `shadow[]` user above checked, and dEQP's `texture.format` and `texture.specification` cases cover
+   most; (2) `raw16` kept for a level the GPU then draws or generates: dropped in the places listed
+   in step 2, or a later re-upload brings back the old level (ogles3's latent bug); (3) VC4's device
+   memory: no `memcpy`/`CopyMem` and no unaligned long into it; (4) the VC4 utile layout (T's reversed odd
+   rows, LT for levels at most 4 utiles wide or high, levels above 0 padded): the bench check before the
+   card; (5) memory: the RAM copy stays RGBA8 (every reader expects it), `raw16` adds 2 bytes a texel of a
+   16-bit texture; (6) the station's traps: an installed `LIBS:ogles2.library` of the same version wins
+   over a package's (`OGLES2Open`), and a run stopped with Ctrl-C can leave the library open so
+   `Avail FLUSH` keeps the old one (ogles3 measured a stale library that way): check the log's init line.
+
+   *Order and size:* step 0 half a day; step 1 half a day (ogles3's code nearly as it is); step 2 one to
+   two days; step 3 one to two days with the bench check; step 4 a day plus dEQP. Step 1 helps the Pi 4
+   (and the Pi 3 through the shared in-place convert), step 2 both cards, step 3 the Pi 3 alone. ogles2 1.x (`C:\- CPP\ogles2`) gets them with P7.
+
+   **Plan: ogles3's vsync fix (2026-11-19, the developer's request; not begun).** A user's report on
+   ogles3 (2026-11-16): with `OGLES3_CCT_VSYNC` a swap now and then took 33 ms though the frame was ready
+   15 ms early. ogles3 commit a4f6ab7 (merged into `es32` as 436e1b7; its `docs/GLES3_PLAN.md` entry
+   "Vsync on the HVS's frame counter" and `docs/vsync_fix_report.html` have the runs). The cause, on the
+   Pi 4 station (VideoCore.card 1.5 without its later vblank interrupt, HDMI 1080p60): `WaitBOVP` spins
+   until the display scaler's (HVS's) line equals the display's height, true about 117 us a refresh, so a
+   task that does not run then spins a whole refresh more (and starves every task below priority 10).
+   This branch has the same wait: `ogles2/display.c:405-448` (`ogles2_display_wait_refresh`: `WaitBOVP`
+   on a screen of its own or in a window its screen's whole size, `direct`; `WaitTOF` in other
+   windows). The fix there: the swap sleeps on timer.device until
+   about a millisecond before the HVS's frame counter changes, then reads it (`hvs_wait`); a refresh that
+   began after the last frame went out, its scan still in the picture's top eighth, is taken at once (the
+   task woke late), one further on is let go (it would tear); the last line counts as the next refresh's
+   start; a stopped display's limit counts from the counter's last move; `WaitBOVP` stays where no
+   counter is found (`hvs_probe`: channel 1 enabled, `DISPCTRL1` bit 31, with 200 to 4096 lines, and
+   two equal refreshes of 5 to 50 ms); the log names the wait at the
+   first swap and counts it at destroy. ogles3's measurements: skipped refreshes per 30 s 7-13 before,
+   0-1 after; the report's 33 ms swaps 17 in 2940 before, 2 after.
+
+   *Steps:*
+   1. **The Pi 4 card:** ogles3's `display.c` and `ogles3_internal.h` changes of a4f6ab7 as they are
+      (`struct OGLES2Display` gets the `vs_*` fields; the HVS at `0xF2400000`, channel 1:
+      `SCALER_DISPCTRL1` 0x50, `SCALER_DISPSTAT1` 0x58, the line in bits 11:0, the counter in 17:12;
+      only read), **for the V3D backend only**: on the Pi 3 the wait stays `WaitBOVP` until step 3
+      (`hvs_probe` not run there: `vs_state` -1 when `ogles2_backend->device` is 21, as `copy.c:94`
+      tells the backends apart, with a log line of its own, "vsync: VC4, WaitBOVP": in a4f6ab7 the
+      "WaitBOVP" line is `hvs_probe`'s, which would not run). ogles3's `tests/vsync` (`vsync_probe`, `vsync_watch`, the report's
+      `VsyncTest`) and packages `vsync-1` to `vsync-4`, made for `p5_run.sh` and ogles2's names
+      (`OGLES2_CCT_VSYNC`, `ogles2.library`, `OGLES2/LogFile`).
+   2. **Tests on the Pi 4 card:** `vsync-1` (the probe), `vsync-2` (the report's `VsyncTest`, before and
+      after, the library in `LIBS:` swapped for the run), `vsync-3` (tearing: the developer watching),
+      `vsync-4` (skipped refreshes and judder, old and new alternately); m6_flip's package and Quake III
+      with vsync on (`r_swapInterval 1`) as checks that nothing got slower. On the Pi 3 card, one run of
+      m6_flip's package: the wait as before (`WaitBOVP`, the log saying so).
+   3. **The Pi 3 card: postponed (the developer, 2026-11-19).** What it needs, for when it is taken up:
+      the Pi 3's HVS found and checked first. The system timer is read at `0xF2003004` on both cards
+      (`ogles2/device.c:20`, `ogles2_clock_us`), so Emu68's peripheral window is likely there on the Pi 3
+      too and the HVS at `0xF2400000` (vc4core itself reaches its peripherals through the device tree's
+      `/soc` ranges, `vc4core/os_amiga.c:105`); the VC4 HVS has the same register layout as the Pi 4's
+      (Linux `vc4_regs.h`), but which of its three channels feeds the HDMI on the Pi 3 is not known here
+      (Linux pairs each pixel valve with a channel in `vc4_crtc.c`). So `vsync_probe` reads all three
+      (the one whose `DISPCTRL` line count is the screen's height and whose counter moves once a
+      refresh) and times `WaitBOVP` on the Pi 3 card's VideoCore.card (spins or sleeps); then
+      `hvs_probe` takes the channel it found, and the tests of step 2 run on that card.
+
+   *Hazards:* (1) the HVS read on the Pi 3 before step 3 has checked it: kept out by the backend check
+   of step 1; (2) a window smaller than its screen keeps `WaitTOF` (ogles3's rule: the HVS wait only
+   where `WaitBOVP` was used, a screen of its own or `direct`); (3) the Pi 4 station's display is the one
+   ogles3 measured (VideoCore.card 1.5, HDMI 1080p60); another refresh rate is `hvs_probe`'s to measure
+   (5 to 50 ms a refresh).
+
+   *Order and size:* step 1 half a day (ogles3's code and packages, renamed); step 2 half a day plus the
+   developer's look at `vsync-3`; step 3 (postponed) a day with the card. Independent of the upload work
+   above: either can go first.
