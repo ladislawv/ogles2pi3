@@ -2285,6 +2285,22 @@ were written on, read that section's "Another machine" first.
    counter, a refresh of 16,612 us, 1080 lines, and of 3,001 waits none slept through a refresh.
    `vsync-4` (`-175317`, 30 s each, old against new): skipped refreshes idle 10 against 1, busy 12
    against 0, 5 ms of work 11 against 1; late frames 109/97/15 against 1/4/1; judder over 2 ms 25/33/29
-   against 3/2/2. m6-9 (`-175653`): `m6_vsync` 60 fps with vsync, 2,535 without, as before. **Owed:**
+   against 3/2/2. m6-9 (`-175653`): `m6_vsync` 60 fps with vsync, 2,535 without, as before.
+   **Quake III (2026-11-19, the Pi 4 card, renderergl2's timedemo, 1,260 frames, the data at
+   `Stuff:Quake3-GLES2`):** 1.4-beta2's library against this branch's (the upload work and the vsync
+   wait), alternating, 1.4-beta2 first, three each: 89.3, 89.4, 89.2 against 88.5, 87.9, 88.2 fps
+   (1.2 % slower, in every round). Tracked down: each step's build in turn (1.4-beta2, steps 1, 2, 3,
+   this branch; three rounds) gave 89.3, 88.6, 89.2, 88.6 and 89.1 fps on average, not a step that
+   costs (step 2 contains step 1 and is as fast as 1.4-beta2), 1.4-beta2 itself 90.0, 89.1, 88.7 over
+   the rounds; and the pair again with this branch first: 88.9, 88.6, 88.3 against 1.4-beta2's 90.0,
+   88.1, 87.7, the same mean (88.6). Over all nine runs each 88.6 against 89.1 fps (0.5 %, inside
+   1.4-beta2's own spread of 87.7 to 90.0): the 1.2 % was the order (the first of a pair ran faster:
+   the station slows over a session) and run-to-run scatter, not the changes, which are not in its
+   frames anyway (its textures RGBA8, loaded before the timing; vsync off). ogles3's `es32` with the
+   same upload fixes (and its render chain): 91.6 three times before against 92.3, 92.1, 92.1 after.
+   A comparison here wants both orders (or several rounds with the order alternating). Running it: amigent's `runpkg` refuses a script argument with `:` or `/` (its
+   `KEY=VALUE` check), so `Q3DATA=Stuff:...` cannot go through `p5_run.sh`: the package was uploaded by
+   it and `Execute Run-M1 FRAMES=0 Q3DATA=Stuff:Quake3-GLES2` run with `amigent-ctl run`; the score
+   is in `results/qconsole.log`, not `1-timedemo.txt`. **Owed:**
    `vsync-3` (tearing, the developer watching), Quake III with `r_swapInterval 1`, and m6-9 once on the
    Pi 3 card (the wait as before there).
