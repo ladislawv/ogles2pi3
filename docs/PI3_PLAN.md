@@ -2048,6 +2048,11 @@ were written on, read that section's "Another machine" first.
    with the reason). **Owed on the Pi 3 card:** beta 2 as a whole (its job changes have run only on the
    Pi 4) and the game's shaders compiled on the Amiga.
 
+   **The Raspberry Pi 3A+ named (2026-11-14, the developer):** the 3B+'s chip (BCM2837B0), 512 MB, 1.4 GHz;
+   `vc4_os_present` takes it as the 3B and the Zero 2 W (`brcm,bcm2837`), no code change. The requirement
+   lists name it (README.md, release/ReadMe, ReadMe-Demos, ReadMe-SDL, GettingStarted, ogles2.doc); "Pi 3"
+   in the texts covers it. Not on the test station.
+
    **Plan: ogles3's 16-bit upload fixes (2026-11-19, the developer's request; not begun).** A user's
    report (`C:\- CPP\ogles3 fix\bug2`): RGB565, RGB5_A1 and RGBA4 uploads 3.7 times slower a texel than
    RGBA8 in ogles3, **and as slow in ogles2 1.3** (the reporter's run, `glTexSubImage2D` into a
