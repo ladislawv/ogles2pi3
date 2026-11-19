@@ -431,6 +431,15 @@ struct OGLES2Display
      * its frame's submission, and its own priority. */
     struct Task *boosted;
     BYTE boost_pri;
+    /* Vsync on the HVS's frame counter (display.c): 0 not tried, 1 in
+     * use, -1 not there (WaitBOVP); the refresh's length (us) and lines;
+     * the counter when the last frame went out; statistics for the log. */
+    BYTE vs_state;
+    UBYTE vs_last;
+    BOOL vs_have_last;
+    UWORD vs_lines;
+    ULONG vs_period;
+    ULONG vs_waits, vs_at_once, vs_late, vs_slept_through, vs_through_line, vs_max_line;
 };
 
 struct V3DContext; /* v3dcore */

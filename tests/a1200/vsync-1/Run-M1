@@ -1,0 +1,57 @@
+; Run-M1 - ogles2 vsync run 1: how the swap's wait for the refresh behaves.
+;   See ReadMe.txt. CD to this directory, then:   Execute Run-M1
+.key FROM/K
+.def FROM 1
+.bra {
+.ket }
+FailAt 21
+If NOT EXISTS bin/vsync_probe
+  Echo "Please CD into the ogles2-vsync-1 directory first,"
+  Echo "then run:  Execute Run-M1"
+  Quit 20
+EndIf
+Assign VSR1: ""
+If NOT EXISTS VSR1:results
+  MakeDir VSR1:results
+EndIf
+Echo "ogles2 vsync run 1" >>VSR1:results/00-progress.txt
+Date >>VSR1:results/00-progress.txt
+List LIBS:ogles2#? >VSR1:results/00-libs.txt
+Version LIBS:ogles2.library FULL >>VSR1:results/00-libs.txt
+Version LIBS:Picasso96/VideoCore.card FULL >>VSR1:results/00-libs.txt
+Version LIBS:Picasso96/rtg.library FULL >>VSR1:results/00-libs.txt
+Status >>VSR1:results/00-libs.txt
+Assign LIBS: VSR1:libs ADD
+Avail FLUSH >NIL:
+SetEnv OGLES2/LogFile VSR1:results/ogles2.log
+CD VSR1:bin
+If NOT {FROM} GT 1 VAL
+  VSR1:bin/vsync_probe IDLE >VSR1:results/01-idle.txt
+  VSR1:bin/vsync_probe HVS >VSR1:results/02-hvs.txt
+  Echo "step 1 done" >>VSR1:results/00-progress.txt
+EndIf
+If NOT {FROM} GT 2 VAL
+  VSR1:bin/vsync_probe BOVP >VSR1:results/03-bovp.txt OUT=VSR1:results/03-bovp.dat
+  VSR1:bin/vsync_probe BOVP DPRI=15 DSPIN=2000 DPERIOD=97 >VSR1:results/04-bovp-d2000.txt OUT=VSR1:results/04-bovp-d2000.dat
+  VSR1:bin/vsync_probe BOVP DPRI=15 DSPIN=300 DPERIOD=97 >VSR1:results/05-bovp-d300.txt OUT=VSR1:results/05-bovp-d300.dat
+  VSR1:bin/vsync_probe BOVP WORK=0 FRAMES=600 >VSR1:results/06-bovp-w0.txt OUT=VSR1:results/06-bovp-w0.dat
+  Echo "step 2 done" >>VSR1:results/00-progress.txt
+EndIf
+If NOT {FROM} GT 3 VAL
+  VSR1:bin/vsync_probe TOF >VSR1:results/07-tof.txt OUT=VSR1:results/07-tof.dat
+  VSR1:bin/vsync_probe TOF DPRI=15 DSPIN=2000 DPERIOD=97 >VSR1:results/08-tof-d2000.txt OUT=VSR1:results/08-tof-d2000.dat
+  VSR1:bin/vsync_probe CNT FRAMES=600 DPRI=15 DSPIN=2000 DPERIOD=97 >VSR1:results/09-cnt-d2000.txt OUT=VSR1:results/09-cnt-d2000.dat
+  Echo "step 3 done" >>VSR1:results/00-progress.txt
+EndIf
+If NOT {FROM} GT 4 VAL
+  VSR1:bin/VsyncTest FRAMES=3000 WORK=5 >VSR1:results/10-vsynctest-w5.txt
+  VSR1:bin/VsyncTest FRAMES=600 >VSR1:results/11-vsynctest-w0.txt
+  Echo "step 4 done" >>VSR1:results/00-progress.txt
+EndIf
+CD VSR1:
+UnSetEnv OGLES2/LogFile
+Assign LIBS: VSR1:libs REMOVE
+Avail FLUSH >NIL:
+Echo "finished" >>VSR1:results/00-progress.txt
+Date >>VSR1:results/00-progress.txt
+Assign VSR1:

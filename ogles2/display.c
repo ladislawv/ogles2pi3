@@ -34,6 +34,7 @@
 #include <cybergraphx/cybergraphics.h>
 #include <utility/tagitem.h>
 #include <dos/var.h>
+#include <devices/timer.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -42,6 +43,7 @@
 #include <proto/utility.h>
 #include <libraries/ogles2.h>
 #include "ogles2_internal.h"
+#include "backend.h"
 
 #define NO_MODE ((ULONG)INVALID_ID)
 
@@ -421,10 +423,23 @@ void ogles2_display_drop(struct OGLES2Display *d)
  * The task waits at priority 10 at least, until its frame is submitted:
  * woken at priority 0 behind a busy task of the same priority, it was late
  * for about 2 refreshes a second (m6_flip, 20-23 of 600 flips late at 0,
- * 0-2 at 10). */
+ * 0-2 at 10).
+ *
+ * The vsync report of 2026-11 (VsyncTest: now and then a swap 33 ms although
+ * the frame was ready 15 ms early) and tests/vsync/vsync_probe (package
+ * vsync-1) found otherwise on the station's VideoCore.card 1.5 and
+ * rtg.library 43.787, HDMI at 1920x1080 60 Hz: WaitBOVP spins (the idle
+ * counter kept 1% of its rounds) until the HVS's line (below) is the
+ * display's height, which it is for about 117 us a refresh; a task that
+ * does not run in those 117 us (another task, an interrupt) spins a
+ * refresh more: 30 of 1200 waits at priority 0 on an idle system. WaitTOF
+ * follows the chipset's 50 Hz, unrelated to the HDMI. So on a screen of
+ * our own the wait reads the HVS's frame counter: it changes as the
+ * picture ends, and a task that runs late still sees that it did
+ * (hvs_wait). */
 #define REFRESH_WAIT_PRI 10
 
-void ogles2_display_wait_refresh(struct OGLES2Display *d)
+static void boost(struct OGLES2Display *d)
 {
     struct Task *me = FindTask(0);
     if (!d->boosted && me->tc_Node.ln_Pri < REFRESH_WAIT_PRI) {
@@ -432,10 +447,187 @@ void ogles2_display_wait_refresh(struct OGLES2Display *d)
         d->boosted = me;
         SetTaskPri(me, REFRESH_WAIT_PRI);
     }
-    if ((d->own_screen || d->direct) && d->screen)
-        WaitBOVP(&d->screen->ViewPort); /* the screen's own refresh */
+}
+
+/* The Pi 4's display scaler (HVS), its channel 1 (HDMI0), the one
+ * VideoCore.card reads for GetVBeamPos and to measure the refresh:
+ * SCALER_DISPCTRL1 (bit 31 on, bits 11:0 the output's lines) and
+ * SCALER_DISPSTAT1 (bits 11:0 the line the HVS outputs, bits 17:12 a frame
+ * counter). Only read. On the station (vsync_probe HVS): the counter moves
+ * once a refresh as the line goes from the last (1080) to 0; the line then
+ * stays at 7 for about 660 us (the vertical blank) and runs on at one per
+ * 15 us. */
+#define HVS_REG(off) (*(volatile ULONG *)(0xF2400000 + (off)))
+#define HVS_LINE(s) ((s)&0xfff)
+#define HVS_FRAME(s) ((UBYTE)(((s) >> 12) & 63))
+
+static ULONG hvs_le(ULONG v)
+{
+    return (v >> 24) | ((v >> 8) & 0xff00) | ((v << 8) & 0xff0000) | (v << 24);
+}
+
+static ULONG hvs_stat(void)
+{
+    return hvs_le(HVS_REG(0x58));
+}
+
+/* The time of the counter's next change from f, FALSE if none in limit us. */
+static BOOL hvs_change(UBYTE f, ULONG limit, ULONG *t)
+{
+    ULONG t0 = ogles2_clock_us();
+    for (;;) {
+        ULONG s = hvs_stat(), now = ogles2_clock_us();
+        if (HVS_FRAME(s) != f) {
+            *t = now;
+            return TRUE;
+        }
+        if (now - t0 > limit)
+            return FALSE;
+    }
+}
+
+/* At the first wait: is the counter there and moving? Two refreshes of
+ * the same length (within 300 us), between 20 and 200 Hz. */
+static void hvs_probe(struct OGLES2Display *d)
+{
+    ULONG ctrl, lines, t1, t2, t3, p1 = 0, p2 = 0;
+    int k;
+    d->vs_state = -1;
+    /* The Pi 3 (the VC4 backend): its HVS not looked at yet, WaitBOVP as
+     * before (docs/PI3_PLAN.md, "Plan: ogles3's vsync fix", step 3,
+     * postponed): nothing of the HVS read there. */
+    if (ogles2_backend->device == 21) {
+        ogles2_log("vsync: VC4, WaitBOVP");
+        return;
+    }
+    ctrl = hvs_le(HVS_REG(0x50));
+    lines = ctrl & 0xfff;
+    if ((ctrl & 0x80000000UL) && lines >= 200 && lines <= 4096) {
+        for (k = 0; k < 3; k++) {
+            if (!hvs_change(HVS_FRAME(hvs_stat()), 60000, &t1) || !hvs_change(HVS_FRAME(hvs_stat()), 60000, &t2) ||
+                !hvs_change(HVS_FRAME(hvs_stat()), 60000, &t3))
+                break;
+            p1 = t2 - t1;
+            p2 = t3 - t2;
+            if (p1 >= 5000 && p1 <= 50000 && (p1 > p2 ? p1 - p2 : p2 - p1) <= 300) {
+                d->vs_period = p1 < p2 ? p1 : p2;
+                d->vs_lines = (UWORD)lines;
+                d->vs_state = 1;
+                break;
+            }
+        }
+    }
+    if (d->vs_state > 0)
+        ogles2_log("vsync: the HVS's frame counter, a refresh of %lu us, %lu lines", d->vs_period, lines);
     else
-        WaitTOF();
+        ogles2_log("vsync: no HVS frame counter (DISPCTRL1 %08lx, refreshes of %lu and %lu us): WaitBOVP",
+                   ctrl, p1, p2);
+}
+
+/* Sleeps us microseconds (timer.device); FALSE if it could not. */
+static BOOL sleep_us(ULONG us)
+{
+    struct MsgPort port;
+    struct timerequest tr;
+    BYTE sig = AllocSignal(-1);
+    BOOL ok = FALSE;
+    if (sig < 0)
+        return FALSE;
+    memset(&port, 0, sizeof(port));
+    port.mp_Node.ln_Type = NT_MSGPORT;
+    port.mp_Flags = PA_SIGNAL;
+    port.mp_SigBit = (UBYTE)sig;
+    port.mp_SigTask = FindTask(0);
+    port.mp_MsgList.lh_Head = (struct Node *)&port.mp_MsgList.lh_Tail;
+    port.mp_MsgList.lh_TailPred = (struct Node *)&port.mp_MsgList.lh_Head;
+    memset(&tr, 0, sizeof(tr));
+    tr.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+    tr.tr_node.io_Message.mn_ReplyPort = &port;
+    tr.tr_node.io_Message.mn_Length = sizeof(tr);
+    if (!OpenDevice((CONST_STRPTR)TIMERNAME, UNIT_MICROHZ, (struct IORequest *)&tr, 0)) {
+        tr.tr_node.io_Command = TR_ADDREQUEST;
+        tr.tr_time.tv_secs = us / 1000000;
+        tr.tr_time.tv_micro = us % 1000000;
+        DoIO((struct IORequest *)&tr);
+        CloseDevice((struct IORequest *)&tr);
+        ok = TRUE;
+    }
+    FreeSignal(sig);
+    return ok;
+}
+
+/* A refresh's start, or its picture's top eighth. The counter moves a
+ * moment before the line goes from the last to 0 (a read between the two
+ * caught it there: vsync-2), so the last line is the start too. */
+static BOOL hvs_at_top(struct OGLES2Display *d, ULONG s)
+{
+    return HVS_LINE(s) < (ULONG)(d->vs_lines / 8) || HVS_LINE(s) >= d->vs_lines;
+}
+
+/* The refresh the frame goes out at: the counter's next change. At
+ * priority 10 from here (asleep too: woken, the task runs before those
+ * below 10); sleeps to about a millisecond before the change (the time left
+ * from the line, a little short: lines of the vertical blank counted too),
+ * then reads the counter. A refresh that began after the last frame went
+ * out, its scan still at the top (hvs_at_top), is the one: this task did
+ * not run when it began (WaitBOVP spun a refresh more then). One whose scan
+ * is further on is let go (the frame would tear): the next. */
+static void hvs_wait(struct OGLES2Display *d)
+{
+    ULONG s = hvs_stat(), start = ogles2_clock_us();
+    UBYTE f0 = HVS_FRAME(s);
+    d->vs_waits++;
+    boost(d);
+    if (d->vs_have_last && f0 != d->vs_last && hvs_at_top(d, s)) {
+        d->vs_at_once++;
+    } else {
+        for (;;) {
+            ULONG line;
+            s = hvs_stat();
+            if (HVS_FRAME(s) != f0) {
+                if (hvs_at_top(d, s))
+                    break;
+                d->vs_slept_through++;
+                if (HVS_LINE(s) > d->vs_through_line)
+                    d->vs_through_line = HVS_LINE(s);
+                f0 = HVS_FRAME(s);
+                start = ogles2_clock_us(); /* the limit below is from the counter's last move */
+                continue;
+            }
+            if (ogles2_clock_us() - start > 3 * d->vs_period)
+                break; /* the counter stopped (the display): no hang */
+            line = HVS_LINE(s);
+            if (line < d->vs_lines) {
+                ULONG left = (d->vs_lines - line) * (d->vs_period / (d->vs_lines + d->vs_lines / 10));
+                if (left > 1500 && sleep_us(left - 1000))
+                    continue;
+            }
+        }
+    }
+    if (HVS_LINE(s) > 16 && HVS_LINE(s) < d->vs_lines) { /* past the vertical blank's stop at line 7 */
+        d->vs_late++;
+        if (HVS_LINE(s) > d->vs_max_line)
+            d->vs_max_line = HVS_LINE(s);
+    }
+    d->vs_last = HVS_FRAME(s);
+    d->vs_have_last = TRUE;
+}
+
+void ogles2_display_wait_refresh(struct OGLES2Display *d)
+{
+    if ((d->own_screen || d->direct) && d->screen) {
+        if (!d->vs_state)
+            hvs_probe(d);
+        if (d->vs_state > 0) {
+            hvs_wait(d);
+            return;
+        }
+        boost(d);
+        WaitBOVP(&d->screen->ViewPort); /* the screen's own refresh */
+        return;
+    }
+    boost(d);
+    WaitTOF();
 }
 
 /* The frame submitted: the task's own priority again. */
@@ -455,6 +647,12 @@ void ogles2_display_set_vsync(struct OGLES2Display *d, BOOL on)
 
 void ogles2_display_close(struct OGLES2Display *d)
 {
+    if (d->vs_waits)
+        ogles2_log("vsync: %lu waits on the HVS's frame counter; %lu went at once (a refresh had begun), %lu "
+                   "slept through a refresh (woken at line %lu at most), %lu returned past the vertical blank "
+                   "(at most line %lu)",
+                   d->vs_waits, d->vs_at_once, d->vs_slept_through, d->vs_through_line, d->vs_late,
+                   d->vs_max_line);
     ogles2_display_unlock(d);
     ogles2_display_wait_done(d);
     if (d->own_bitmap && d->bitmap)

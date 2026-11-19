@@ -55,7 +55,8 @@ void ogles2_v3d_draw_free(struct OGLES2Context *ctx);
 
 /* texture_v3d.c */
 BOOL ogles2_v3d_tex_upload(struct OGLES2Texture *t);
-void ogles2_v3d_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w, int h);
+void ogles2_v3d_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, ULONG stride, int x, int y, int w,
+                          int h);
 BOOL ogles2_v3d_tex_load(struct OGLES2Texture *t, int k, int l, int x, int y, int w, int h, UBYTE *rgba, ULONG stride);
 void ogles2_v3d_tex_free(struct OGLES2Texture *t);
 BOOL ogles2_v3d_tex_rename(struct OGLES2Context *user, struct OGLES2Texture *t);

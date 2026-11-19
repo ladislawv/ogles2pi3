@@ -1,0 +1,60 @@
+; Run-M1 - ogles2 vsync run 4: vsync_watch, old and new library alternately.
+;   See ReadMe.txt. CD to this directory, then:   Execute Run-M1
+.key SECONDS/K
+.def SECONDS 30
+.bra {
+.ket }
+FailAt 21
+If NOT EXISTS bin/vsync_watch
+  Echo "Please CD into the ogles2-vsync-4 directory first,"
+  Echo "then run:  Execute Run-M1"
+  Quit 20
+EndIf
+Assign VSR4: ""
+If NOT EXISTS VSR4:results
+  MakeDir VSR4:results
+EndIf
+Echo "ogles2 vsync run 4" >>VSR4:results/00-progress.txt
+Date >>VSR4:results/00-progress.txt
+If NOT EXISTS LIBS:ogles2.library.vsync-backup
+  Copy LIBS:ogles2.library LIBS:ogles2.library.vsync-backup CLONE QUIET
+EndIf
+CD VSR4:bin
+Copy LIBS:ogles2.library.vsync-backup LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+SetEnv OGLES2/LogFile VSR4:results/1-old-idle.log
+VSR4:bin/vsync_watch SECONDS={SECONDS} >VSR4:results/1-old-idle.txt
+Echo "1 old idle done" >>VSR4:results/00-progress.txt
+Copy VSR4:libs/ogles2.library LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+SetEnv OGLES2/LogFile VSR4:results/1-new-idle.log
+VSR4:bin/vsync_watch SECONDS={SECONDS} >VSR4:results/1-new-idle.txt
+Echo "1 new idle done" >>VSR4:results/00-progress.txt
+Copy LIBS:ogles2.library.vsync-backup LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+SetEnv OGLES2/LogFile VSR4:results/2-old-busy.log
+VSR4:bin/vsync_watch SECONDS={SECONDS} BUSY >VSR4:results/2-old-busy.txt
+Echo "2 old busy done" >>VSR4:results/00-progress.txt
+Copy VSR4:libs/ogles2.library LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+SetEnv OGLES2/LogFile VSR4:results/2-new-busy.log
+VSR4:bin/vsync_watch SECONDS={SECONDS} BUSY >VSR4:results/2-new-busy.txt
+Echo "2 new busy done" >>VSR4:results/00-progress.txt
+Copy LIBS:ogles2.library.vsync-backup LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+SetEnv OGLES2/LogFile VSR4:results/3-old-w5.log
+VSR4:bin/vsync_watch SECONDS={SECONDS} WORK=5 >VSR4:results/3-old-w5.txt
+Echo "3 old w5 done" >>VSR4:results/00-progress.txt
+Copy VSR4:libs/ogles2.library LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+SetEnv OGLES2/LogFile VSR4:results/3-new-w5.log
+VSR4:bin/vsync_watch SECONDS={SECONDS} WORK=5 >VSR4:results/3-new-w5.txt
+Echo "3 new w5 done" >>VSR4:results/00-progress.txt
+CD VSR4:
+UnSetEnv OGLES2/LogFile
+Copy LIBS:ogles2.library.vsync-backup LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+Delete LIBS:ogles2.library.vsync-backup QUIET
+List LIBS:ogles2#? >VSR4:results/00-libs.txt
+Echo "finished" >>VSR4:results/00-progress.txt
+Assign VSR4:

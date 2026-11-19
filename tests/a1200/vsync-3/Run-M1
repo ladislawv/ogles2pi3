@@ -1,0 +1,49 @@
+; Run-M1 - ogles2 vsync run 3: m6_vsync to watch, new wait twice, old once (OLD=0, NEW=0: without).
+;   See ReadMe.txt. CD to this directory, then:   Execute Run-M1
+.key WAIT/K,OLD/K,NEW/K
+.def WAIT 15
+.def OLD 1
+.def NEW 1
+.bra {
+.ket }
+FailAt 21
+If NOT EXISTS bin/m6_vsync
+  Echo "Please CD into the ogles2-vsync-3 directory first,"
+  Echo "then run:  Execute Run-M1"
+  Quit 20
+EndIf
+Assign VSR3: ""
+If NOT EXISTS VSR3:results
+  MakeDir VSR3:results
+EndIf
+Echo "ogles2 vsync run 3" >>VSR3:results/00-progress.txt
+Date >>VSR3:results/00-progress.txt
+If NOT EXISTS LIBS:ogles2.library.vsync-backup
+  Copy LIBS:ogles2.library LIBS:ogles2.library.vsync-backup CLONE QUIET
+EndIf
+Wait {WAIT}
+CD VSR3:bin
+If {NEW} EQ 1 VAL
+  Copy VSR3:libs/ogles2.library LIBS:ogles2.library CLONE QUIET
+  Avail FLUSH >NIL:
+  SetEnv OGLES2/LogFile VSR3:results/1-new.log
+  VSR3:bin/m6_vsync >VSR3:results/1-new.txt
+  Echo "new pass 1 done" >>VSR3:results/00-progress.txt
+  SetEnv OGLES2/LogFile VSR3:results/2-new.log
+  VSR3:bin/m6_vsync >VSR3:results/2-new.txt
+  Echo "new pass 2 done" >>VSR3:results/00-progress.txt
+EndIf
+Copy LIBS:ogles2.library.vsync-backup LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+If {OLD} EQ 1 VAL
+  SetEnv OGLES2/LogFile VSR3:results/3-old.log
+  VSR3:bin/m6_vsync >VSR3:results/3-old.txt
+  Echo "old pass done" >>VSR3:results/00-progress.txt
+EndIf
+CD VSR3:
+UnSetEnv OGLES2/LogFile
+Avail FLUSH >NIL:
+Delete LIBS:ogles2.library.vsync-backup QUIET
+List LIBS:ogles2#? >VSR3:results/00-libs.txt
+Echo "finished" >>VSR3:results/00-progress.txt
+Assign VSR3:

@@ -158,7 +158,8 @@ void ogles2_vc4_draw_free(struct OGLES2Context *ctx);
 
 /* texture_vc4.c */
 BOOL ogles2_vc4_tex_upload(struct OGLES2Texture *t);
-void ogles2_vc4_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w, int h);
+void ogles2_vc4_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, ULONG stride, int x, int y, int w,
+                          int h);
 BOOL ogles2_vc4_tex_load(struct OGLES2Texture *t, int k, int l, int x, int y, int w, int h, UBYTE *dst,
                          ULONG stride);
 void ogles2_vc4_tex_free(struct OGLES2Texture *t);

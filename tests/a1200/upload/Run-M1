@@ -1,0 +1,41 @@
+; Run-M1 - ogles2 upload run: the 16-bit texture upload report's test.
+;   See ReadMe.txt. CD to this directory, then:   Execute Run-M1
+; Nothing is installed: libs/ is added to LIBS: for the run and removed at
+; the end. Output goes to results/.
+.key SIZE/K,REPS/K
+.def SIZE 256
+.def REPS 64
+.bra {
+.ket }
+
+FailAt 21
+If NOT EXISTS libs/ogles2.library
+  Echo "Please CD into the ogles2-upload directory first,"
+  Echo "then run:  Execute Run-M1"
+  Quit 20
+EndIf
+Assign UPR: ""
+If NOT EXISTS UPR:results
+  MakeDir UPR:results
+EndIf
+Echo "ogles2 upload run" >>UPR:results/00-progress.txt
+Date >>UPR:results/00-progress.txt
+List LIBS:ogles2#? >UPR:results/00-libs.txt
+SetEnv OGLES2/LogFile UPR:results/ogles2.log
+Assign LIBS: UPR:libs ADD
+Avail FLUSH >NIL:
+Echo "The uploads, a 640x480 screen for a few seconds."
+UPR:bin/upload_test SIZE={SIZE} REPS={REPS} >UPR:results/1-upload.txt
+Echo "step 1 done" >>UPR:results/00-progress.txt
+Avail FLUSH >NIL:
+Echo "glTexImage2D, each drawn once, a 640x480 screen for a few seconds."
+UPR:bin/upload_test SIZE={SIZE} REPS={REPS} IMAGE >UPR:results/2-image.txt
+Echo "step 2 done" >>UPR:results/00-progress.txt
+Avail FLUSH >NIL:
+Assign LIBS: UPR:libs REMOVE
+UnSetEnv OGLES2/LogFile
+List UPR:results >UPR:results/99-files.txt
+Echo "finished" >>UPR:results/00-progress.txt
+Date >>UPR:results/00-progress.txt
+Assign UPR:
+Echo "Done. Results are in results/."

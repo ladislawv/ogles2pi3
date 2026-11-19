@@ -106,30 +106,86 @@ uint32_t vc4_texel_offset(const struct vc4_level *l, uint32_t cpp, uint32_t x, u
     return t_subtile(ux & ~3u, uy & ~3u, utile_stride) + ((uy & 3) * 4 + (ux & 3)) * 64 + in;
 }
 
+/* A long read at any alignment, its bytes as they are in memory (the
+ * compiler makes the load the target allows: one move on the 68020 and x86,
+ * bytes on an ARM that needs them). */
+struct __attribute__((packed, may_alias)) vc4_u32_any
+{
+    uint32_t v;
+};
+
+/* One texel's bytes from s to d (d naturally aligned), as they are. */
+static void put_texel(uint8_t *d, const uint8_t *s, uint32_t cpp)
+{
+    switch (cpp) {
+    case 1:
+        *d = s[0];
+        break;
+    case 2:
+        vc4_put16(d, (uint32_t)s[0] | (uint32_t)s[1] << 8);
+        break;
+    case 8:
+        vc4_put32(d + 4, (uint32_t)s[4] | (uint32_t)s[5] << 8 | (uint32_t)s[6] << 16 | (uint32_t)s[7] << 24);
+        /* fall through */
+    default:
+        vc4_put32(d, (uint32_t)s[0] | (uint32_t)s[1] << 8 | (uint32_t)s[2] << 16 | (uint32_t)s[3] << 24);
+        break;
+    }
+}
+
+/* Texels [x0, x1) of row y of the box, a texel at a time. */
+static void put_texels(uint8_t *img, const struct vc4_level *l, uint32_t cpp, const uint8_t *row, uint32_t x,
+                       uint32_t x0, uint32_t x1, uint32_t y)
+{
+    uint32_t i;
+    for (i = x0; i < x1; i++)
+        put_texel(img + vc4_texel_offset(l, cpp, i, y), row + (i - x) * cpp, cpp);
+}
+
+/* A box of a level, a utile at a time (2026-11-19, ogles3's 16-bit upload
+ * report: a texel at a time, through vc4_texel_offset, every upload on a GPU
+ * without a TFU): a utile's address once, each of its rows (8 or 16 bytes,
+ * the utile's width) moved with naturally aligned 32-bit stores of the
+ * source's bytes as they are (GPU memory may be device memory: no memcpy
+ * into it). The utiles the box only partly covers, a texel at a time. */
+void vc4_texture_store_box(uint8_t *base, const struct vc4_texture_layout *t, uint32_t level, uint32_t face,
+                           const uint8_t *src, uint32_t src_stride, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+{
+    const struct vc4_level *l = &t->level[level];
+    uint32_t cpp = t->cpp, uw = vc4_utile_width(cpp), uh = vc4_utile_height(cpp), rb = uw * cpp;
+    uint32_t ux0 = (x + uw - 1) / uw, ux1 = (x + w) / uw, uy0 = (y + uh - 1) / uh, uy1 = (y + h) / uh;
+    uint32_t ux, uy, r, j, b;
+    uint8_t *img = base + face * t->face_stride + l->offset;
+    if (l->tiling == VC4_TILING_RASTER || ux0 >= ux1 || uy0 >= uy1) {
+        for (j = 0; j < h; j++)
+            put_texels(img, l, cpp, src + j * src_stride, x, x, x + w, y + j);
+        return;
+    }
+    /* the rows above and below the whole utiles */
+    for (j = y; j < uy0 * uh; j++)
+        put_texels(img, l, cpp, src + (j - y) * src_stride, x, x, x + w, j);
+    for (j = uy1 * uh; j < y + h; j++)
+        put_texels(img, l, cpp, src + (j - y) * src_stride, x, x, x + w, j);
+    /* their rows' texels left and right of them */
+    for (j = uy0 * uh; j < uy1 * uh; j++) {
+        const uint8_t *row = src + (j - y) * src_stride;
+        put_texels(img, l, cpp, row, x, x, ux0 * uw, j);
+        put_texels(img, l, cpp, row, x, ux1 * uw, x + w, j);
+    }
+    /* the whole utiles */
+    for (uy = uy0; uy < uy1; uy++)
+        for (ux = ux0; ux < ux1; ux++) {
+            uint8_t *d = img + vc4_texel_offset(l, cpp, ux * uw, uy * uh);
+            const uint8_t *s = src + (uy * uh - y) * src_stride + (ux * uw - x) * cpp;
+            for (r = 0; r < uh; r++, d += rb, s += src_stride)
+                for (b = 0; b < rb; b += 4) /* from RAM, any alignment; into the GPU's, aligned */
+                    *(volatile uint32_t *)(d + b) = ((const struct vc4_u32_any *)(s + b))->v;
+        }
+}
+
 void vc4_texture_store(uint8_t *base, const struct vc4_texture_layout *t, uint32_t level, uint32_t face,
                        const uint8_t *src, uint32_t src_stride)
 {
-    const struct vc4_level *l = &t->level[level];
-    uint32_t cpp = t->cpp, x, y;
-    uint8_t *img = base + face * t->face_stride + l->offset;
-    for (y = 0; y < l->height; y++) {
-        const uint8_t *s = src + y * src_stride;
-        for (x = 0; x < l->width; x++, s += cpp) {
-            uint8_t *d = img + vc4_texel_offset(l, cpp, x, y);
-            switch (cpp) {
-            case 1:
-                *d = s[0];
-                break;
-            case 2:
-                vc4_put16(d, (uint32_t)s[0] | (uint32_t)s[1] << 8);
-                break;
-            case 8:
-                vc4_put32(d + 4, (uint32_t)s[4] | (uint32_t)s[5] << 8 | (uint32_t)s[6] << 16 | (uint32_t)s[7] << 24);
-                /* fall through */
-            default:
-                vc4_put32(d, (uint32_t)s[0] | (uint32_t)s[1] << 8 | (uint32_t)s[2] << 16 | (uint32_t)s[3] << 24);
-                break;
-            }
-        }
-    }
+    vc4_texture_store_box(base, t, level, face, src, src_stride, 0, 0, t->level[level].width,
+                          t->level[level].height);
 }

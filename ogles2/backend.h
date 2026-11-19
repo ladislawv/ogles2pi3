@@ -164,7 +164,10 @@ struct OGLES2Backend
      * do: 0 or an error, -3 busy); level 0 filled from a raster image
      * (glCopyTex*: 0, an error, -3 busy). */
     BOOL (*tex_upload)(struct OGLES2Texture *t);
-    void (*tex_store)(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w, int h);
+    /* tex_store: `src` the RAM copy's texels of the box, `stride` bytes a
+     * row (a compressed level's blocks: tight, `stride` not read) */
+    void (*tex_store)(struct OGLES2Texture *t, int k, int l, const UBYTE *src, ULONG stride, int x, int y, int w,
+                      int h);
     BOOL (*tex_load)(struct OGLES2Texture *t, int k, int l, int x, int y, int w, int h, UBYTE *dst, ULONG stride);
     void (*tex_free)(struct OGLES2Texture *t);
     BOOL (*tex_rename)(struct OGLES2Context *user, struct OGLES2Texture *t);

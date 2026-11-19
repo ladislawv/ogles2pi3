@@ -1,0 +1,71 @@
+; Run-M1 - ogles2 vsync run 2: VsyncTest with the old wait and with the new.
+;   See ReadMe.txt. CD to this directory, then:   Execute Run-M1
+.key FROM/K
+.def FROM 1
+.bra {
+.ket }
+FailAt 21
+If NOT EXISTS bin/VsyncTest
+  Echo "Please CD into the ogles2-vsync-2 directory first,"
+  Echo "then run:  Execute Run-M1"
+  Quit 20
+EndIf
+Assign VSR2: ""
+If NOT EXISTS VSR2:results
+  MakeDir VSR2:results
+EndIf
+Echo "ogles2 vsync run 2" >>VSR2:results/00-progress.txt
+Date >>VSR2:results/00-progress.txt
+If NOT EXISTS LIBS:ogles2.library.vsync-backup
+  Copy LIBS:ogles2.library LIBS:ogles2.library.vsync-backup CLONE QUIET
+EndIf
+Version LIBS:ogles2.library.vsync-backup FULL >VSR2:results/00-libs.txt
+List LIBS:ogles2#? >>VSR2:results/00-libs.txt
+CD VSR2:bin
+If NOT {FROM} GT 1 VAL
+  Copy LIBS:ogles2.library.vsync-backup LIBS:ogles2.library CLONE QUIET
+  Avail FLUSH >NIL:
+  SetEnv OGLES2/LogFile VSR2:results/01-old-w5.log
+  VSR2:bin/VsyncTest FRAMES=3000 WORK=5 >VSR2:results/01-old-w5.txt
+  SetEnv OGLES2/LogFile VSR2:results/02-old-idle.log
+  Run >NIL: VSR2:bin/VsyncTest FRAMES=900 WORK=5 >VSR2:results/02-old-w5-idle.txt
+  Wait 3
+  VSR2:bin/vsync_probe IDLE FRAMES=8 >VSR2:results/02-old-idle.txt
+  Wait 8
+  SetEnv OGLES2/LogFile VSR2:results/03-old-busy.log
+  VSR2:bin/VsyncTest FRAMES=3000 WORK=5 BUSY >VSR2:results/03-old-busy.txt
+  SetEnv OGLES2/LogFile VSR2:results/04-old-w15.log
+  VSR2:bin/VsyncTest FRAMES=1200 WORK=15 >VSR2:results/04-old-w15.txt
+  Echo "old done" >>VSR2:results/00-progress.txt
+EndIf
+If NOT {FROM} GT 2 VAL
+  Copy VSR2:libs/ogles2.library LIBS:ogles2.library CLONE QUIET
+  Avail FLUSH >NIL:
+  Version LIBS:ogles2.library FULL >>VSR2:results/00-libs.txt
+  SetEnv OGLES2/LogFile VSR2:results/11-new-w5.log
+  VSR2:bin/VsyncTest FRAMES=3000 WORK=5 >VSR2:results/11-new-w5.txt
+  SetEnv OGLES2/LogFile VSR2:results/12-new-idle.log
+  Run >NIL: VSR2:bin/VsyncTest FRAMES=900 WORK=5 >VSR2:results/12-new-w5-idle.txt
+  Wait 3
+  VSR2:bin/vsync_probe IDLE FRAMES=8 >VSR2:results/12-new-idle.txt
+  Wait 8
+  SetEnv OGLES2/LogFile VSR2:results/13-new-busy.log
+  VSR2:bin/VsyncTest FRAMES=3000 WORK=5 BUSY >VSR2:results/13-new-busy.txt
+  SetEnv OGLES2/LogFile VSR2:results/14-new-w15.log
+  VSR2:bin/VsyncTest FRAMES=1200 WORK=15 >VSR2:results/14-new-w15.txt
+  SetEnv OGLES2/LogFile VSR2:results/15-new-w0.log
+  VSR2:bin/VsyncTest FRAMES=600 >VSR2:results/15-new-w0.txt
+  SetEnv OGLES2/LogFile VSR2:results/16-new-pri20.log
+  VSR2:bin/VsyncTest FRAMES=1200 WORK=5 PRI=20 >VSR2:results/16-new-pri20.txt
+  Echo "new done" >>VSR2:results/00-progress.txt
+EndIf
+CD VSR2:
+UnSetEnv OGLES2/LogFile
+Copy LIBS:ogles2.library.vsync-backup LIBS:ogles2.library CLONE QUIET
+Avail FLUSH >NIL:
+Version LIBS:ogles2.library FULL >>VSR2:results/00-libs.txt
+Delete LIBS:ogles2.library.vsync-backup QUIET
+List LIBS:ogles2#? >>VSR2:results/00-libs.txt
+Echo "finished" >>VSR2:results/00-progress.txt
+Date >>VSR2:results/00-progress.txt
+Assign VSR2:

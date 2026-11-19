@@ -329,6 +329,10 @@ uint32_t vc4_texel_offset(const struct vc4_level *l, uint32_t cpp, uint32_t x, u
  * src_stride bytes apart) into the miptree at base. */
 void vc4_texture_store(uint8_t *base, const struct vc4_texture_layout *t, uint32_t level, uint32_t face,
                        const uint8_t *src, uint32_t src_stride);
+/* A box (x, y, w, h) of a level from src (its first texel; rows src_stride
+ * bytes apart), a utile at a time where the box covers whole utiles. */
+void vc4_texture_store_box(uint8_t *base, const struct vc4_texture_layout *t, uint32_t level, uint32_t face,
+                           const uint8_t *src, uint32_t src_stride, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 
 /* The TMU's texture configuration words, P0 and P1 (Linux's vc4_packet.h:
  * VC4_TEX_P0_*, VC4_TEX_P1_*), as a fragment shader's uniform stream gives

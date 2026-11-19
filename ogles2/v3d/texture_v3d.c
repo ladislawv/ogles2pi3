@@ -121,9 +121,6 @@ static void storage_of(struct OGLES2Texture *t)
     memcpy(t->swizzle, sw, 4);
 }
 
-/* A 16-bit texel stored little-endian (the GPU's order) from the 68k. */
-#define LE16_STORE(p, v) (*(UWORD *)(p) = (UWORD)(((v) << 8) | ((v) >> 8)))
-
 /* n RGBA8 texels into the stored format, in the GPU's byte order (16-bit
  * texels little-endian, the GL packing: red in the top bits). Each format
  * in a loop of its own, a texel read as one long (R in the top byte): a
@@ -134,29 +131,14 @@ static void pack(const struct OGLES2Texture *t, const UBYTE *s, UBYTE *d, ULONG 
     const ULONG *p = (const ULONG *)s;
     ULONG i, c;
     switch (t->hw_type) {
-    case V3D_TEXTURE_DATA_FORMAT_RGB565:
-        for (i = 0; i < n; i++, d += 2) {
-            UWORD v;
-            c = p[i];
-            v = (UWORD)(((c >> 16) & 0xF800) | ((c >> 13) & 0x07E0) | ((c >> 11) & 0x001F));
-            LE16_STORE(d, v);
-        }
+    case V3D_TEXTURE_DATA_FORMAT_RGB565: /* texture.c's, two texels a long store */
+        ogles2_pack16(GL_UNSIGNED_SHORT_5_6_5, s, d, n);
         return;
     case V3D_TEXTURE_DATA_FORMAT_RGBA4:
-        for (i = 0; i < n; i++, d += 2) {
-            UWORD v;
-            c = p[i];
-            v = (UWORD)(((c >> 16) & 0xF000) | ((c >> 12) & 0x0F00) | ((c >> 8) & 0x00F0) | ((c >> 4) & 0x000F));
-            LE16_STORE(d, v);
-        }
+        ogles2_pack16(GL_UNSIGNED_SHORT_4_4_4_4, s, d, n);
         return;
     case V3D_TEXTURE_DATA_FORMAT_RGB5A1:
-        for (i = 0; i < n; i++, d += 2) {
-            UWORD v;
-            c = p[i];
-            v = (UWORD)(((c >> 16) & 0xF800) | ((c >> 13) & 0x07C0) | ((c >> 10) & 0x003E) | ((c >> 7) & 1));
-            LE16_STORE(d, v);
-        }
+        ogles2_pack16(GL_UNSIGNED_SHORT_5_5_5_1, s, d, n);
         return;
     case V3D_TEXTURE_DATA_FORMAT_R8: /* luminance (red of the copy) or alpha */
         if (t->swizzle[3] == v3d_SWIZZLE_RED)
@@ -403,11 +385,11 @@ static BOOL store_tfu(struct OGLES2Texture *t, int k, int l, const UBYTE *raster
 /* A box of level l of face k, from the RAM copy `src` (`w` texels a row, of
  * level 0's class: complete() saw to it). S3TC: the box on block bounds,
  * `src` its blocks, stored as they are (the TFU takes no BC format). */
-void ogles2_v3d_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w,
-                      int h)
+void ogles2_v3d_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, ULONG in, int x, int y, int w,
+                          int h)
 {
     V3DTexture tmp;
-    ULONG row = (ULONG)w * t->cpp, in;
+    ULONG row = (ULONG)w * t->cpp;
     UBYTE *packed;
     BOOL whole = x == 0 && y == 0 && w == t->f[k].w[l] && h == t->f[k].h[l];
     int j;
@@ -416,12 +398,22 @@ void ogles2_v3d_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *sr
                           x / 4, y / 4, (int)blocks4((ULONG)w), (int)blocks4((ULONG)h));
         return;
     }
-    in = (ULONG)w * copy_bytes(class_of(t->f[0].format[0], t->f[0].type[0]));
-    /* RGBA8 is stored as the RAM copy holds it: straight from there. */
+    /* A 16-bit level's texels kept as given (texture.c's raw16): stored from
+     * there, the GPU's bytes already, not packed from its RAM copy (which may
+     * be behind them). */
+    if (t->f[k].raw16[l] && t->cpp == 2) {
+        ULONG fr = (ULONG)t->f[k].w[l] * 2;
+        const UBYTE *r = t->f[k].raw16[l] + (ULONG)y * fr + (ULONG)x * 2;
+        if (!whole || !store_tfu(t, k, l, r, fr, w, h))
+            v3d_texture_store(ogles2_device(), face_gpu(t, k, &tmp), (v3d_u8)l, r, fr, x, y, w, h);
+        return;
+    }
+    /* RGBA8 is stored as the RAM copy holds it: straight from there (`in`
+     * bytes a row: the box in the level's RAM copy, or a copy of its own). */
     if (t->hw_type == V3D_TEXTURE_DATA_FORMAT_RGBA8) {
-        if (whole && store_tfu(t, k, l, src, (ULONG)w * 4, w, h))
+        if (whole && store_tfu(t, k, l, src, in, w, h))
             return;
-        v3d_texture_store(ogles2_device(), face_gpu(t, k, &tmp), (v3d_u8)l, src, (ULONG)w * 4, x, y, w, h);
+        v3d_texture_store(ogles2_device(), face_gpu(t, k, &tmp), (v3d_u8)l, src, in, x, y, w, h);
         return;
     }
     if (!(packed = AllocVec(row * h + 4, MEMF_ANY)))
@@ -498,7 +490,9 @@ BOOL ogles2_v3d_tex_upload(struct OGLES2Texture *t)
     for (k = 0; k < faces(t); k++)
         for (l = 0; l < n; l++)
             if ((l == 0 || consistent(&t->f[k], l)) && !(t->f[k].blank & (1UL << l)))
-                ogles2_v3d_tex_store(t, k, l, t->f[k].shadow[l], 0, 0, t->f[k].w[l], t->f[k].h[l]);
+                ogles2_v3d_tex_store(t, k, l, t->f[k].shadow[l],
+                                     (ULONG)t->f[k].w[l] * copy_bytes(level_class(&t->f[k], l)), 0, 0, t->f[k].w[l],
+                                     t->f[k].h[l]);
     return TRUE;
 }
 

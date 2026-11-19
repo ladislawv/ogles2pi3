@@ -24,6 +24,13 @@ struct OGLES2Face
     ULONG rendered;                 /* levels the GPU drew into since: the copy is stale */
     ULONG blank;                    /* levels never given texels (glTexImage2D without pixels):
                                      * the copy is zeros, as a new GPU copy is (MEMF_CLEAR) */
+    /* A 16-bit level (type 5_6_5, 4_4_4_4 or 5_5_5_1) given in its own
+     * packing keeps its texels as the GPU stores them (little-endian words,
+     * w x h): the backends store from there, and its RGBA8 RAM copy above
+     * is left behind them (`stale`) until something reads it (texture.c's
+     * fresh_level; ogles3's b303921). 0: none kept. */
+    UBYTE *raw16[MAX_LEVELS];
+    ULONG stale;                    /* levels whose RAM copy is behind raw16[] */
 };
 
 struct OGLES2Texture
@@ -238,5 +245,13 @@ static inline struct OGLES2TexState *texture_ts_fast(struct OGLES2Context *ctx)
 struct OGLES2Texture *ogles2_texture_fallback(struct OGLES2TexState *ts);
 BOOL ogles2_texture_complete(const struct OGLES2Texture *t, int *first, int *last);
 BOOL ogles2_texture_upload(struct OGLES2Texture *t); /* the GPU copy made again, rendered levels read back */
+/* The three 16-bit packings, shared by both backends (their bits are GL's on
+ * both GPUs: red in the top bits; little-endian words): n RGBA8 texels of
+ * the RAM copy (a long each, R in the top byte) into `type`'s packing
+ * (GL_UNSIGNED_SHORT_5_6_5, _4_4_4_4 or _5_5_5_1), two texels a long store
+ * where `d` allows; and n 16-bit words from the 68k's order into the GPU's,
+ * two a long. */
+void ogles2_pack16(GLenum type, const UBYTE *s, UBYTE *d, ULONG n);
+void ogles2_swap16(const UBYTE *s, UBYTE *d, ULONG n);
 
 #endif

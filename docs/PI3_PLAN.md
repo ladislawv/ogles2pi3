@@ -2177,6 +2177,47 @@ were written on, read that section's "Another machine" first.
    two days; step 3 one to two days with the bench check; step 4 a day plus dEQP. Step 1 helps the Pi 4
    (and the Pi 3 through the shared in-place convert), step 2 both cards, step 3 the Pi 3 alone. ogles2 1.x (`C:\- CPP\ogles2`) gets them with P7.
 
+   *Done (2026-11-19, the same day; built and measured on the Pi 4 card; the Pi 3 card not run yet):*
+   - Step 0: `tests/perf/upload_test.c` (ogles3's, its `IMAGE` mode built for GLES2 too), package
+     `tests/a1200/upload` (`p5_run.sh`; `LIB=` the plain build for speed). Library runs need the build
+     in `LIBS:ogles2.library` (an installed 1.4 wins over a package's; the developer allowed
+     overwriting it, 2026-11-19).
+   - Step 1: `v3d_hw.c` as ogles3's (its patch applied as it is: the file was the same); `tex_store`
+     with the source's stride (`backend.h`; both backends, `upload_level`, the backends' uploads,
+     `glCompressedTexSubImage2D` passing 0); `tex_sub_image` converts in place; VC4's `store_box` reads
+     rows by the stride (its negative-value scan too, still stopping at the first). The packer is
+     shared: `ogles2_pack16` and `ogles2_swap16` in `texture.c` (`texture_private.h`), which both
+     backends' `pack` call for the three formats (VC4's stored a byte at a time).
+   - Step 2: `OGLES2Face.raw16[]` and `stale`; `packed16`, `raw16_keep`, `raw16_pack_box`,
+     `raw16_drop`, `fresh_level`; `sync_ex`/`before_change_ex` (the uploads and `upload_all` without the
+     expansion; `sync` itself went: its only callers were those two); `set_level`'s `later`; the drops
+     in `set_level`, `free_levels`, `ogles2_texture_rendered`, `generate_tfu` (through
+     `ogles2_texture_rendered`), the CPU mipmaps; `destroy` clears the stale bits; the backends store a
+     level's `raw16` (V3D: `store_tfu` or `v3d_texture_store`; VC4: `write_box`).
+   - Step 3: `vc4_texture_store_box` (`vc4core/tiling.c`): whole utiles a row at a time with aligned
+     32-bit stores (the source read through a packed struct, any alignment; no `memcpy`: the library
+     has no C library), the partly covered utiles a texel at a time; `vc4_texture_store` is its whole-
+     level case and `write_box` calls it. `tests/pi3/tiling` (host): 1,236 textures (1, 2, 4, 8 bytes
+     a texel; 1 to 300 a side; every level; 1 and 6 faces) and 52,296 boxes byte for byte as the
+     texel-at-a-time store; a store broken on purpose (the right edge rounded up) differs in 980.
+
+   | Pi 4 card, 64 x 256x256, measure pass | RGBA8 | RGB565 | RGB5_A1 | RGBA4 |
+   |---|---|---|---|---|
+   | `glTexSubImage2D`, 1.4-beta2 (`ogles2-upload-20261119-164016`) | 54 ms | 199 | 211 | 207 |
+   | the same, step 1 (`-164320`) | 56 | 96 | 112 | 104 |
+   | the same, step 2 (`-164643`) | 57 (289 MB/s) | 36 (226 MB/s) | 35 (232) | 36 (228) |
+   | `glTexImage2D` drawn once, 1.4-beta2 | 88 | 124 | 139 | 131 |
+   | the same, step 2 | 84 (192 MB/s) | 47 (172 MB/s) | 48 (170) | 47 (172) |
+
+   Step 4 on the Pi 4 card (the build with step 3, in `LIBS:`): dEQP-GLES2 `texture` 783 of 807, the
+   same 24 failures as 2026-11-05's run (the cube-map cases of the documented deviation: 6
+   `texture.mipmap.cube`, 18 `texture.vertex.cube`), `fbo` 709 of 709 (`p6-deqp-20261119-1732.txt`;
+   from Git Bash `p6_deqp.sh` needs `AMIGENT_CTL` set to the Windows `amigent-ctl.exe`: its default is
+   the WSL venv's, and without it the station reads as away for 45 minutes); m5-1 272 PASS, m6-6 404,
+   m7-6 40, none failed; m2-5's 14 pictures identical to `ogles2-m2-5-20261111-170137`'s. **Owed:**
+   the Pi 3 card (the upload package against its 1.4-beta2 numbers, dEQP-GLES2's `texture` and `fbo`
+   and then the whole list, the regression packages), and Quake III's load on both.
+
    **Plan: ogles3's vsync fix (2026-11-19, the developer's request; not begun).** A user's report on
    ogles3 (2026-11-16): with `OGLES3_CCT_VSYNC` a swap now and then took 33 ms though the frame was ready
    15 ms early. ogles3 commit a4f6ab7 (merged into `es32` as 436e1b7; its `docs/GLES3_PLAN.md` entry
@@ -2231,3 +2272,19 @@ were written on, read that section's "Another machine" first.
    *Order and size:* step 1 half a day (ogles3's code and packages, renamed); step 2 half a day plus the
    developer's look at `vsync-3`; step 3 (postponed) a day with the card. Independent of the upload work
    above: either can go first.
+
+   *Done (2026-11-19, the Pi 4 card):* step 1: a4f6ab7's `display.c` and internal header changes
+   applied as they are (the names mapped: `OGLES3Display`, the files), and `hvs_probe` returns before
+   any HVS read when `ogles2_backend->device` is 21 ("vsync: VC4, WaitBOVP" in the log). `tests/vsync`
+   (`vsync_watch` with ogles2's names, `VsyncTest` built `-DUSE_OGLES2`, `vsync_probe` as it is) and
+   packages `vsync-1` to `vsync-4` (ogles2's library, log variable and build root). Step 2, the build
+   with the upload work and this (`LIB=`; the one before it in `LIBS:` as the "old"): `vsync-2`
+   (`ogles2-vsync-2-20261119-174754`), swaps of 33 ms or more in the report's test, 5 ms of work 12
+   before against 1 after, a busy task 17 against 0 (one of 28 ms), 15 ms of work 7 against 1; a
+   priority -1 counter during the swaps 0 rounds a second before, 140 million after; the log: the HVS's
+   counter, a refresh of 16,612 us, 1080 lines, and of 3,001 waits none slept through a refresh.
+   `vsync-4` (`-175317`, 30 s each, old against new): skipped refreshes idle 10 against 1, busy 12
+   against 0, 5 ms of work 11 against 1; late frames 109/97/15 against 1/4/1; judder over 2 ms 25/33/29
+   against 3/2/2. m6-9 (`-175653`): `m6_vsync` 60 fps with vsync, 2,535 without, as before. **Owed:**
+   `vsync-3` (tearing, the developer watching), Quake III with `r_swapInterval 1`, and m6-9 once on the
+   Pi 3 card (the wait as before there).

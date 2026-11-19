@@ -114,17 +114,14 @@ static void pack(const struct vc4_tex_format *f, int cls, const UBYTE *s, UBYTE 
         return;
     }
     switch (f->hw_type) {
-    case VC4_TEX_RGB565:
-        for (i = 0; i < n; i++, s += 4, d += 2)
-            le16(d, (ULONG)(s[0] >> 3) << 11 | (ULONG)(s[1] >> 2) << 5 | (ULONG)(s[2] >> 3));
+    case VC4_TEX_RGB565: /* texture.c's, two texels a long store (the copy's longs, R in the top byte) */
+        ogles2_pack16(GL_UNSIGNED_SHORT_5_6_5, s, d, n);
         break;
     case VC4_TEX_RGBA4444:
-        for (i = 0; i < n; i++, s += 4, d += 2)
-            le16(d, (ULONG)(s[0] >> 4) << 12 | (ULONG)(s[1] >> 4) << 8 | (ULONG)(s[2] >> 4) << 4 | (ULONG)(s[3] >> 4));
+        ogles2_pack16(GL_UNSIGNED_SHORT_4_4_4_4, s, d, n);
         break;
     case VC4_TEX_RGBA5551:
-        for (i = 0; i < n; i++, s += 4, d += 2)
-            le16(d, (ULONG)(s[0] >> 3) << 11 | (ULONG)(s[1] >> 3) << 6 | (ULONG)(s[2] >> 3) << 1 | (ULONG)(s[3] >> 7));
+        ogles2_pack16(GL_UNSIGNED_SHORT_5_5_5_1, s, d, n);
         break;
     case VC4_TEX_ALPHA: /* LUMINANCE (red) or ALPHA */
         for (i = 0; i < n; i++, s += 4)
@@ -320,7 +317,10 @@ static void rt_split_stale(struct vc4_tex *g)
     g->any_stale = FALSE;
 }
 
-static void store_box(struct vc4_tex *g, int cls, int k, int l, const UBYTE *src, int x, int y, int w, int h);
+static void store_box(struct vc4_tex *g, int cls, int k, int l, const UBYTE *src, ULONG stride, int x, int y, int w,
+                      int h);
+static void write_box(struct vc4_tex *g, UBYTE *base, int l, const UBYTE *packed, ULONG row, int x, int y, int w,
+                      int h);
 
 /* An S3TC box's blocks (rows of ceil(w/4) blocks) decoded into w x h RGBA8
  * texels; NULL out of memory. */
@@ -349,7 +349,8 @@ static UBYTE *decode_blocks(GLenum format, const UBYTE *src, int w, int h)
 
 /* A box of level l of face k from the RAM copy src (w texels a row; S3TC:
  * the box on block bounds, src its blocks). */
-void ogles2_vc4_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, int x, int y, int w, int h)
+void ogles2_vc4_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *src, ULONG stride, int x, int y, int w,
+                          int h)
 {
     struct vc4_tex *g = VT(t);
     if (!g || l >= (int)g->lay.levels || w <= 0 || h <= 0)
@@ -362,39 +363,37 @@ void ogles2_vc4_tex_store(struct OGLES2Texture *t, int k, int l, const UBYTE *sr
             rt_split(g, k, l);
         g->rt_fresh[k] &= ~(1UL << l);
     }
+    /* A 16-bit level's texels kept as given (texture.c's raw16): written from
+     * there, the GPU's bytes already (pack's for those formats), not packed
+     * from its RAM copy (which may be behind them). */
+    if (t->f[k].raw16[l] && g->lay.cpp == 2 && g->cls == CLASS_RGBA8) {
+        ULONG fr = (ULONG)t->f[k].w[l] * 2;
+        write_box(g, face_base(g, k), l, t->f[k].raw16[l] + (ULONG)y * fr + (ULONG)x * 2, fr, x, y, w, h);
+        return;
+    }
     if (g->cls == CLASS_BLOCKS) {
         UBYTE *rgba = decode_blocks(t->f[k].format[l], src, w, h);
         if (rgba) {
-            store_box(g, CLASS_RGBA8, k, l, rgba, x, y, w, h);
+            store_box(g, CLASS_RGBA8, k, l, rgba, (ULONG)w * 4, x, y, w, h);
             FreeVec(rgba);
         }
         return;
     }
-    store_box(g, g->cls, k, l, src, x, y, w, h);
+    store_box(g, g->cls, k, l, src, stride, x, y, w, h);
 }
 
-/* A packed box into the miptree at base (a face's, or a plane's). */
+/* A packed box into the miptree at base (a face's, or a plane's): a utile at
+ * a time (vc4core's vc4_texture_store_box, 2026-11-19). */
 static void write_box(struct vc4_tex *g, UBYTE *base, int l, const UBYTE *packed, ULONG row, int x, int y, int w, int h)
 {
-    const struct vc4_level *lv = &g->lay.level[l];
-    ULONG cpp = g->lay.cpp;
-    int i, j;
-    if (x == 0 && y == 0 && (ULONG)w == lv->width && (ULONG)h == lv->height) {
-        vc4_texture_store(base, &g->lay, (uint32_t)l, 0, packed, row);
-    } else {
-        UBYTE *lb = base + lv->offset;
-        for (j = 0; j < h; j++)
-            for (i = 0; i < w; i++) {
-                UBYTE *d = lb + vc4_texel_offset(lv, cpp, (ULONG)(x + i), (ULONG)(y + j));
-                const UBYTE *s = packed + (ULONG)j * row + (ULONG)i * cpp;
-                ULONG b;
-                for (b = 0; b < cpp; b++)
-                    d[b] = s[b];
-            }
-    }
+    vc4_texture_store_box(base, &g->lay, (uint32_t)l, 0, packed, row, (uint32_t)x, (uint32_t)y, (uint32_t)w,
+                          (uint32_t)h);
 }
 
-static void store_box(struct vc4_tex *g, int cls, int k, int l, const UBYTE *src, int x, int y, int w, int h)
+/* The box's RAM-copy texels at src, `stride` bytes a row (the box in the
+ * level's RAM copy, or a copy of its own). */
+static void store_box(struct vc4_tex *g, int cls, int k, int l, const UBYTE *src, ULONG stride, int x, int y, int w,
+                      int h)
 {
     ULONG row = (ULONG)w * g->lay.cpp, plane;
     UBYTE *packed;
@@ -402,23 +401,28 @@ static void store_box(struct vc4_tex *g, int cls, int k, int l, const UBYTE *src
     if (!(packed = AllocVec(row * (ULONG)h + 4, MEMF_ANY)))
         return;
     if (cls == CLASS_FLOAT && !g->neg.size) {
-        const GLfloat *v = (const GLfloat *)src;
-        ULONG n = (ULONG)w * (ULONG)h * 4, i;
-        for (i = 0; i < n; i++)
-            if (v[i] < 0.0f) {
-                neg_planes(g);
-                break;
-            }
+        ULONG n = (ULONG)w * 4, i;
+        BOOL found = FALSE;
+        for (j = 0; j < h && !found; j++) {
+            const GLfloat *v = (const GLfloat *)(src + (ULONG)j * stride);
+            for (i = 0; i < n; i++)
+                if (v[i] < 0.0f) {
+                    found = TRUE;
+                    break;
+                }
+        }
+        if (found)
+            neg_planes(g);
     }
     for (plane = 0; plane < (g->plane_stride ? 4UL : 1UL); plane++) {
         /* FLOAT: each channel into its plane (pack takes the floats from it) */
         const UBYTE *s0 = src + (g->plane_stride ? plane * sizeof(GLfloat) : 0);
         for (j = 0; j < h; j++)
-            pack(g->f, cls, s0 + (ULONG)j * (ULONG)w * copy_bytes(cls), packed + (ULONG)j * row, (ULONG)w);
+            pack(g->f, cls, s0 + (ULONG)j * stride, packed + (ULONG)j * row, (ULONG)w);
         write_box(g, face_base(g, k) + plane * g->plane_stride, l, packed, row, x, y, w, h);
         if (cls == CLASS_FLOAT && g->neg.size) {
             for (j = 0; j < h; j++)
-                pack_neg(s0 + (ULONG)j * (ULONG)w * copy_bytes(cls), packed + (ULONG)j * row, (ULONG)w);
+                pack_neg(s0 + (ULONG)j * stride, packed + (ULONG)j * row, (ULONG)w);
             write_box(g, neg_base(g, k) + plane * g->plane_stride, l, packed, row, x, y, w, h);
         }
     }
@@ -512,7 +516,9 @@ BOOL ogles2_vc4_tex_upload(struct OGLES2Texture *t)
     for (k = 0; k < faces(t); k++)
         for (l = 0; l < n; l++)
             if ((l == 0 || consistent(&t->f[k], l)) && !(t->f[k].blank & (1UL << l)) && t->f[k].shadow[l])
-                ogles2_vc4_tex_store(t, k, l, t->f[k].shadow[l], 0, 0, t->f[k].w[l], t->f[k].h[l]);
+                ogles2_vc4_tex_store(t, k, l, t->f[k].shadow[l],
+                                     (ULONG)t->f[k].w[l] * copy_bytes(level_class(&t->f[k], l)), 0, 0, t->f[k].w[l],
+                                     t->f[k].h[l]);
     return TRUE;
 }
 
