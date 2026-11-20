@@ -1314,10 +1314,14 @@ the newest last. **Next, in order:**
    A1200's link on the Pi 3 card (cause unknown, the station's and not the library's; the scripts work
    around them); ERRSTAT VCMRE, logged for some renders with right pictures (item 5).
 
-**Next on branch `ogles2pi3-beta2` (2026-11-19, the developer's request; planned, not begun):** ogles3's
-16-bit texture upload fixes, both backends, and its vsync fix (the swap on the HVS's frame counter) for
-the Pi 4 card (the Pi 3 card's postponed): the last two entries below, "Plan: ogles3's 16-bit upload
-fixes" and "Plan: ogles3's vsync fix".
+**Branch `ogles2pi3-beta` (`ogles2pi3-beta2` until its rename on 2026-11-20; 2026-11-19, the developer's request; done on the Pi 4 card, released as
+1.4-beta3 on 2026-11-20):** ogles3's 16-bit texture upload fixes, both backends, and its vsync fix (the
+swap on the HVS's frame counter) for the Pi 4 card (the Pi 3 card's postponed): the last entries below,
+"Plan: ogles3's 16-bit upload fixes", "Plan: ogles3's vsync fix" and "Release 1.4-beta3". **Owed:** the
+Pi 3 card (postponed by the developer: the upload package, dEQP-GLES2's `texture` and `fbo`, the
+regression packages, m6-9 with the wait as before), `vsync-3` (the developer watching), Quake III with
+`r_swapInterval 1`, the Pi 3 card's vsync (step 3, postponed), a GitHub pre-release (only when the
+developer asks).
 
 How to work on the card: CONTRIBUTING.md, "The Pi 3 card and the amigent station" (packages with
 `p5_run.sh`, dEQP with `p6_deqp.sh` and `p6_watch.sh`, why a program compiles at a draw with
@@ -2309,3 +2313,22 @@ were written on, read that section's "Another machine" first.
    is in `results/qconsole.log`, not `1-timedemo.txt`. **Owed:**
    `vsync-3` (tearing, the developer watching), Quake III with `r_swapInterval 1`, and m6-9 once on the
    Pi 3 card (the wait as before there).
+
+   **Release 1.4-beta3 (2026-11-20, the developer's request; the branch renamed `ogles2pi3-beta`):** this branch with the upload work and the
+   vsync wait above: library 1.4 (`OGLES2_RELEASE` "1.4-beta3", 20.11.2026), the compiler of `c5acf2a`'s
+   sources (unchanged since beta 2). README.md, release/ReadMe ("New in beta 3": the 16-bit uploads, the
+   Pi 4's vsync, tested on the Pi 4 only), Install-ogles2 and GettingStarted name it; `release/dist/`
+   holds its six archives and `SHA256SUMS` (beta 2's in the `v1.4-beta2` pre-release). **The compilers on
+   the build machine (C:\- CPP):** `build_release.sh` refused the on-target compiler there, stamped
+   `a28b3b2` (beta 1's, of 2026-11-05: beta 2 was built on another machine), and that machine's Mesa
+   tree had patch 0016's first version (`offset != c->output_color_index`, before 661a530's
+   `offset * 4`); the tree otherwise HEAD plus the 22 patches (and `patch_drmshim.sh`'s WSL1 fallback).
+   Corrected to the committed patch, then `replay.py --libs` (tool and VC4: 956 objects),
+   `build_m68k.sh` (stamp `20261120-150112 d9866dc+`), `build_host.sh`; `compare_vc4p.sh` 9 of 9 and
+   `compare_v3dp.sh` 8 of 8 identical. **The archives on the Pi 4 card** (`beta_run.sh` and
+   `DEMOS=1`, beta 3's library in `LIBS:`, which an installed 1.4 would otherwise win over):
+   `beta-20261120-160319` and `-160533`, each 34 links from `shaders/`, no closest variant, every
+   context freed; boing2026 57.4 fps without MSAA, 65.3 full screen with it. Its "FAIL" was the count's
+   pattern `compiler` meeting the library's line naming the station's own `LIBS:v3dglslc` (the test
+   expects none there): nothing compiled. **Owed:** the archives on the Pi 3 card, with the rest of
+   the Pi 3 card's list (postponed).

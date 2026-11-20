@@ -10,14 +10,15 @@ It is the same API that phones, browsers and game engines use, and the same libr
 AmigaOS 4 has: GLES2 code from Linux, Android, the web or OS4 compiles and runs on the classic
 Amiga.
 
-## Version 1.4 beta 2: the Raspberry Pi 3 joins the Pi 4
+## Version 1.4 beta 3: the Raspberry Pi 3 joins the Pi 4
 
 Up to release 1.3.3, ogles2 needed a Raspberry Pi 4 in the PiStorm. Version 1.4 also runs on a
 **Raspberry Pi 3** (3B, 3B+ and 3A+) and the **Raspberry Pi Zero 2 W**, which is built on the same
 chip. Their VideoCore IV is an older and quite different GPU. Everything said below about the Pi 3
 applies to the Zero 2 W as well. The library now carries a back end for each GPU, and the shader
-compiler produces code for both. On a Pi 4 nothing has changed: the same tests, the same pictures
-and the same speed as 1.3.3.
+compiler produces code for both. On a Pi 4 it passes the same tests with the same pictures as
+1.3.3, at the same speed or better: beta 3 uploads 16-bit textures five times faster, and its
+vsync no longer skips a refresh now and then.
 
 **One library, one program, both Pis.** `ogles2.library` finds out which Pi it is running on
 when a program opens it. The program doesn't need to know: there is no Pi 3 build, no `#ifdef`,
@@ -48,9 +49,9 @@ files from `OGLES2Cache:`. `GettingStarted.txt` (section 5) walks through it. Th
 are built exactly this way: they carry both sets and run on either Pi with no compiler
 installed.
 
-**Getting it.** The archives are in [`release/dist/`](release/dist/) and on the
-[`v1.4-beta2` pre-release](https://github.com/ladislawv/ogles2pi3/releases/tag/v1.4-beta2). To
-just try it, take `ogles2-1.4-beta2-demos.lha`: unpack it, open the drawer and double-click a
+**Getting it.** The archives are in [`release/dist/`](release/dist/) (beta 2's are on the
+[`v1.4-beta2` pre-release](https://github.com/ladislawv/ogles2pi3/releases/tag/v1.4-beta2)). To
+just try it, take `ogles2-1.4-beta3-demos.lha`: unpack it, open the drawer and double-click a
 demo. Nothing needs installing. 1.3.3, the last Pi 4-only release, is in the tag `v1.3.3`. This
 is a beta: please report what you find, with the library's log (`release/ReadMe`, "Logging").
 
@@ -90,11 +91,11 @@ classic Amiga is solved; what remains is the CPU and OS code.
 
 | Archive | For | Contents |
 |---|---|---|
-| `ogles2-1.4-beta2.lha` | users | the library, the shader compiler, `Install-ogles2`, `OGLES2Log`, four examples with their Pi 4 and Pi 3 binaries |
-| `ogles2-1.4-beta2-demos.lha` | trying it out | the four examples with their shaders' binaries for both Pis and the library beside them: unpack and run, nothing to install |
-| `ogles2-1.4-beta2-sdk.lha` | Amiga programmers | the same plus the SDK: headers, import libraries for GCC and vbcc, the autodoc `ogles2.doc`, the guide `GettingStarted.txt`, example sources |
-| `ogles2-1.4-beta2-sdk.zip` | cross-development on a PC | the SDK alone |
-| `ogles2-1.4-beta2-sdl.lha` / `.zip` | SDL programmers | SDL2 and SDL3 with the ogles2 backend, the MiniGL SDK SDL links, two examples; unpacks over the SDK |
+| `ogles2-1.4-beta3.lha` | users | the library, the shader compiler, `Install-ogles2`, `OGLES2Log`, four examples with their Pi 4 and Pi 3 binaries |
+| `ogles2-1.4-beta3-demos.lha` | trying it out | the four examples with their shaders' binaries for both Pis and the library beside them: unpack and run, nothing to install |
+| `ogles2-1.4-beta3-sdk.lha` | Amiga programmers | the same plus the SDK: headers, import libraries for GCC and vbcc, the autodoc `ogles2.doc`, the guide `GettingStarted.txt`, example sources |
+| `ogles2-1.4-beta3-sdk.zip` | cross-development on a PC | the SDK alone |
+| `ogles2-1.4-beta3-sdl.lha` / `.zip` | SDL programmers | SDL2 and SDL3 with the ogles2 backend, the MiniGL SDK SDL links, two examples; unpacks over the SDK |
 
 ### Requirements
 
