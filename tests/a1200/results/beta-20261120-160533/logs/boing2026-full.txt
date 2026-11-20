@@ -1,0 +1,34 @@
+   166 close (count 0)
+   167 open (count 1)
+   168 display: mode 0x50031200 has pixel format 9, needs 32-bit BGRA or RGBA
+   169 aglCreateContext2: failed, error 4
+   170 display: mode 0x50031201 has pixel format 10, needs 32-bit BGRA or RGBA
+   171 aglCreateContext2: failed, error 4
+   172 display: render bitmap at 0x3C7E9000, 2560 bytes a row: NOT in memory the GPU reaches
+   173 display: fullscreen, 640x480, BGRA
+   174 device: context pools for 640x480, D16, 4x MSAA (32x32 tiles), 18267520 bytes of GPU memory in use
+   175 aglCreateContext2: context 0x091E278C, 640x480
+   176 glLinkProgram: PROGDIR:shaders/b56f2c8490fb9919273d3526.v3dp (5 variants, 12552 bytes of code)
+   177 glLinkProgram: PROGDIR:shaders/5c2099f534924f5643bb4e21.v3dp (5 variants, 35856 bytes of code)
+   178 glLinkProgram: PROGDIR:shaders/869b8c574e15ca111268d3bb.v3dp (5 variants, 1560 bytes of code)
+   179 glLinkProgram: PROGDIR:shaders/25e2829ecb32c8c5720cf187.v3dp (5 variants, 1248 bytes of code)
+   180 glLinkProgram: PROGDIR:shaders/8e8e58e549d79085f8ad5002.v3dp (5 variants, 792 bytes of code)
+   181 glLinkProgram: PROGDIR:shaders/a96c30151df51cf156068de8.v3dp (5 variants, 2320 bytes of code)
+   182 job: framebuffer 2 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+   183 framebuffer 2: tile pools of its own for 512x512
+   184 texture 0 sampled while incomplete (it reads black): no GPU copy, level 0 0x0, min filter 0x2702, level 1 of 1 missing or inconsistent (logged once a texture)
+   185 draw: program 5c2099f534924f5643bb4e21: its 32-bit sampler variants (5)
+   186 job: framebuffer 5 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+   187 framebuffer 5: tile pools of its own for 160x120
+   188 job: framebuffer 3 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+   189 job: framebuffer 1 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+   190 framebuffer 1: tile pools of its own for 512x512
+   191 framebuffer 3: tile pools of its own for 640x480
+   192 aglDestroyContext: context 0x091E278C: freeing
+   193 device: context freed, 0 bytes of GPU memory still in use
+   194 aglDestroyContext: context 0x091E278C (1500 frames, 0 dropped, 0 binning blocks added)
+   195 job: 1494 jobs chained behind a running render (1490 of them waited for an older one first)
+   196 timing: 1500 jobs, each on average: 272 us of CPU work before its flush, 42 us waiting for binning, 14 us for the render
+   197 timing: and in each flush 1129 us building the render list, 50 us for the CPU cache before the GPU, 0 us after
+   198 timing: 150 swaps, 15275 us from one to the next on average, 1 us of it presenting
+   199 timing: per frame 20 draws, 1809 us in them; in all 0 ms in glBuffer(Sub)Data, 4 ms in glTex(Sub)Image2D

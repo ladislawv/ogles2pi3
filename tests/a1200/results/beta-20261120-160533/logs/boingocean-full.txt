@@ -1,0 +1,26 @@
+    59 close (count 0)
+    60 open (count 1)
+    61 display: mode 0x50031200 has pixel format 9, needs 32-bit BGRA or RGBA
+    62 aglCreateContext2: failed, error 4
+    63 display: mode 0x50031201 has pixel format 10, needs 32-bit BGRA or RGBA
+    64 aglCreateContext2: failed, error 4
+    65 display: render bitmap at 0x3C7E9000, 2560 bytes a row: NOT in memory the GPU reaches
+    66 display: fullscreen, 640x480, BGRA
+    67 device: context pools for 640x480, D16, 18196864 bytes of GPU memory in use
+    68 aglCreateContext2: context 0x091E278C, 640x480
+    69 glLinkProgram: PROGDIR:shaders/979813889518f75fefac46b0.v3dp (5 variants, 32944 bytes of code)
+    70 glLinkProgram: PROGDIR:shaders/37ec59dfa58c405ccec137ea.v3dp (5 variants, 600 bytes of code)
+    71 glLinkProgram: PROGDIR:shaders/23aaf3137b53a13416d66210.v3dp (5 variants, 8528 bytes of code)
+    72 glLinkProgram: PROGDIR:shaders/1c7f18a4fe584df6d18e6a9e.v3dp (5 variants, 1664 bytes of code)
+    73 job: framebuffer 2 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+    74 framebuffer 2: tile pools of its own for 64x64
+    75 job: framebuffer 1 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+    76 framebuffer 1: tile pools of its own for 160x160
+    77 aglDestroyContext: context 0x091E278C: freeing
+    78 device: context freed, 0 bytes of GPU memory still in use
+    79 aglDestroyContext: context 0x091E278C (310 frames, 0 dropped, 0 binning blocks added)
+    80 job: 307 jobs chained behind a running render (305 of them waited for an older one first)
+    81 timing: 310 jobs, each on average: 220 us of CPU work before its flush, 19 us waiting for binning, 100 us for the render
+    82 timing: and in each flush 7521 us building the render list, 51 us for the CPU cache before the GPU, 0 us after
+    83 timing: 150 swaps, 16322 us from one to the next on average, 1 us of it presenting
+    84 timing: per frame 2 draws, 1581 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D

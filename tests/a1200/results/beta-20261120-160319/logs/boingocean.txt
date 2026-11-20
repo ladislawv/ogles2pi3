@@ -1,0 +1,20 @@
+    39 close (count 0)
+    40 open (count 1)
+    41 display: render bitmap at 0x09F6CC0C, 2560 bytes a row: in memory the GPU reaches
+    42 display: application window, 640x480, BGRA
+    43 device: context pools for 640x480, D16, 18196864 bytes of GPU memory in use
+    44 aglCreateContext2: context 0x091E278C, 640x480
+    45 glLinkProgram: PROGDIR:shaders/979813889518f75fefac46b0.v3dp (5 variants, 32944 bytes of code)
+    46 glLinkProgram: PROGDIR:shaders/37ec59dfa58c405ccec137ea.v3dp (5 variants, 600 bytes of code)
+    47 glLinkProgram: PROGDIR:shaders/23aaf3137b53a13416d66210.v3dp (5 variants, 8528 bytes of code)
+    48 glLinkProgram: PROGDIR:shaders/1c7f18a4fe584df6d18e6a9e.v3dp (5 variants, 1664 bytes of code)
+    49 job: framebuffer 2 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+    50 framebuffer 2: tile pools of its own for 64x64
+    51 aglDestroyContext: context 0x091E278C: freeing
+    52 device: context freed, 0 bytes of GPU memory still in use
+    53 aglDestroyContext: context 0x091E278C (310 frames, 0 dropped, 0 binning blocks added)
+    54 job: 9 jobs chained behind a running render (0 of them waited for an older one first)
+    55 timing: 310 jobs, each on average: 373 us of CPU work before its flush, 16 us waiting for binning, 7823 us for the render
+    56 timing: and in each flush 65 us building the render list, 55 us for the CPU cache before the GPU, 23 us after
+    57 timing: 150 swaps, 17938 us from one to the next on average, 887 us of it presenting
+    58 timing: per frame 2 draws, 519 us in them; in all 0 ms in glBuffer(Sub)Data, 0 ms in glTex(Sub)Image2D

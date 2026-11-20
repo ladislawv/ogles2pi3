@@ -1,0 +1,29 @@
+    85 close (count 0)
+    86 open (count 1)
+    87 display: render bitmap at 0x09F6CC0C, 2560 bytes a row: in memory the GPU reaches
+    88 display: application window, 640x480, BGRA
+    89 device: context pools for 640x480, D16, 4x MSAA (32x32 tiles), 18267520 bytes of GPU memory in use
+    90 aglCreateContext2: context 0x0923A98C, 640x480
+    91 glLinkProgram: PROGDIR:shaders/b56f2c8490fb9919273d3526.v3dp (5 variants, 12552 bytes of code)
+    92 glLinkProgram: PROGDIR:shaders/5c2099f534924f5643bb4e21.v3dp (5 variants, 35856 bytes of code)
+    93 glLinkProgram: PROGDIR:shaders/869b8c574e15ca111268d3bb.v3dp (5 variants, 1560 bytes of code)
+    94 glLinkProgram: PROGDIR:shaders/25e2829ecb32c8c5720cf187.v3dp (5 variants, 1248 bytes of code)
+    95 glLinkProgram: PROGDIR:shaders/8e8e58e549d79085f8ad5002.v3dp (5 variants, 792 bytes of code)
+    96 glLinkProgram: PROGDIR:shaders/a96c30151df51cf156068de8.v3dp (5 variants, 2320 bytes of code)
+    97 job: framebuffer 2 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+    98 framebuffer 2: tile pools of its own for 512x512
+    99 texture 0 sampled while incomplete (it reads black): no GPU copy, level 0 0x0, min filter 0x2702, level 1 of 1 missing or inconsistent (logged once a texture)
+   100 draw: program 5c2099f534924f5643bb4e21: its 32-bit sampler variants (5)
+   101 job: framebuffer 5 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+   102 framebuffer 5: tile pools of its own for 160x120
+   103 draw: program 869b8c574e15ca111268d3bb: its 32-bit sampler variants (5)
+   104 job: framebuffer 3 drawn while a render runs: tile pools of its own from its next job on, so that its jobs can be queued
+   105 framebuffer 3: tile pools of its own for 640x480
+   106 aglDestroyContext: context 0x0923A98C: freeing
+   107 device: context freed, 0 bytes of GPU memory still in use
+   108 aglDestroyContext: context 0x0923A98C (44060 frames, 0 dropped, 0 binning blocks added)
+   109 job: 32775 jobs chained behind a running render (27133 of them waited for an older one first)
+   110 timing: 44060 jobs, each on average: 1135 us of CPU work before its flush, 31 us waiting for binning, 1106 us for the render
+   111 timing: and in each flush 89 us building the render list, 51 us for the CPU cache before the GPU, 6 us after
+   112 timing: 5641 swaps, 13454 us from one to the next on average, 875 us of it presenting
+   113 timing: per frame 15 draws, 1443 us in them; in all 0 ms in glBuffer(Sub)Data, 4 ms in glTex(Sub)Image2D

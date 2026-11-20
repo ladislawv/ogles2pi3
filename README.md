@@ -49,8 +49,8 @@ files from `OGLES2Cache:`. `GettingStarted.txt` (section 5) walks through it. Th
 are built exactly this way: they carry both sets and run on either Pi with no compiler
 installed.
 
-**Getting it.** The archives are in [`release/dist/`](release/dist/) (beta 2's are on the
-[`v1.4-beta2` pre-release](https://github.com/ladislawv/ogles2pi3/releases/tag/v1.4-beta2)). To
+**Getting it.** The archives are in [`release/dist/`](release/dist/) and on the
+[`v1.4-beta3` pre-release](https://github.com/ladislawv/ogles2pi3/releases/tag/v1.4-beta3). To
 just try it, take `ogles2-1.4-beta3-demos.lha`: unpack it, open the drawer and double-click a
 demo. Nothing needs installing. 1.3.3, the last Pi 4-only release, is in the tag `v1.3.3`. This
 is a beta: please report what you find, with the library's log (`release/ReadMe`, "Logging").

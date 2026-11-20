@@ -1320,8 +1320,7 @@ swap on the HVS's frame counter) for the Pi 4 card (the Pi 3 card's postponed): 
 "Plan: ogles3's 16-bit upload fixes", "Plan: ogles3's vsync fix" and "Release 1.4-beta3". **Owed:** the
 Pi 3 card (postponed by the developer: the upload package, dEQP-GLES2's `texture` and `fbo`, the
 regression packages, m6-9 with the wait as before), `vsync-3` (the developer watching), Quake III with
-`r_swapInterval 1`, the Pi 3 card's vsync (step 3, postponed), a GitHub pre-release (only when the
-developer asks).
+`r_swapInterval 1`, the Pi 3 card's vsync (step 3, postponed).
 
 How to work on the card: CONTRIBUTING.md, "The Pi 3 card and the amigent station" (packages with
 `p5_run.sh`, dEQP with `p6_deqp.sh` and `p6_watch.sh`, why a program compiles at a draw with
@@ -2330,5 +2329,6 @@ were written on, read that section's "Another machine" first.
    `beta-20261120-160319` and `-160533`, each 34 links from `shaders/`, no closest variant, every
    context freed; boing2026 57.4 fps without MSAA, 65.3 full screen with it. Its "FAIL" was the count's
    pattern `compiler` meeting the library's line naming the station's own `LIBS:v3dglslc` (the test
-   expects none there): nothing compiled. **Owed:** the archives on the Pi 3 card, with the rest of
-   the Pi 3 card's list (postponed).
+   expects none there): nothing compiled. Tag `v1.4-beta3` (26d78d7) and a GitHub pre-release on
+   `ladislawv/ogles2pi3` with the six archives and `SHA256SUMS` (2026-11-20, the developer's request).
+   **Owed:** the archives on the Pi 3 card, with the rest of the Pi 3 card's list (postponed).
