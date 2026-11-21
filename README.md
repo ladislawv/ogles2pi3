@@ -214,7 +214,7 @@ link them. Third-party code and the ports keep their own licences and notices (`
 
 ## Credits
 
-ogles2 is developed by R-Typer and Ladislawv, with Claude Opus 5.5 (Anthropic's AI assistant).
+ogles2 is developed by Ladislav Vojnic (ladislawv), Aleksandar Vojnic (R-Typer).
 
 It builds on: PiStorm3D (`minigl.library` for PiStorm) by Steffen "MagicSN" Haeuser, and its V3D
 backend, which this library builds on, by Dennis van der Boon; the V3D assembler and V3D documentation by Macoy Madson; Mesa's

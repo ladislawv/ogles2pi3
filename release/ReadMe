@@ -1,247 +1,343 @@
 ogles2.library 1.4 beta 3 (release 1.4-beta3) for AmigaOS 3.x on PiStorm
 =========================================================================
 
+By Ladislav Vojnic (ladislawv), Aleksandar Vojnic (R-Typer)
+
 OpenGL ES 2.0 for 68k AmigaOS, drawn by the Raspberry Pi's GPU through
-PiStorm and Emu68: the Raspberry Pi 4's (Broadcom V3D 4.2) and, new in
-1.4, the VideoCore IV of the Raspberry Pi 3 and Zero 2 W. One library and
-one shader compiler for both; the library finds which Pi it runs on. The
-API is source-compatible with AmigaOS 4's ogles2.library: the GLES2
-functions plus the agl* context calls.
+PiStorm and Emu68.
 
-This is a beta
---------------
-1.4 beta 1 was the first release with the Raspberry Pi 3. On the Pi 4 the
-library behaves as release 1.3.3 (the same tests and pictures). Please
-report what you find, with the log (see "Logging").
+- The Raspberry Pi 4's GPU (Broadcom V3D 4.2) and, new in 1.4, the
+  VideoCore IV of the Raspberry Pi 3 and Zero 2 W.
+- One library and one shader compiler for both; the library finds which
+  Pi it runs on.
+- The API is source-compatible with AmigaOS 4's ogles2.library: the
+  GLES2 functions plus the agl* context calls.
 
-New in beta 3:
+This is a beta. 1.4 beta 1 was the first release with the Raspberry
+Pi 3; on the Pi 4 the library passes the same tests with the same
+pictures as release 1.3.3. Please report what you find, with the log
+(see 11, "Logging").
+
+Contents
+--------
+   1. New in beta 3
+   2. New in beta 2
+   3. Requirements
+   4. The Raspberry Pi 3
+   5. What is in this archive
+   6. Installing
+   7. Upgrading
+   8. Using it without installing
+   9. Shaders
+  10. The examples
+  11. Logging
+  12. For programmers
+  13. Conformance
+  14. Licence
+  15. Credits
+
+
+1. New in beta 3
+----------------
 - 16-bit textures (RGB565, RGB5_A1, RGBA4) upload as fast per byte as
-  RGBA8, where they took four times as long: on a Pi 4, 64 textures of
-  256 x 256 with glTexSubImage2D in 36 ms instead of 199 (RGBA8: 57 ms),
-  with glTexImage2D in 47 ms instead of 124. Their texels are kept as
-  the program gives them, without the 32-bit copy, until something needs
-  one. On the Pi 3 the texture is written to the GPU a block at a time.
-- Vsync on the Pi 4: the swap sleeps until just before the display's next
-  refresh, read from the display's own frame counter, instead of polling
-  for the last line. A frame that is ready in time is no longer held back
-  a whole refresh now and then (in 30 seconds about 10 skipped refreshes
-  before, 0 or 1 now), and other tasks run while a program waits. On the
-  Pi 3 the wait is as before.
+  RGBA8, where they took four times as long. On a Pi 4, 64 textures of
+  256 x 256 take 36 ms instead of 199 with glTexSubImage2D (RGBA8:
+  57 ms), and 47 ms instead of 124 with glTexImage2D. Their texels are
+  kept as the program gives them, without the 32-bit copy, until
+  something needs one. On the Pi 3 the texture is written to the GPU a
+  block at a time.
+- Vsync on the Pi 4: the swap sleeps until just before the display's
+  next refresh, read from the display's own frame counter, instead of
+  polling for the last line. A frame that is ready in time is no longer
+  held back a whole refresh now and then (in 30 seconds about 10
+  skipped refreshes before, 0 or 1 now), and other tasks run while a
+  program waits. On the Pi 3 the wait is as before.
+
 Beta 3's changes were tested on the Pi 4 (dEQP-GLES2's texture and fbo
-groups, the regression tests, Quake III: as fast as beta 2); they have not
-run on a Pi 3 yet.
+groups, the regression tests, Quake III: as fast as beta 2); they have
+not run on a Pi 3 yet.
 
-New in beta 2:
-- On a Pi 3 or Zero 2 W, programs whose shaders are compiled on the Amiga
-  work again. Beta 1 shipped a shader compiler older than its library: it
-  refused every such program ("the program binary could not be written").
-  The library now also retries without its link hints if a compile fails,
-  and the compiler writes its reason into the log. A shader too large for
-  the Pi 3's GPU now fails with that reason instead of linking with
-  nothing to draw with.
+
+2. New in beta 2
+----------------
+- On a Pi 3 or Zero 2 W, programs whose shaders are compiled on the
+  Amiga work again. Beta 1 shipped a shader compiler older than its
+  library: it refused every such program ("the program binary could not
+  be written"). The library now also retries without its link hints if
+  a compile fails, and the compiler writes its reason into the log. A
+  shader too large for the Pi 3's GPU now fails with that reason instead
+  of linking with nothing to draw with.
 - Faster: index data from static buffers is no longer copied at every
-  draw (Quake III's timedemo on a Pi 4: 88 to 91 fps), on the Pi 4 a
-  framebuffer object's job is queued on the GPU behind the screen's, and
-  on the Pi 3 the CPU no longer waits for the GPU's binning pass.
-Beta 2's changes were tested on the Pi 4; on the Pi 3 the compiler fix was
-checked with the Amiga's compiler on a PC, and the rest has not run on a
-Pi 3 yet. 1.4-beta1a is beta 1 with the fixed compiler, for those who
-stay on beta 1.
+  draw (Quake III's timedemo on a Pi 4: 88 to 91 fps); on the Pi 4 a
+  framebuffer object's job is queued on the GPU behind the screen's; on
+  the Pi 3 the CPU no longer waits for the GPU's binning pass.
 
-Requirements
-------------
-- An Amiga with a PiStorm and a Raspberry Pi 4B or CM4, or a Raspberry Pi
-  3B, 3B+, 3A+ or Zero 2 W (the GPU is the Pi's). Tested: a Pi 4B and a
-  Pi 3B on a PiStorm32-lite in an A1200.
+Beta 2's changes were tested on the Pi 4; on the Pi 3 the compiler fix
+was checked with the Amiga's compiler on a PC, and the rest has not run
+on a Pi 3 yet.
+
+
+3. Requirements
+---------------
+- An Amiga with a PiStorm and a Raspberry Pi 4B or CM4, or a Raspberry
+  Pi 3B, 3B+, 3A+ or Zero 2 W (the GPU is the Pi's). Tested: a Pi 4B
+  and a Pi 3B on a PiStorm32-lite in an A1200.
 - Emu68 (tested: 1.1.0-beta.1)
 - AmigaOS 3.x (tested: 3.2) with Picasso96 or CyberGraphX
 - A 32-bit RTG screen for programs that render into a window
 
-The Raspberry Pi 3
-------------------
-What this file says about the Pi 3 applies to every one, the 3B, 3B+ and
-3A+, and to the Raspberry Pi Zero 2 W, which has the Pi 3's chip. Their
-CPUs run at 1.2 GHz (3B), 1.4 GHz (3B+, 3A+) and 1.0 GHz (Zero 2 W); the
-figures below are the 3B's.
 
-The Pi 3's GPU is older and its Emu68 slower: Quake III's timedemo runs at
-about 33 fps (89 on a Pi 4 at 2.2 GHz), glmark2 scores 70. Textures and
-framebuffers go up to 2048 x 2048 (4096 on the Pi 4), with 8 vertex
-attributes (16). Blending, texture formats and vertex formats are done in
-the shaders on this GPU, so a program needs a shader "variant" for each
-combination of them it draws with: the compiler makes them as the program
-draws (each new combination once, then kept in OGLES2Cache: as a .vc4k
-file), or the program ships them (see "Shaders"). Programs and their
-binaries are the same source for both Pis; the binaries are not: a .v3dp
-file is the Pi 4's, a .vc4p file (with its .vc4k) the Pi 3's.
+4. The Raspberry Pi 3
+---------------------
+What this file says about the Pi 3 applies to every one, the 3B, 3B+
+and 3A+, and to the Raspberry Pi Zero 2 W, which has the Pi 3's chip.
+Their CPUs run at 1.2 GHz (3B), 1.4 GHz (3B+, 3A+) and 1.0 GHz
+(Zero 2 W); the figures below are the 3B's.
 
-What is in this archive
------------------------
-  Install-ogles2      the installer (an AmigaDOS script, see below)
-  Libs/ogles2.library the library
-  Libs/v3dglslc       the shader compiler (Mesa's V3D compiler, 19 MB)
-  C/OGLES2Log         writes the library's log while a program runs
-  Examples/           four programs with their compiled shaders
-  SDK/                headers, import libraries, documentation and the
-                      examples' sources, for programmers (only in
-                      ogles2-1.4-beta3-sdk.lha; see "For programmers")
-  LICENSE, licences/  licences and notices
+  Speed          Quake III's timedemo about 33 fps (89 on a Pi 4 at
+                 2.2 GHz), glmark2 70: the GPU is older and Emu68
+                 slower
+  Textures and   up to 2048 x 2048 (4096 on the Pi 4)
+  framebuffers
+  Vertex         8 (16 on the Pi 4)
+  attributes
 
-Installing
-----------
+Blending, texture formats and vertex formats are done in the shaders on
+this GPU, so a program needs a shader "variant" for each combination of
+them it draws with. The compiler makes them as the program draws (each
+new combination once, then kept in OGLES2Cache: as a .vc4k file), or
+the program ships them (see 9).
+
+Programs and their shaders are the same source for both Pis; the
+binaries are not: a .v3dp file is the Pi 4's, a .vc4p file (with its
+.vc4k) the Pi 3's.
+
+
+5. What is in this archive
+--------------------------
+  Install-ogles2       the installer (an AmigaDOS script, see 6)
+  Libs/ogles2.library  the library
+  Libs/v3dglslc        the shader compiler (Mesa's V3D compiler, 19 MB)
+  C/OGLES2Log          writes the library's log while a program runs
+  Examples/            four programs with their compiled shaders (see 10)
+  SDK/                 headers, import libraries, documentation and the
+                       examples' sources, for programmers (only in
+                       ogles2-1.4-beta3-sdk.lha; see 12)
+  LICENSE, licences/   licences and notices
+
+
+6. Installing
+-------------
 From a Shell, in this drawer:
 
     Execute Install-ogles2
 
 It asks before each step:
+
 - copies ogles2.library to LIBS:;
-- copies the shader compiler v3dglslc to LIBS: (optional, see "Shaders");
+- copies the shader compiler v3dglslc to LIBS: (optional, see 9);
 - makes the drawer SYS:OGLES2Cache and adds "Assign OGLES2Cache:
-  SYS:OGLES2Cache" to S:User-Startup, so compiled shaders are kept across
-  reboots (optional; without it they are kept in T: until the next reboot);
+  SYS:OGLES2Cache" to S:User-Startup, so compiled shaders are kept
+  across reboots (optional; without it they are kept in T: until the
+  next reboot);
 - copies OGLES2Log to C: (optional).
+
 "Execute Install-ogles2 ALL" does all four without asking.
 
-To remove it: delete LIBS:ogles2.library, LIBS:v3dglslc, C:OGLES2Log and
-SYS:OGLES2Cache, and the lines between ";BEGIN ogles2" and ";END ogles2"
-in S:User-Startup.
+To remove it: delete LIBS:ogles2.library, LIBS:v3dglslc, C:OGLES2Log
+and SYS:OGLES2Cache, and the lines between ";BEGIN ogles2" and
+";END ogles2" in S:User-Startup.
 
-Using it without installing
----------------------------
-A program finds ogles2.library and the compiler in its own drawer when they
-are not installed: the library in LIBS:, else PROGDIR:libs/, else beside the
-program; the compiler likewise (LIBS:v3dglslc, PROGDIR:libs/v3dglslc,
-PROGDIR:v3dglslc). So a program can be shipped with a libs/ drawer holding
-ogles2.library (and v3dglslc, if it needs to compile shaders). This works
-for programs built with this SDK's import library (version 1.3 or newer).
-A program's own copy also replaces an installed one that is too old for
+
+7. Upgrading
+------------
+Install the library and the compiler together: Install-ogles2 replaces
+both. Remove old copies a program may carry in its own libs/ drawer.
+
+Every 1.4 beta's library has the same version, 1.4, so an installed
+earlier beta is used instead of a program's own copy of this one (see
+8): install beta 3 over it.
+
+1.4-beta1a is beta 1 with the fixed compiler of beta 2, for those who
+stay on beta 1.
+
+
+8. Using it without installing
+------------------------------
+A program finds ogles2.library and the compiler in its own drawer when
+they are not installed:
+
+  the library    LIBS:, else PROGDIR:libs/, else beside the program
+  the compiler   LIBS:v3dglslc, else PROGDIR:libs/v3dglslc, else
+                 PROGDIR:v3dglslc
+
+So a program can be shipped with a libs/ drawer holding ogles2.library
+(and v3dglslc, if it needs to compile shaders). This works for programs
+built with this SDK's import library (version 1.3 or newer). A
+program's own copy also replaces an installed one that is too old for
 it, unless another program is using the old one at that moment (AmigaOS
 keeps one ogles2.library in memory for all programs).
 
-To try the examples this way: copy Libs/ogles2.library into Examples/libs/
-and run Examples/triangle, Examples/cube or Examples/boingocean.
+To try the examples this way: copy Libs/ogles2.library into
+Examples/libs/ and run Examples/triangle, Examples/cube or
+Examples/boingocean.
 
-Shaders
--------
-The GPU runs machine code compiled from each program's GLSL. ogles2 finds
-a program's compiled form ("binary", a file named by a hash of the GLSL
-text: .v3dp on the Pi 4, .vc4p on the Pi 3) in the program's shaders/
-drawer, beside the program, or in OGLES2Cache: (or T:). When there is
-none, the compiler v3dglslc compiles it (about 0.2 s per program; its first
-start takes about a second) and the result goes into OGLES2Cache:, so the
-next run needs no compiler.
 
-The cache does not grow without end: over 64 MB or 8192 files, the first
-compile after ogles2.library is loaded removes the oldest of its files, down
-to 3/4 of the limit, and a program that needs one again compiles it again.
-"SetEnv OGLES2/CacheKB 200000" (in S:User-Startup, to keep it) sets the size
-in KB; 0 turns this off. Keep the binaries you ship in the program's shaders/
-drawer, which is never touched.
+9. Shaders
+----------
+The GPU runs machine code compiled from each program's GLSL. ogles2
+finds a program's compiled form ("binary", a file named by a hash of the
+GLSL text: .v3dp on the Pi 4, .vc4p on the Pi 3) in the program's
+shaders/ drawer, beside the program, or in OGLES2Cache: (or T:). When
+there is none, the compiler v3dglslc compiles it (about 0.2 s per
+program; its first start takes about a second) and the result goes into
+OGLES2Cache:, so the next run needs no compiler.
+
+The cache does not grow without end: over 64 MB or 8192 files, the
+first compile after ogles2.library is loaded removes the oldest of its
+files, down to 3/4 of the limit, and a program that needs one again
+compiles it again. To set the size in KB (in S:User-Startup, to keep
+it; 0 turns this off):
+
+    SetEnv OGLES2/CacheKB 200000
+
+Keep the binaries you ship in the program's shaders/ drawer, which is
+never touched.
 
 Programs that ship their binaries (as the examples do) run without the
-compiler. Where it is installed, they leave it unstarted only if they also
-ship their shaders' records (.v3ds files, in shaders/ with the binaries),
-as the examples do. Programs that make shaders at run time (gl4es
-and the programs built on it, for instance) need it.
+compiler. Where it is installed, they leave it unstarted only if they
+also ship their shaders' records (.v3ds files, in shaders/ with the
+binaries), as the examples do. Programs that make shaders at run time
+(gl4es and the programs built on it, for instance) need it.
 
-On the Pi 3 a program without the compiler also needs the variants of every
-state it draws in (see "The Raspberry Pi 3"): in its .vc4p, or in a .vc4k
-beside it. The examples ship theirs for a 32-bit RTG screen as PiStorm's
-VideoCore RTG driver gives it. A program that finds no variant for a draw
-and no compiler draws with the closest one it has, which can show wrong
+On the Pi 3 a program without the compiler also needs the variants of
+every state it draws in (see 4): in its .vc4p, or in a .vc4k beside it.
+The examples ship theirs for a 32-bit RTG screen as PiStorm's VideoCore
+RTG driver gives it. A program that finds no variant for a draw and no
+compiler draws with the closest one it has, which can show wrong
 colours: install the compiler on a Pi 3 unless a program says it ships
 everything it needs.
 
-The examples
-------------
-  Examples/triangle   a turning coloured triangle in a window
-  Examples/cube       a textured cube with a depth buffer, in a window you
-                      can resize
-  Examples/boingocean the Boing ball floating on a ray-marched ocean, all
-                      drawn by shaders: 60 fps at 640 x 480 on a Pi 4 with
-                      "boingocean FULLSCREEN" from a Shell (about 55 in a
-                      window); drag with the mouse to move the camera, keys
-                      1 to 4 draw it at 1/1 to 1/4 size and scale it up
-  Examples/boing2026  the 1984 Boing Ball remade: it bounces in a neon room
-                      with a soft shadow, a reflecting floor, bloom, 4x
-                      antialiasing and its "boing" on Paula (about 53 fps
-                      at 640 x 480); "boing2026 TOUR" shows each effect in
-                      turn. Its keys and options: Examples/boing2026.txt
+
+10. The examples
+----------------
 Close the window or press Esc to quit. They have icons: from Workbench
 their options are the icons' ToolTypes (switched off in brackets, as
-"(FULLSCREEN)"). Their binaries are in
-Examples/shaders/ (.v3dp for the Pi 4, .vc4p for the Pi 3): they run
-without the compiler on either Pi. The frame rates above are the Pi 4's.
+"(FULLSCREEN)"). Their binaries are in Examples/shaders/ (.v3dp for the
+Pi 4, .vc4p for the Pi 3): they run without the compiler on either Pi.
+The frame rates below are the Pi 4's.
 
-Logging
--------
-The library logs to T:ogles2.log, or to the file named in the environment
-variable OGLES2/LogFile (SetEnv OGLES2/LogFile RAM:ogles2.log). OGLES2Log
-writes the buffered log while a program still runs. A program that fails
-usually says why there.
+  triangle
+      A turning coloured triangle in a window.
 
-The log is kept in memory and written to the file when a program ends, and
-T: is usually in RAM: so if the Amiga crashes, the log is lost twice over.
-To find out why it crashes, log to a file on a disk and have every line
-written at once, then run the program again:
+  cube
+      A textured cube with a depth buffer, in a window you can resize.
+
+  boingocean
+      The Boing ball floating on a ray-marched ocean, all drawn by
+      shaders: 60 fps at 640 x 480 with "boingocean FULLSCREEN" from a
+      Shell (about 55 in a window). Drag with the mouse to move the
+      camera; keys 1 to 4 draw it at 1/1 to 1/4 size and scale it up.
+
+  boing2026
+      The 1984 Boing Ball remade: it bounces in a neon room with a soft
+      shadow, a reflecting floor, bloom, 4x antialiasing and its "boing"
+      on Paula (about 53 fps at 640 x 480). "boing2026 TOUR" shows each
+      effect in turn.
+      Keys and options: Examples/boing2026.txt
+
+
+11. Logging
+-----------
+The library logs to T:ogles2.log, or to the file named in the
+environment variable OGLES2/LogFile:
+
+    SetEnv OGLES2/LogFile RAM:ogles2.log
+
+OGLES2Log writes the buffered log while a program still runs. A program
+that fails usually says why there.
+
+The log is kept in memory and written to the file when a program ends,
+and T: is usually in RAM: so if the Amiga crashes, the log is lost
+twice over. To find out why it crashes, log to a file on a disk and
+have every line written at once, then run the program again:
 
     SetEnv OGLES2/LogFile Work:ogles2.log
     SetEnv OGLES2/LogSync 1
 
-After the reboot, Work:ogles2.log holds everything up to the crash (with
-SetEnv SAVE on AmigaOS 3.2 the settings stay after a reboot too). Writing
-each line costs a little time; "UnSetEnv OGLES2/LogSync" turns it off.
+After the reboot, Work:ogles2.log holds everything up to the crash
+(with SetEnv SAVE on AmigaOS 3.2 the settings stay after a reboot too).
+Writing each line costs a little time; "UnSetEnv OGLES2/LogSync" turns
+it off.
 
-For programmers
----------------
-The SDK comes in two forms: ogles2-1.4-beta3-sdk.lha (this archive with
-SDK/ added) and ogles2-1.4-beta3-sdk.zip (the SDK alone, for building on a
-PC with a cross compiler). SDL2 and SDL3 with an ogles2 backend are a
-separate archive, ogles2-1.4-beta3-sdl.lha or .zip, which unpacks over the
-SDK (its ReadMe-SDL). It holds:
 
-SDK/include    <proto/ogles2.h> (GLES2 and agl*), <libraries/ogles2.h>
-               (tags, errors, extra enumerants), the dispatch table, and
-               Khronos' GLES2/ and KHR/ headers
-SDK/lib        libogles2.a (GCC) and ogles2.lib (vbcc), the import library
-SDK/doc        GettingStarted.txt: writing, building, debugging and shipping
-               a program, and a prompt for working with an AI assistant;
-               ogles2.doc: the agl* calls, shaders and binaries, extensions
-               and deviations from GLES2 and from AmigaOS 4's library
-SDK/examples   the examples' sources and a Makefile (GCC and vbcc)
+12. For programmers
+-------------------
+The SDK comes in two forms:
+
+  ogles2-1.4-beta3-sdk.lha  this archive with SDK/ added
+  ogles2-1.4-beta3-sdk.zip  the SDK alone, for building on a PC with a
+                            cross compiler
+
+SDL2 and SDL3 with an ogles2 backend are a separate archive,
+ogles2-1.4-beta3-sdl.lha or .zip, which unpacks over the SDK (its
+ReadMe-SDL). The SDK holds:
+
+  SDK/include   <proto/ogles2.h> (GLES2 and agl*), <libraries/ogles2.h>
+                (tags, errors, extra enumerants), the dispatch table,
+                and Khronos' GLES2/ and KHR/ headers
+  SDK/lib       libogles2.a (GCC) and ogles2.lib (vbcc), the import
+                library
+  SDK/doc       GettingStarted.txt: writing, building, debugging and
+                shipping a program, and a prompt for working with an AI
+                assistant.
+                ogles2.doc: the agl* calls, shaders and binaries,
+                extensions and deviations from GLES2 and from AmigaOS
+                4's library.
+  SDK/examples  the examples' sources and a Makefile (GCC and vbcc)
 
 The import library and the headers are MIT-licensed: programs of any
 licence may use them. The source of everything here, the compiler's
-included, is at https://github.com/ladislawv/ogles2pi3 (the 1.4 betas; the
-releases before them: https://github.com/ladislawv/ogles2).
+included, is at https://github.com/ladislawv/ogles2pi3 (the 1.4 betas;
+the releases before them: https://github.com/ladislawv/ogles2).
 
-Conformance
------------
-The Khronos dEQP-GLES2 must-pass list (17,165 cases), run on an A1200 with
-this release's library:
-- Pi 4: all pass except 25 cube-map cases (the GPU always filters cube maps
-  seamlessly, as GLES 3 requires) and 6 timing and quality warnings.
-- Pi 3: 17,047 pass; 18 fail, each also failing with Mesa's own VideoCore
-  IV driver on Linux on the same Pi (which passes 16,906); 92 are not
-  supported (sizes and formats the GPU lacks).
+
+13. Conformance
+---------------
+The Khronos dEQP-GLES2 must-pass list (17,165 cases), run on an A1200
+with this release's library:
+
+  Pi 4  all pass except 25 cube-map cases (the GPU always filters cube
+        maps seamlessly, as GLES 3 requires) and 6 timing and quality
+        warnings
+  Pi 3  17,047 pass; 18 fail, each also failing with Mesa's own
+        VideoCore IV driver on Linux on the same Pi (which passes
+        16,906); 92 are not supported (sizes and formats the GPU lacks)
+
 The SDK's ogles2.doc lists the deviations.
 
-Licence
--------
+
+14. Licence
+-----------
 ogles2.library incorporates PiStorm3D's V3D backend and is distributed
-under the Hyperion MiniGL Open Source License (licences/
-License_MiniGL_Library.txt): for AmigaOS only, with the source published.
-The import library, headers, examples and OGLES2Log are MIT. v3dglslc is
-Mesa (MIT; licences/Mesa/). LICENSE lists every part.
+under the Hyperion MiniGL Open Source License
+(licences/License_MiniGL_Library.txt): for AmigaOS only, with the source
+published. The import library, headers, examples and OGLES2Log are MIT.
+v3dglslc is Mesa (MIT; licences/Mesa/). LICENSE lists every part.
 
-Credits
--------
-ogles2 is developed by R-Typer and Ladislawv, with Claude Opus 5.5
-(Anthropic's AI assistant).
 
-It builds on: PiStorm3D (minigl.library for PiStorm) by Steffen "MagicSN" Haeuser, whose
-V3D backend this library builds on, with Dennis van der Boon; the V3D
-assembler by Macoy Madson; Mesa's V3D driver and compiler (Broadcom, VMware
-and the Mesa contributors); Emu68 by Michal Schulz; PiStorm by Claude
-Schwarz and contributors; bebbo's amiga-gcc; vbcc by Volker Barthelmann
-and Frank Wille.
+15. Credits
+-----------
+ogles2 is developed by Ladislav Vojnic (ladislawv), Aleksandar Vojnic
+(R-Typer).
+
+It builds on:
+- PiStorm3D (minigl.library for PiStorm) by Steffen "MagicSN" Haeuser,
+  whose V3D backend this library builds on, with Dennis van der Boon;
+- the V3D assembler by Macoy Madson;
+- Mesa's V3D driver and compiler (Broadcom, VMware and the Mesa
+  contributors);
+- Emu68 by Michal Schulz;
+- PiStorm by Claude Schwarz and contributors;
+- bebbo's amiga-gcc;
+- vbcc by Volker Barthelmann and Frank Wille.

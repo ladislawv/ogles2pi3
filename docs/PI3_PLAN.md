@@ -2331,4 +2331,10 @@ were written on, read that section's "Another machine" first.
    pattern `compiler` meeting the library's line naming the station's own `LIBS:v3dglslc` (the test
    expects none there): nothing compiled. Tag `v1.4-beta3` (26d78d7) and a GitHub pre-release on
    `ladislawv/ogles2pi3` with the six archives and `SHA256SUMS` (2026-11-20, the developer's request).
+   **The archives rebuilt for their texts (2026-11-21, the developer's request; library and compiler
+   unchanged):** the authors named "Ladislav Vojnic (ladislawv), Aleksandar Vojnic (R-Typer)"
+   (README.md, release/ReadMe at its top and in Credits, ogles2.doc's AUTHORS, LICENSE's copyright
+   line); release/ReadMe laid out as ogles3's (a contents list, numbered sections, the examples one
+   to an entry, "7. Upgrading": both files together, every beta is 1.4 so install over an earlier
+   one, 1.4-beta1a). The pre-release's files are the archives of 2026-11-20 until replaced.
    **Owed:** the archives on the Pi 3 card, with the rest of the Pi 3 card's list (postponed).
